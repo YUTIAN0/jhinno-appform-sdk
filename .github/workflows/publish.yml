@@ -60,8 +60,7 @@ jobs:
           # Create venv and install SDK to resolve all deps
           python -m venv venv
           source venv/bin/activate
-          pip install --upgrade pip
-          pip install dist/jhinno_appform_sdk-*-py3-none-any.whl
+          python -m pip install dist/jhinno_appform_sdk-*-py3-none-any.whl
 
           # List resolved dependencies
           echo "=== Resolved dependencies ==="
@@ -126,8 +125,7 @@ jobs:
           # Create venv and install SDK to resolve all deps
           python -m venv venv
           & .\venv\Scripts\Activate.ps1
-          pip install --upgrade pip
-          pip install dist\jhinno_appform_sdk-*-py3-none-any.whl
+          python -m pip install dist\jhinno_appform_sdk-*-py3-none-any.whl
 
           # List resolved dependencies
           Write-Host "=== Resolved dependencies ==="

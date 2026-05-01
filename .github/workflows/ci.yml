@@ -22,7 +22,7 @@ jobs:
           pip install black isort mypy
 
       - name: Run black
-        run: black --check .
+        run: black --check --fast .
 
       - name: Run isort
         run: isort --check-only .
