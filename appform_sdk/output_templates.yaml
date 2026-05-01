@@ -194,22 +194,46 @@ sessions.list:
       label: SESSION_ID
       width: 12
       fallback: id
+    - key: name
+      label: NAME
+      width: 20
     - key: app_id
       label: APP
-      width: 20
+      width: 15
     - key: owner
       label: OWNER
-      width: 15
+      width: 12
       fallback: ownername
     - key: host
       label: HOST
       width: 20
+    - key: protocol
+      label: PROTOCOL
+      width: 10
     - key: status
       label: STATUS
       width: 10
+    - key: desktop_type
+      label: TYPE
+      width: 12
     - key: createDate
       label: CREATE_TIME
       width: 20
+    - key: lastUseTime
+      label: LAST_USE
+      width: 20
+    - key: isDocker
+      label: DOCKER
+      width: 6
+    - key: isShare
+      label: SHARE
+      width: 6
+    - key: os
+      label: OS
+      width: 8
+    - key: startmode
+      label: MODE
+      width: 8
 
 sessions.list-all:
   type: table
@@ -220,22 +244,46 @@ sessions.list-all:
       label: SESSION_ID
       width: 12
       fallback: id
+    - key: name
+      label: NAME
+      width: 20
     - key: app_id
       label: APP
-      width: 20
+      width: 15
     - key: owner
       label: OWNER
-      width: 15
+      width: 12
       fallback: ownername
     - key: host
       label: HOST
       width: 20
+    - key: protocol
+      label: PROTOCOL
+      width: 10
     - key: status
       label: STATUS
       width: 10
+    - key: desktop_type
+      label: TYPE
+      width: 12
     - key: createDate
       label: CREATE_TIME
       width: 20
+    - key: lastUseTime
+      label: LAST_USE
+      width: 20
+    - key: isDocker
+      label: DOCKER
+      width: 6
+    - key: isShare
+      label: SHARE
+      width: 6
+    - key: os
+      label: OS
+      width: 8
+    - key: startmode
+      label: MODE
+      width: 8
 
 # ===========================================================================
 # Files
@@ -349,16 +397,37 @@ sessions.start:
   type: detail
   title: Session Started
   item_path: data
+  fields:
+    - key: desktopId
+      label: Desktop ID
+    - key: jhappUrl
+      label: jhapp URL
+    - key: clientUrl
+      label: Client URL
+    - key: webUrl
+      label: Web URL
 
 sessions.connect:
   type: detail
   title: Session Connected
-  item_path: data
+  item_path: data.0
+  fields:
+    - key: jhappUrl
+      label: jhapp URL
 
 sessions.disconnect:
   type: detail
   title: Session Disconnected
   item_path: data
+  fields:
+    - key: code
+      label: Code
+    - key: result
+      label: Result
+    - key: message
+      label: Message
+    - key: data
+      label: Data
 
 sessions.close:
   type: detail

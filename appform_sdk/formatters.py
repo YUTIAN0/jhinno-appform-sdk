@@ -355,12 +355,17 @@ def _format_size(size) -> str:
 
 
 def _resolve_path(obj: dict, path: str):
-    """Resolve dotted path like 'data.total' from a nested dict."""
+    """Resolve dotted path like 'data.0.name' from nested dict/list."""
     parts = path.split(".")
     current = obj
     for part in parts:
         if isinstance(current, dict):
             current = current.get(part)
+        elif isinstance(current, list):
+            try:
+                current = current[int(part)]
+            except (ValueError, IndexError):
+                return None
         else:
             return None
     return current

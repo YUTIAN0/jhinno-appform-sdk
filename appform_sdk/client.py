@@ -79,7 +79,7 @@ class AppformClient:
 
     def __init__(
         self,
-        base_url: str,
+        base_url: Optional[str] = None,
         token: Optional[str] = None,
         access_key: Optional[str] = None,
         access_key_secret: Optional[str] = None,
@@ -87,7 +87,7 @@ class AppformClient:
         aes_key: Optional[str] = None,
         timeout: int = 30,
         max_retries: int = 3,
-        verify_ssl: bool = True,
+        verify_ssl: Optional[bool] = None,
         api_version: Optional[str] = None,
         extensions_dir: Optional[str] = None,
         config: Optional[Config] = None,
@@ -117,7 +117,8 @@ class AppformClient:
             username = username or config.username
             aes_key = aes_key or config.aes_key
             timeout = timeout or config.timeout
-            verify_ssl = verify_ssl if verify_ssl is not None else config.verify_ssl
+            if verify_ssl is None:
+                verify_ssl = config.verify_ssl
             api_version = api_version or config.api_version
             extensions_dir = extensions_dir or config.extensions_dir
 
@@ -129,7 +130,7 @@ class AppformClient:
         self._username = username or _get_current_username()
         self._aes_key = aes_key
         self.timeout = timeout
-        self.verify_ssl = verify_ssl
+        self.verify_ssl = verify_ssl if verify_ssl is not None else True
         self._api_version = api_version or "6.5"
         self._extensions_dir = extensions_dir
 

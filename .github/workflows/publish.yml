@@ -63,7 +63,11 @@ jobs:
           pip install --upgrade pip
           pip install dist/jhinno_appform_sdk-*-py3-none-any.whl
 
-          # Download all resolved dependencies (transitive) for this Python on Linux
+          # List resolved dependencies
+          echo "=== Resolved dependencies ==="
+          pip freeze | grep -v jhinno
+
+          # Download all resolved dependencies for this Python on Linux
           mkdir -p bundle
           pip download \
             --dest bundle/ \
@@ -81,12 +85,13 @@ jobs:
           # Copy SDK wheel into bundle
           cp dist/jhinno_appform_sdk-*-py3-none-any.whl bundle/
 
+          echo "=== Bundle contents ==="
+          ls -la bundle/
+
       - name: Create tarball
         run: |
           VERSION=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
           PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
-          echo "Bundle contents:"
-          ls -la bundle/
           tar czf "jhinno-appform-sdk-${VERSION}-linux-x86_64-cp${PYVER}.tar.gz" bundle/
 
       - name: Upload artifact
@@ -111,6 +116,7 @@ jobs:
 
       - name: Build and bundle for Windows py${{ matrix.python-version }}
         run: |
+          $ErrorActionPreference = "Stop"
           $PYVER = "${{ matrix.python-version }}".Replace('.','')
 
           # Build SDK wheel
@@ -119,21 +125,47 @@ jobs:
 
           # Create venv and install SDK to resolve all deps
           python -m venv venv
-          .\venv\Scripts\Activate.ps1
+          & .\venv\Scripts\Activate.ps1
           pip install --upgrade pip
           pip install dist\jhinno_appform_sdk-*-py3-none-any.whl
 
-          # Download all resolved dependencies (transitive) for this Python on Windows
+          # List resolved dependencies
+          Write-Host "=== Resolved dependencies ==="
+          $FREEZE = pip freeze
+          foreach ($line in $FREEZE) { Write-Host $line }
+
+          # Get deps excluding jhinno-appform-sdk
+          $DEPS = @()
+          foreach ($line in $FREEZE) {
+            if ($line -notmatch '^jhinno') {
+              $DEPS += $line
+            }
+          }
+          Write-Host "=== Downloading $($DEPS.Count) dependencies ==="
+          foreach ($d in $DEPS) { Write-Host $d }
+
+          # Create bundle directory
+          Remove-Item -Recurse -Force bundle -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path bundle | Out-Null
-          $DEPS = pip freeze | Select-String -Pattern '^jhinno' -NotMatch
-          pip download --dest bundle/ --no-deps --only-binary=:all: $DEPS
-          pip download --dest bundle/ --no-deps --no-binary :all: $DEPS 2>$null || true
+
+          # Download binary wheels
+          Write-Host "--- Downloading binary wheels ---"
+          if ($DEPS.Count -gt 0) {
+            pip download --dest bundle/ --no-deps --only-binary=:all: $DEPS 2>&1
+          }
+
+          # Download source-only deps (pure Python packages)
+          Write-Host "--- Downloading source packages ---"
+          if ($DEPS.Count -gt 0) {
+            pip download --dest bundle/ --no-deps --no-binary :all: $DEPS 2>&1
+          }
 
           # Copy SDK wheel into bundle
           Copy-Item (Get-ChildItem dist\jhinno_appform_sdk-*-py3-none-any.whl).FullName bundle\
 
-          echo "Bundle contents:"
+          Write-Host "=== Bundle contents ==="
           Get-ChildItem bundle\
+          Write-Host "Total files: $((Get-ChildItem bundle\).Count)"
 
       - name: Create zip
         run: |
@@ -166,7 +198,7 @@ jobs:
       - name: Create release body
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          cat > release_body.md << BODY
+          cat > release_body.md << 'ENDBODY'
           ## Installation
 
           ### Standard installation (recommended)
@@ -182,18 +214,18 @@ jobs:
           **Linux:**
 
           ```bash
-          tar xzf jhinno-appform-sdk-${VERSION}-linux-x86_64-cp<pyver>.tar.gz
+          tar xzf jhinno-appform-sdk-VERSION-linux-x86_64-cp<pyver>.tar.gz
           pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
           ```
 
           **Windows:**
 
           ```powershell
-          Expand-Archive jhinno-appform-sdk-${VERSION}-windows-x86_64-cp<pyver>.zip
+          Expand-Archive jhinno-appform-sdk-VERSION-windows-x86_64-cp<pyver>.zip
           pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
           ```
 
-          > Replace `<pyver>` with your Python version (e.g., `cp312` for Python 3.12).
+          > Replace `VERSION` with the release version (e.g., `0.0.1`) and `<pyver>` with your Python version (e.g., `cp312` for Python 3.12).
 
           ## Package contents
 
@@ -205,7 +237,8 @@ jobs:
           |----------|----------------|
           | Linux x86_64 (manylinux2014) | 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 |
           | Windows x86_64 | 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 |
-          BODY
+          ENDBODY
+          sed -i "s/VERSION/${VERSION}/g" release_body.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

@@ -81,7 +81,7 @@ class Config:
         """
         # Determine config file path - use default if not specified
         if config_file:
-            self._config_file = config_file
+            self._config_file = os.path.expanduser(config_file)
         else:
             default_path = self.get_default_config_path()
             self._config_file = str(default_path) if default_path.exists() else None

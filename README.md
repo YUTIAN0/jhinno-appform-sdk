@@ -68,7 +68,10 @@ pip install -e .
 from appform_sdk import AppformClient
 
 # Method 1: Token authentication (login with password)
-client = AppformClient(base_url="https://your-appform-server.com")
+client = AppformClient(
+    base_url="https://your-appform-server.com",
+    verify_ssl=False,  # Set False if server uses a self-signed or weak certificate
+)
 result = client.auth.login(username="your_username", password="your_password")
 print(f"Token: {client.token}")
 
@@ -77,18 +80,17 @@ client = AppformClient(
     base_url="https://your-appform-server.com",
     access_key="your_access_key",
     access_key_secret="your_access_key_secret",
-    username="your_username"
+    username="your_username",
+    verify_ssl=False,
 )
 
 # Method 3: Load from environment variables or config file
 from appform_sdk import Config
-config = Config()  # Auto-loads from env vars and config file
-client = AppformClient(
-    base_url=config.base_url,
-    access_key=config.access_key,
-    access_key_secret=config.access_key_secret,
-    username=config.username,
-)
+config = Config(config_file="~/.appform/config.json")  # Specify config file path
+print(f"Config file: {config.config_file}")
+client = AppformClient(config=config)
+# Automatically reads APPFORM_BASE_URL, APPFORM_ACCESS_KEY, APPFORM_ACCESS_KEY_SECRET,
+# APPFORM_USERNAME, APPFORM_VERIFY_SSL, etc. from environment or config file
 
 # Test connection
 client.auth.ping()

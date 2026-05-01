@@ -349,7 +349,15 @@ def create_parser() -> argparse.ArgumentParser:
         "--page-size", type=int, default=20, help="Page size"
     )
 
-    for cmd in ("connect", "disconnect", "close"):
+    p = sessions_subparsers.add_parser("connect", help="Get connection info for a session")
+    p.add_argument("session_id", help="Session ID")
+
+    p = sessions_subparsers.add_parser(
+        "connect-launch", help="Get connection info and auto-launch JHApp client"
+    )
+    p.add_argument("session_id", help="Session ID")
+
+    for cmd in ("disconnect", "close"):
         p = sessions_subparsers.add_parser(cmd, help=f"{cmd.capitalize()} a session")
         p.add_argument("session_id", help="Session ID")
 
@@ -1273,6 +1281,9 @@ def handle_sessions_command(args: argparse.Namespace):
         output_result(result, args.output, "sessions.list-all")
     elif args.sessions_command == "connect":
         result = client.sessions.connect(args.session_id)
+        output_result(result, args.output, "sessions.connect")
+    elif args.sessions_command == "connect-launch":
+        result = client.sessions.connect_and_launch(args.session_id)
         output_result(result, args.output, "sessions.connect")
     elif args.sessions_command == "disconnect":
         result = client.sessions.disconnect(args.session_id)

@@ -204,10 +204,11 @@ appform jobs tooltip                                 # 获取作业监控信息�
 appform sessions start --app-id gedit --start-new --cwd '${HOME}'
 appform sessions start --app-id xterm --work-file /path/to/file
 
-appform sessions list --ids 494039                   # 按 ID 查询
+appform sessions list --ids 494039                   # 按 ID 查询（当前用户默认）
 appform sessions list --name my_session              # 按名称查询
 appform sessions list-all                            # 列出所有会话
-appform sessions connect <session_id>                # 连接会话
+appform sessions connect <session_id>                # 获取会话连接信息
+appform sessions connect-launch <session_id>         # 连接并自动启动客户端
 appform sessions disconnect <session_id>             # 断开会话
 appform sessions close <session_id>                  # 关闭会话
 appform sessions share <session_id> --usernames user1,user2  # 共享会话
