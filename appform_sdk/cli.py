@@ -16,6 +16,25 @@ from .formatters import format_output
 from .job_submit import _apply_path_conversion, _resolve_disk_mapping
 
 
+def _get_completion_script(shell: str) -> Optional[str]:
+    """Get shell completion script content."""
+    import importlib.resources
+
+    try:
+        if sys.version_info >= (3, 9):
+            return (
+                importlib.resources.files("appform_sdk.completions")
+                .joinpath(f"appform-completion.{shell}")
+                .read_text()
+            )
+        else:
+            return importlib.resources.read_text(
+                "appform_sdk.completions", f"appform-completion.{shell}"
+            )
+    except (FileNotFoundError, ImportError):
+        return None
+
+
 class _SubmitHelpFormatter(argparse.RawDescriptionHelpFormatter):
     """Custom formatter for job submit help that shows app-specific params."""
 
@@ -45,6 +64,11 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "--generate-completion",
+        choices=["bash", "zsh", "fish"],
+        help="Generate shell completion script",
     )
 
     # Global options
@@ -1611,6 +1635,19 @@ def main(args: Optional[list] = None):
         return
 
     parsed_args, remaining = parser.parse_known_args(filtered)
+
+    # Generate shell completion
+    if parsed_args.generate_completion:
+        script = _get_completion_script(parsed_args.generate_completion)
+        if script:
+            print(script)
+        else:
+            print(
+                f"Error: No completion script available for '{parsed_args.generate_completion}'",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        return
 
     if not parsed_args.command:
         parser.print_help()

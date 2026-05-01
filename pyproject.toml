@@ -57,6 +57,7 @@ include = ["appform_sdk*"]
 
 [tool.setuptools.package-data]
 "appform_sdk" = ["*.yaml", "*.yml", "*.json"]
+"appform_sdk.completions" = ["*.bash", "*.zsh", "*.fish"]
 
 [tool.black]
 line-length = 88
