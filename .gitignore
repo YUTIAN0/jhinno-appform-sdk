@@ -22,3 +22,6 @@ __pycache__/
 htmlcov/
 .coverage
 coverage.xml
+
+# Demo client directory
+client/
