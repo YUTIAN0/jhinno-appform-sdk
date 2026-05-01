@@ -1,0 +1,381 @@
+# Appform SDK Output Templates
+#
+# Define display fields for CLI output.
+# Format: https://github.com/YUTIAN0/jhinno-appform-sdk
+#
+# Each command entry defines:
+#   type:       "table" (list), "detail" (key-value), "tree" (indented hierarchy)
+#   title:      Display title
+#   version:    Minimum API version required (optional)
+#   items_path: Dotted path to items array in response (for table/tree)
+#   item_path:  Dotted path to single item in response (for detail)
+#   total_key:  Dotted path to total count (for table)
+#   name_key:   Field name for tree nodes
+#   children_key: Field name for child nodes (tree)
+#   fields:     List of field definitions
+#     key:      Field name in response item
+#     label:    Column header / display label
+#     width:    Column width for table (default: 20)
+#     fallback: Alternative field name if key is null
+#     format:   Value format: "size" (bytes), "join" (list->csv), "json"
+#     prefix_key: Field to read prefix value from
+#     prefix_map: Dict mapping prefix_key values to prefix strings
+#     min_version: Minimum API version to show this field (optional)
+
+# ===========================================================================
+# Jobs
+# ===========================================================================
+
+jobs.list:
+  type: table
+  title: Jobs
+  items_path: data.jobs
+  total_key: data.total
+  fields:
+    - key: jobId
+      label: JOB_ID
+      width: 10
+    - key: status
+      label: STATUS
+      width: 8
+    - key: name
+      label: NAME
+      width: 30
+    - key: appName
+      label: APP
+      width: 15
+    - key: queue
+      label: QUEUE
+      width: 10
+    - key: owner
+      label: OWNER
+      width: 12
+    - key: slots
+      label: SLOTS
+      width: 6
+    - key: submitTime
+      label: SUBMIT_TIME
+      width: 20
+
+jobs.get:
+  type: detail
+  title: Job Detail
+  item_path: data
+  fields:
+    - key: jobId
+      label: Job ID
+    - key: name
+      label: Name
+    - key: status
+      label: Status
+    - key: appName
+      label: Application
+    - key: queue
+      label: Queue
+    - key: owner
+      label: Owner
+    - key: userNameCn
+      label: Owner(CN)
+    - key: slots
+      label: Slots
+    - key: executionHost
+      label: Host
+      format: join
+    - key: host
+      label: Host
+    - key: submitTime
+      label: Submit Time
+    - key: executionTime
+      label: Start Time
+    - key: terminationTime
+      label: End Time
+    - key: cwd
+      label: Working Dir
+    - key: project
+      label: Project
+    - key: gpuNum
+      label: GPU
+    - key: reasons
+      label: Reasons
+      format: join
+    - key: alarmInfo
+      label: Alarm
+    - key: exceptionInfo
+      label: Exception
+    - key: organizationTree
+      label: Organization
+
+jobs.output:
+  type: detail
+  title: Job Output
+  item_path: data
+  fields:
+    - key: output
+      label: Output
+
+jobs.files:
+  type: table
+  title: Job Files
+  items_path: data
+  fields:
+    - key: name
+      label: NAME
+      width: 40
+    - key: size
+      label: SIZE
+      width: 10
+      format: size
+
+jobs.history:
+  type: table
+  title: Job History
+  items_path: data
+  fields:
+    - key: jobId
+      label: JOB_ID
+      width: 10
+    - key: status
+      label: STATUS
+      width: 8
+    - key: name
+      label: NAME
+      width: 30
+    - key: appName
+      label: APP
+      width: 15
+    - key: owner
+      label: OWNER
+      width: 12
+    - key: submitTime
+      label: SUBMIT_TIME
+      width: 20
+    - key: terminationTime
+      label: END_TIME
+      width: 20
+
+jobs.form:
+  type: table
+  title: Job Form
+  min_version: "6.6"
+  items_path: data
+  fields:
+    - key: key
+      label: PARAM
+      width: 25
+    - key: label
+      label: LABEL
+      width: 20
+    - key: sign
+      label: TYPE
+      width: 10
+    - key: required
+      label: REQUIRED
+      width: 8
+    - key: defaultValue
+      label: DEFAULT
+      width: 15
+
+jobs.tooltip:
+  type: detail
+  title: Job Monitoring
+  min_version: "6.6"
+  item_path: data
+
+# ===========================================================================
+# Sessions
+# ===========================================================================
+
+sessions.list:
+  type: table
+  title: Sessions
+  items_path: data
+  fields:
+    - key: session_id
+      label: SESSION_ID
+      width: 12
+      fallback: id
+    - key: app_id
+      label: APP
+      width: 20
+    - key: owner
+      label: OWNER
+      width: 15
+      fallback: ownername
+    - key: host
+      label: HOST
+      width: 20
+    - key: status
+      label: STATUS
+      width: 10
+    - key: createDate
+      label: CREATE_TIME
+      width: 20
+
+sessions.list-all:
+  type: table
+  title: All Sessions
+  items_path: data
+  fields:
+    - key: session_id
+      label: SESSION_ID
+      width: 12
+      fallback: id
+    - key: app_id
+      label: APP
+      width: 20
+    - key: owner
+      label: OWNER
+      width: 15
+      fallback: ownername
+    - key: host
+      label: HOST
+      width: 20
+    - key: status
+      label: STATUS
+      width: 10
+    - key: createDate
+      label: CREATE_TIME
+      width: 20
+
+# ===========================================================================
+# Files
+# ===========================================================================
+
+files.list:
+  type: table
+  title: Files
+  items_path: data
+  fields:
+    - key: fileName
+      label: NAME
+      width: 30
+      prefix_key: fileType
+      prefix_map:
+        directory: "[D]"
+        file: "[F]"
+    - key: owner
+      label: OWNER
+      width: 12
+    - key: size
+      label: SIZE
+      width: 10
+      format: size
+    - key: ts
+      label: MODIFIED
+      width: 20
+
+# ===========================================================================
+# Applications
+# ===========================================================================
+
+apps.list:
+  type: table
+  title: Applications
+  items_path: data
+  fields:
+    - key: id
+      label: APP_ID
+      width: 25
+    - key: name
+      label: NAME
+      width: 25
+    - key: type
+      label: TYPE
+      width: 8
+      fallback: mode
+    - key: protocol
+      label: PROTOCOL
+      width: 10
+    - key: os
+      label: OS
+      width: 8
+
+# ===========================================================================
+# Organization
+# ===========================================================================
+
+departments.list:
+  type: tree
+  title: Departments
+  items_path: data
+  name_key: displayName
+  fallback_name_key: name
+  children_key: items
+
+users.list:
+  type: table
+  title: Users
+  items_path: data.list
+  total_key: data.totalCount
+  fields:
+    - key: userName
+      label: USERNAME
+      width: 15
+    - key: userNameCn
+      label: DISPLAY_NAME
+      width: 15
+    - key: userDepNameCn
+      label: DEPARTMENT
+      width: 12
+      fallback: userDepName
+    - key: userStat
+      label: STATUS
+      width: 8
+    - key: userMail
+      label: EMAIL
+      width: 25
+
+# ===========================================================================
+# Actions (single-item responses)
+# ===========================================================================
+
+jobs.submit:
+  type: detail
+  title: Submit Result
+  item_path: data.0
+
+jobs.action:
+  type: detail
+  title: Action Result
+  item_path: data
+
+jobs.delete:
+  type: detail
+  title: Delete Result
+  min_version: "6.6"
+  item_path: data
+
+sessions.start:
+  type: detail
+  title: Session Started
+  item_path: data
+
+sessions.connect:
+  type: detail
+  title: Session Connected
+  item_path: data
+
+sessions.disconnect:
+  type: detail
+  title: Session Disconnected
+  item_path: data
+
+sessions.close:
+  type: detail
+  title: Session Closed
+  item_path: data
+
+sessions.share:
+  type: detail
+  title: Session Shared
+  item_path: data
+
+files.mkdir:
+  type: detail
+  title: Directory Created
+  item_path: data
+
+files.delete:
+  type: detail
+  title: Files Deleted
+  item_path: data

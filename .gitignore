@@ -1,0 +1,27 @@
+# OpenAPI spec files (reference only)
+默认模块*.yaml
+
+# Build output
+dist/
+*.egg-info/
+build/
+
+# Generated docs
+docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.whl
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml

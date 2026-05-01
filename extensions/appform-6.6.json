@@ -1,0 +1,73 @@
+{
+  "name": "appform-6.6",
+  "version": "6.6",
+  "description": "Appform 6.6 version specific endpoints",
+  "endpoints": {
+    "quota.storage": {
+      "path": "/appform/diskquota/quotaStorage",
+      "method": "GET",
+      "description": "Get user storage quota information",
+      "version_added": "6.6"
+    },
+    "count.appsCpu": {
+      "path": "/appform/count/appsCpu",
+      "method": "GET",
+      "description": "Get available cores and pending jobs for a specific app",
+      "version_added": "6.6"
+    },
+    "count.allAppsCpu": {
+      "path": "/appform/count/allAppsCpu",
+      "method": "GET",
+      "description": "Get usage info for all available simulation apps",
+      "version_added": "6.6"
+    },
+    "jobs.getForm": {
+      "path": "/appform/ws/api/v2/app/form/{appId}",
+      "method": "GET",
+      "description": "Get job submission form for an app",
+      "version_added": "6.6"
+    },
+    "jobs.submitV2": {
+      "path": "/appform/ws/api/v2/jobs",
+      "method": "POST",
+      "description": "Submit job v2 (with form params)",
+      "version_added": "6.6"
+    },
+    "jobs.listV2": {
+      "path": "/appform/ws/api/v2/jobs",
+      "method": "GET",
+      "description": "List jobs v2 with pagination",
+      "version_added": "6.6"
+    },
+    "jobs.deleteV2": {
+      "path": "/appform/ws/api/v2/jobs/{jobId}",
+      "method": "DELETE",
+      "description": "Delete a job",
+      "version_added": "6.6"
+    },
+    "jobs.tooltip": {
+      "path": "/appform/ws/api/v2/jobs/tooltip",
+      "method": "GET",
+      "description": "Get job app monitoring info",
+      "version_added": "6.6"
+    },
+    "jobs.totalHistory": {
+      "path": "/appform/workspace/myjob/totalHistory",
+      "method": "GET",
+      "description": "Get total history job count",
+      "version_added": "6.6"
+    },
+    "sessions.startV2": {
+      "path": "/appform/ws/api/v2/app_session",
+      "method": "POST",
+      "description": "Start session v2 (returns client and web connection)",
+      "version_added": "6.6"
+    },
+    "apps.listV2": {
+      "path": "/appform/ws/api/v2/apps",
+      "method": "GET",
+      "description": "Get available compute, interactive, and web apps",
+      "version_added": "6.6"
+    }
+  }
+}

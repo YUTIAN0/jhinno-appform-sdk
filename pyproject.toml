@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jhinno-appform-sdk"
+version = "1.0.0"
+description = "Python SDK for Appform 6.0-6.6 API"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Appform SDK Developer"}
+]
+keywords = ["appform", "api", "sdk", "hpc", "cluster"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "requests>=2.28.0",
+    "pycryptodome>=3.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+appform = "appform_sdk.cli:main"
+job_submit = "appform_sdk.job_submit:main"
+
+[project.urls]
+Homepage = "https://github.com/YUTIAN0/jhinno-appform-sdk"
+Documentation = "https://github.com/YUTIAN0/jhinno-appform-sdk#readme"
+Repository = "https://github.com/YUTIAN0/jhinno-appform-sdk"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["appform_sdk*"]
+
+[tool.setuptools.package-data]
+"appform_sdk" = ["*.yaml", "*.yml", "*.json"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313', 'py314']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
