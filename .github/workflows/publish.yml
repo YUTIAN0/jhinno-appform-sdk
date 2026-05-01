@@ -222,4 +222,3 @@ jobs:
         with:
           files: dist/*
           body_path: release_body.md
-          generate_release_notes: true
