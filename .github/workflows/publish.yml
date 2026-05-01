@@ -163,8 +163,56 @@ jobs:
       - name: List release files
         run: ls -lh dist/
 
+      - name: Create release body
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          cat > release_body.md << 'BODY'
+          ## Installation
+
+          ### Standard installation (recommended)
+
+          ```bash
+          pip install jhinno-appform-sdk
+          ```
+
+          ### Offline installation
+
+          Download the appropriate release package below, then install without network access.
+
+          **Linux:**
+
+          ```bash
+          tar xzf jhinno-appform-sdk-<version>-linux-x86_64-cp<pyver>.tar.gz
+          pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
+          ```
+
+          **Windows:**
+
+          ```powershell
+          Expand-Archive jhinno-appform-sdk-<version>-windows-x86_64-cp<pyver>.zip
+          pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
+          ```
+
+          > Replace `<version>` with the release version (e.g., `0.0.1`) and `<pyver>` with your Python version (e.g., `cp312` for Python 3.12).
+
+          ## Package contents
+
+          Each bundle includes the SDK wheel and all resolved transitive dependencies for the specified Python version and platform.
+
+          ## Supported platforms
+
+          | Platform | Python versions |
+          |----------|----------------|
+          | Linux x86_64 (manylinux2014) | 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 |
+          | Windows x86_64 | 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 |
+          BODY
+          sed -i "s/<version>/${VERSION}/g" release_body.md
+          # Keep <pyver> as-is since it varies per package
+          cp release_body.md release_body_final.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          body_path: release_body_final.md
           generate_release_notes: true
