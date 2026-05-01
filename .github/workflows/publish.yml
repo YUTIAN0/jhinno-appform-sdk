@@ -45,31 +45,48 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Build and bundle for Linux py${{ matrix.python-version }}
         run: |
           PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
-          mkdir -p bundle
+
+          # Build SDK wheel
           python -m pip install --upgrade pip build
           python -m build
-          SDK_WHEEL=$(ls dist/*-py3-none-any.whl)
-          cp "$SDK_WHEEL" bundle/
+
+          # Create venv and install SDK to resolve all deps
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install dist/jhinno_appform_sdk-*-py3-none-any.whl
+
+          # Download all resolved dependencies (transitive) for this Python on Linux
+          mkdir -p bundle
           pip download \
-            --platform manylinux2014_x86_64 \
-            --python-version $PYVER \
+            --dest bundle/ \
+            --no-deps \
             --only-binary=:all: \
-            --no-deps \
-            -d bundle/ "$SDK_WHEEL"
+            $(pip freeze | grep -v jhinno)
+
+          # Also download source-only deps (pure Python like urllib3, certifi, idna)
           pip download \
-            --platform manylinux2014_x86_64 \
-            --python-version $PYVER \
-            --no-binary :none: \
+            --dest bundle/ \
             --no-deps \
-            -d bundle/ "$SDK_WHEEL" 2>/dev/null || true
+            --no-binary :all: \
+            $(pip freeze | grep -v jhinno) 2>/dev/null || true
+
+          # Copy SDK wheel into bundle
+          cp dist/jhinno_appform_sdk-*-py3-none-any.whl bundle/
 
       - name: Create tarball
         run: |
           VERSION=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
           PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
+          echo "Bundle contents:"
+          ls -la bundle/
           tar czf "jhinno-appform-sdk-${VERSION}-linux-x86_64-cp${PYVER}.tar.gz" bundle/
 
       - name: Upload artifact
@@ -88,16 +105,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Build and bundle for Windows py${{ matrix.python-version }}
         run: |
           $PYVER = "${{ matrix.python-version }}".Replace('.','')
-          New-Item -ItemType Directory -Force -Path bundle | Out-Null
+
+          # Build SDK wheel
           python -m pip install --upgrade pip build
           python -m build
-          $SDK_WHEEL = (Get-ChildItem dist\*-py3-none-any.whl).FullName
-          Copy-Item $SDK_WHEEL bundle\
-          pip download --platform win_amd64 --python-version $PYVER --only-binary=:all: --no-deps -d bundle/ $SDK_WHEEL
-          pip download --platform win_amd64 --python-version $PYVER --no-binary :none: --no-deps -d bundle/ $SDK_WHEEL 2>$null || true
+
+          # Create venv and install SDK to resolve all deps
+          python -m venv venv
+          .\venv\Scripts\Activate.ps1
+          pip install --upgrade pip
+          pip install dist\jhinno_appform_sdk-*-py3-none-any.whl
+
+          # Download all resolved dependencies (transitive) for this Python on Windows
+          New-Item -ItemType Directory -Force -Path bundle | Out-Null
+          $DEPS = pip freeze | Select-String -Pattern '^jhinno' -NotMatch
+          pip download --dest bundle/ --no-deps --only-binary=:all: $DEPS
+          pip download --dest bundle/ --no-deps --no-binary :all: $DEPS 2>$null || true
+
+          # Copy SDK wheel into bundle
+          Copy-Item (Get-ChildItem dist\jhinno_appform_sdk-*-py3-none-any.whl).FullName bundle\
+
+          echo "Bundle contents:"
+          Get-ChildItem bundle\
 
       - name: Create zip
         run: |
