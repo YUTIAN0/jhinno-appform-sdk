@@ -330,7 +330,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     sessions_list_parser = sessions_subparsers.add_parser(
-        "list", help="Query sessions by ID or name"
+        "list", help="Query sessions (default: current user's sessions)"
     )
     sessions_list_parser.add_argument(
         "--ids", dest="session_ids", help="Session IDs (comma-separated)"

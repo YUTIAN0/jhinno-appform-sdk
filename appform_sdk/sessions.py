@@ -89,10 +89,10 @@ class SessionsAPI:
         session_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Query sessions by IDs or name.
+        Query sessions.
 
-        This endpoint requires at least one of session_ids or session_name.
-        Use list_all() to list all sessions.
+        When called without arguments, returns the current user's sessions
+        (filters all sessions by the logged-in user).
 
         Args:
             session_ids: List of session IDs to query
@@ -108,7 +108,19 @@ class SessionsAPI:
         if session_name:
             params["sessionName"] = session_name
 
-        return self._client.get("/appform/ws/api/apps/sessions", params=params)
+        if params:
+            resp = self._client.get("/appform/ws/api/apps/sessions", params=params)
+        else:
+            # No filter: get all sessions and filter by current user
+            resp = self._client.get("/appform/ws/api/apps/sessions/all")
+            data = resp.get("data", [])
+            if isinstance(data, dict):
+                data = data.get("records", data.get("files", []))
+            username = self._client._username
+            data = [s for s in data if s.get("owner") == username]
+            resp["data"] = data
+
+        return resp
 
     def share(self, session_id: str, usernames: List[str]) -> Dict[str, Any]:
         """
