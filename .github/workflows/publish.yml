@@ -1,4 +1,4 @@
-name: Publish to PyPI
+name: Build and Release
 
 on:
   push:
@@ -35,39 +35,97 @@ jobs:
           APPFORM_AES_KEY: "0123456789abcdef"
         run: pytest tests/ -v
 
-  build:
+  build_linux:
     needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Build and bundle for Linux py${{ matrix.python-version }}
+        run: |
+          PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
+          mkdir -p bundle
+          python -m pip install --upgrade pip build
+          python -m build
+          SDK_WHEEL=$(ls dist/*-py3-none-any.whl)
+          cp "$SDK_WHEEL" bundle/
+          pip download \
+            --platform manylinux2014_x86_64 \
+            --python-version $PYVER \
+            --only-binary=:all: \
+            --no-deps \
+            -d bundle/ "$SDK_WHEEL"
+          pip download \
+            --platform manylinux2014_x86_64 \
+            --python-version $PYVER \
+            --no-binary :none: \
+            --no-deps \
+            -d bundle/ "$SDK_WHEEL" 2>/dev/null || true
 
-      - name: Install build tools
-        run: python -m pip install --upgrade pip build
+      - name: Create tarball
+        run: |
+          VERSION=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
+          PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
+          tar czf "jhinno-appform-sdk-${VERSION}-linux-x86_64-cp${PYVER}.tar.gz" bundle/
 
-      - name: Build package
-        run: python -m build
-
-      - name: Upload dist artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: linux-cp${{ matrix.python-version }}
+          path: jhinno-appform-sdk-*-linux-x86_64-cp*.tar.gz
+
+  build_windows:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and bundle for Windows py${{ matrix.python-version }}
+        run: |
+          $PYVER = "${{ matrix.python-version }}".Replace('.','')
+          New-Item -ItemType Directory -Force -Path bundle | Out-Null
+          python -m pip install --upgrade pip build
+          python -m build
+          $SDK_WHEEL = (Get-ChildItem dist\*-py3-none-any.whl).FullName
+          Copy-Item $SDK_WHEEL bundle\
+          pip download --platform win_amd64 --python-version $PYVER --only-binary=:all: --no-deps -d bundle/ $SDK_WHEEL
+          pip download --platform win_amd64 --python-version $PYVER --no-binary :none: --no-deps -d bundle/ $SDK_WHEEL 2>$null || true
+
+      - name: Create zip
+        run: |
+          $VERSION = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches.Groups[1].Value
+          $PYVER = "${{ matrix.python-version }}".Replace('.','')
+          $NAME = "jhinno-appform-sdk-$VERSION-windows-x86_64-cp$PYVER.zip"
+          Compress-Archive -Path "bundle\*" -DestinationPath $NAME -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cp${{ matrix.python-version }}
+          path: jhinno-appform-sdk-*-windows-x86_64-cp*.zip
 
   release:
-    needs: [test, build]
+    needs: [build_linux, build_windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist
+          pattern: *
           path: dist/
+          merge-multiple: true
+
+      - name: List release files
+        run: ls -lh dist/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
