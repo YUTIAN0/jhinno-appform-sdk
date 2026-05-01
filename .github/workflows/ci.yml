@@ -50,6 +50,8 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run tests
+        env:
+          APPFORM_AES_KEY: "0123456789abcdef"
         run: |
           pytest tests/ -v --cov=appform_sdk --cov-report=xml
 
