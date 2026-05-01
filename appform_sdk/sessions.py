@@ -8,11 +8,13 @@ from typing import Any, Dict, List, Optional
 
 try:
     import requests as _requests
+
     _HAS_REQUESTS = True
 except ImportError:
     _HAS_REQUESTS = False
 
 # ---------------------------------------------------------------------------
+
 
 def _check_port(host: str, port: int, timeout: float = 1.0) -> bool:
     """Check if a TCP port is open and responding."""
@@ -25,6 +27,7 @@ def _check_port(host: str, port: int, timeout: float = 1.0) -> bool:
 
 
 # ---------------------------------------------------------------------------
+
 
 class SessionsAPI:
     """
@@ -246,11 +249,7 @@ class SessionsAPI:
     @staticmethod
     def _resolve_desktop_id(item: dict) -> str:
         """Resolve desktop ID from connection info."""
-        return (
-            item.get("desktopId")
-            or item.get("session_id")
-            or item.get("id", "")
-        )
+        return item.get("desktopId") or item.get("session_id") or item.get("id", "")
 
     @staticmethod
     def _try_launch_client(

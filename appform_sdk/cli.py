@@ -349,7 +349,9 @@ def create_parser() -> argparse.ArgumentParser:
         "--page-size", type=int, default=20, help="Page size"
     )
 
-    p = sessions_subparsers.add_parser("connect", help="Get connection info for a session")
+    p = sessions_subparsers.add_parser(
+        "connect", help="Get connection info for a session"
+    )
     p.add_argument("session_id", help="Session ID")
 
     p = sessions_subparsers.add_parser(
