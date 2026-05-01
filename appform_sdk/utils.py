@@ -9,7 +9,7 @@ import os
 import subprocess
 import time
 from typing import Any, Dict, Optional
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
@@ -144,7 +144,7 @@ class AESEncryptor:
             Decrypted plaintext
         """
         cipher = AES.new(self.key, AES.MODE_ECB)
-        encrypted = base64.b64decode(ciphertext)
+        encrypted = base64.b64decode(unquote(ciphertext))
         decrypted = unpad(cipher.decrypt(encrypted), AES.block_size)
         return decrypted.decode("utf-8")
 
