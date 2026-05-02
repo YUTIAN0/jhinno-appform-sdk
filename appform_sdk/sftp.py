@@ -588,8 +588,7 @@ class SFTPAPI:
         # exec tail: replaces the shell process with tail so closing the
         # channel kills tail directly instead of orphaning it as a child.
         channel.exec_command(
-            f"exec tail -f {shlex.quote(remote_path)} 2>&1",
-            get_pty=False,
+            f"exec tail -f {shlex.quote(remote_path)} 2>&1"
         )
 
         try:
