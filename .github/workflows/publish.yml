@@ -118,22 +118,19 @@ jobs:
           echo "=== Resolved dependencies ==="
           pip freeze | grep -v jhinno
 
-          # Download all resolved dependencies for this Python on Linux
+          # Download everything needed for offline install
           mkdir -p bundle
-          DEPS=$(pip freeze | grep -v jhinno)
-
-          # Download binary wheels — pip picks the newest manylinux tag on the runner
           pip download \
             --dest bundle/ \
-            --no-deps \
             --only-binary=:all: \
-            $DEPS
+            "$WHEEL[sftp]"
+          pip download \
+            --dest bundle/ \
+            --no-binary :all: \
+            "$WHEEL[sftp]" 2>/dev/null || true
 
-          # Fix manylinux wheels: download manylinux2014 variants for older glibc compatibility
-          python3 scripts/fix_manylinux.py
-
-          # Copy SDK wheel into bundle
-          cp "$WHEEL" bundle/
+          # Remove SDK sdist (keep wheel)
+          rm -f bundle/jhinno_appform_sdk-*.tar.gz
 
           echo "=== Bundle contents ==="
           ls -la bundle/
