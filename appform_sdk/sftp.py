@@ -566,18 +566,23 @@ class SFTPAPI:
     def tailf(self, remote_path: str, encoding: str = "utf-8"):
         """Run `tail -f` on a remote file via SSH exec channel.
 
+        Returns the channel + tail PID so the caller can clean up.
+
         Blocks and prints output in real-time until interrupted with Ctrl+C.
         Requires an SFTP connection with password or key auth (Transport available).
 
         Args:
             remote_path: Remote file path to tail
             encoding: Text encoding (default: utf-8)
+
+        Returns:
+            Tuple of (tail_pid, channel) for caller to clean up.
+            tail_pid may be None if command failed.
         """
         import shlex
         import time
 
         manager = self._get_manager()
-        # Trigger lazy connection so transport is established
         _ = manager.sftp
         transport = manager._transport
         if transport is None:
@@ -585,28 +590,65 @@ class SFTPAPI:
 
         channel = transport.open_session()
         channel.setblocking(False)
-        # exec tail: replaces the shell process with tail so closing the
-        # channel kills tail directly instead of orphaning it as a child.
-        channel.exec_command(
-            f"exec tail -f {shlex.quote(remote_path)} 2>&1"
-        )
+        # Start tail in background, get PID on stdout
+        cmd = f"tail -f {shlex.quote(remote_path)} 2>&1 & echo $!"
+        channel.exec_command(cmd)
 
+        tail_pid = None
+        first_chunk = True
+        # Stream output; extract PID from first line
         try:
             while not channel.closed:
                 if channel.recv_ready():
                     data = channel.recv(65536)
                     if not data:
                         break
-                    sys.stdout.write(data.decode(encoding, errors="replace"))
-                    sys.stdout.flush()
+                    text = data.decode(encoding, errors="replace")
+
+                    if first_chunk:
+                        first_chunk = False
+                        # First line is the PID, rest is tail output
+                        parts = text.split("\n", 1)
+                        tail_pid = parts[0].strip()
+                        if len(parts) > 1:
+                            sys.stdout.write(parts[1])
+                            sys.stdout.flush()
+                    else:
+                        sys.stdout.write(text)
+                        sys.stdout.flush()
                 else:
                     time.sleep(0.1)
         except KeyboardInterrupt:
             pass
+
+        return tail_pid, channel
+
+    def kill_tail(self, tail_pid: str):
+        """Kill a tail process started by tailf().
+
+        Args:
+            tail_pid: PID returned by tailf()
+        """
+        import time
+
+        manager = self._get_manager()
+        _ = manager.sftp
+        transport = manager._transport
+        if transport is None:
+            raise SFTPError("SFTP transport not connected")
+
+        kill_ch = transport.open_session()
+        kill_ch.setblocking(False)
+        kill_ch.exec_command(f"kill {tail_pid} 2>/dev/null")
+        try:
+            for _ in range(20):
+                if kill_ch.recv_ready():
+                    kill_ch.recv(65536)
+                if kill_ch.exit_status_ready():
+                    break
+                time.sleep(0.05)
         finally:
-            # exec replaced the shell with tail, so channel.close() sends
-            # SIGHUP directly to the tail process itself, killing it cleanly.
-            channel.close()
+            kill_ch.close()
 
     def close(self):
         if self._manager:

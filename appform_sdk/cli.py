@@ -1884,7 +1884,13 @@ def handle_files_command(args: argparse.Namespace):
                     print(line)
 
             elif args.files_command == "tailf":
-                client.sftp.tailf(remote_path=args.path, encoding=args.encoding)
+                tail_pid, channel = client.sftp.tailf(
+                    remote_path=args.path, encoding=args.encoding
+                )
+                try:
+                    client.sftp.kill_tail(tail_pid)
+                except Exception:
+                    pass
 
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)
@@ -2167,10 +2173,14 @@ def handle_jobs_files_command(args: argparse.Namespace):
                     print(line)
 
             elif cmd == "tailf":
-                client.sftp.tailf(
+                tail_pid, channel = client.sftp.tailf(
                     remote_path=resolve_jobs_path(args.path),
                     encoding=args.encoding,
                 )
+                try:
+                    client.sftp.kill_tail(tail_pid)
+                except Exception:
+                    pass
             else:
                 print(f"Error: Unknown files command: {cmd}", file=sys.stderr)
                 client.close()
