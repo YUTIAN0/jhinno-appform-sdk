@@ -108,6 +108,7 @@ jobs:
           # Create venv and install SDK to resolve all deps
           python -m venv venv
           source venv/bin/activate
+          python -m pip install --upgrade pip
           WHEEL=$(ls dist/jhinno_appform_sdk-*-py3-none-any.whl)
           python -m pip install "$WHEEL"
           python -m pip install "$WHEEL[sftp]"
@@ -175,6 +176,7 @@ jobs:
           # Create venv and install SDK to resolve all deps
           python -m venv venv
           & .\venv\Scripts\Activate.ps1
+          python -m pip install --upgrade pip
           $WHEEL = (Get-ChildItem dist\jhinno_appform_sdk-*-py3-none-any.whl).FullName
           python -m pip install $WHEEL
           python -m pip install "$WHEEL[sftp]"

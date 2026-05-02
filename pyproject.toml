@@ -42,7 +42,7 @@ dev = [
     "mypy>=1.0.0",
 ]
 sftp = [
-    "paramiko>=3.0.0",
+    "paramiko>=3.0.0,<4.0.0",
 ]
 
 [project.scripts]
