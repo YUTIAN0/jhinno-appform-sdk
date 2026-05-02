@@ -153,7 +153,7 @@ class SFTPAPI:
         if manager._transport is None:
             raise SFTPError("SFTP transport not connected")
         channel = manager._transport.open_session()
-        channel.set_timeout(10)
+        channel.settimeout(10)
         channel.exec_command("echo ~")
         home = channel.recv(4096).decode("utf-8", errors="replace").strip()
         channel.recv_exit_status()
