@@ -127,31 +127,11 @@ jobs.files:
       format: size
 
 jobs.history:
-  type: table
+  type: text
   title: Job History
   items_path: data
   fields:
-    - key: jobId
-      label: JOB_ID
-      width: 10
-    - key: status
-      label: STATUS
-      width: 8
-    - key: name
-      label: NAME
-      width: 30
-    - key: appName
-      label: APP
-      width: 15
-    - key: owner
-      label: OWNER
-      width: 12
-    - key: submitTime
-      label: SUBMIT_TIME
-      width: 20
-    - key: terminationTime
-      label: END_TIME
-      width: 20
+    - key: jobhistory
 
 jobs.form:
   type: table

@@ -577,6 +577,68 @@ def _format_tree_template(template: dict, response: dict) -> str:
     return "\n".join(lines)
 
 
+def _format_text_template(template: dict, response: dict) -> str:
+    """Format using a text template — outputs raw field values."""
+    import re
+
+    items = _resolve_path(response, template.get("items_path", "data"))
+    if not items:
+        return "(no data)"
+    if not isinstance(items, list):
+        items = [items]
+
+    fields = template.get("fields", [])
+    if not fields:
+        return json.dumps(items, indent=2, ensure_ascii=False)
+
+    key = fields[0].get("key", "")
+    result_lines = []
+    for item in items:
+        val = item.get(key, "")
+        if val is None:
+            val = ""
+        # Server output has wide-space column padding (>=16 spaces).
+        # Wide gap: if it splits a lowercase word → remove.
+        # Otherwise → single space. 4-15 spaces → single space. <4 → keep.
+
+        def _replace_space(m):
+            length = len(m.group(0))
+            if length < 4:
+                return m.group(0)
+            if length <= 15:
+                return " "
+            before_char = val[m.start() - 1] if m.start() > 0 else " "
+            rest = val[m.end():]
+            after_char = ""
+            for ch in rest:
+                if ch != " ":
+                    after_char = ch
+                    break
+            if (before_char.islower() and after_char.islower()) or (
+                before_char in "-." and after_char.islower()
+            ):
+                return ""
+            return " "
+
+        cleaned = re.sub(r" +", _replace_space, val)
+        # Fix glued punctuation → uppercase: ")Fri" → ") Fri", ";Fri" → "; Fri"
+        cleaned = re.sub(r"([);,.])\s*([A-Z])", r"\1 \2", cleaned)
+        # Fix glued lowercase → uppercase run: "minFri" → "min Fri"
+        cleaned = re.sub(r"([a-z0-9])([A-Z]{2,})", r"\1 \2", cleaned)
+        # Fix glued closing paren → uppercase: ")Fri" → ") Fri"
+        cleaned = re.sub(r"(\))\s*([A-Z])", r"\1 \2", cleaned)
+        # Fix space before comma/semicolon/period, ensure single space after
+        cleaned = re.sub(r" +,", ", ", cleaned)
+        cleaned = re.sub(r" +;", "; ", cleaned)
+        cleaned = re.sub(r" +\.", ". ", cleaned)
+        # Collapse any remaining double+ spaces to single
+        cleaned = re.sub(r"  +", " ", cleaned)
+        cleaned = cleaned.strip()
+        if cleaned:
+            result_lines.append(cleaned)
+    return "\n\n".join(result_lines)
+
+
 # ---------------------------------------------------------------------------
 # Built-in formatters (fallback when no template)
 # ---------------------------------------------------------------------------
@@ -900,6 +962,8 @@ def format_output(command: str, response: dict, output_format: str = "table") ->
                 return _format_detail_template(template, response)
             elif t == "tree":
                 return _format_tree_template(template, response)
+            elif t == "text":
+                return _format_text_template(template, response)
         except Exception:
             pass  # Fall through to built-in
 
