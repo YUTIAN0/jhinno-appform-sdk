@@ -57,8 +57,8 @@ job_submit -a starccm -i /local/file.sim -n 8 -u username -p password
 ### 多文件和目录
 
 ```bash
-# 上传多个文件（逗号分隔或通过多个 -i 参数）
-job_submit -a starccm -i /local/file1.sim /local/file2.dat -n 8
+# 上传多个文件（逗号分隔）
+job_submit -a starccm -i /local/file1.sim,/local/file2.dat -n 8
 
 # 上传整个目录
 job_submit -a starccm -i /local/project_dir/ -n 8

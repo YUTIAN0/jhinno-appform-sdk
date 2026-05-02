@@ -535,9 +535,8 @@ def _add_params(group, params):
             kwargs["metavar"] = "{on,off}"
             kwargs["default"] = pd.default if pd.default else "off"
         elif pd.param_type == "upload":
-            kwargs["nargs"] = "+"
-            kwargs["metavar"] = "FILE..."
-            kwargs["help"] = help_text + " (支持多个文件/目录)"
+            kwargs["metavar"] = "PATH[,PATH...]"
+            kwargs["help"] = help_text + " (多个路径用逗号分隔，支持目录)"
             if pd.required:
                 kwargs["required"] = True
         else:
@@ -564,10 +563,10 @@ def _collect_overrides(profile, parsed_args) -> Dict[str, str]:
             if pd.param_type == "switch":
                 overrides[pd.name] = str(value)
             elif pd.param_type == "upload":
-                if isinstance(value, list):
-                    overrides[pd.name] = ",".join(str(v) for v in value if v)
-                elif value not in (None, ""):
-                    overrides[pd.name] = str(value)
+                # value is a comma-separated string; split into individual paths
+                paths = [p.strip() for p in str(value).split(",") if p.strip()]
+                if paths:
+                    overrides[pd.name] = ",".join(paths)
             elif value not in (None, ""):
                 overrides[pd.name] = str(value)
 
@@ -575,7 +574,9 @@ def _collect_overrides(profile, parsed_args) -> Dict[str, str]:
     if "JH_JOB_NAME" not in overrides:
         cas_value = overrides.get("JH_CAS")
         if cas_value:
-            overrides["JH_JOB_NAME"] = os.path.splitext(os.path.basename(cas_value))[0]
+            # Take first path if comma-separated
+            first = cas_value.split(",")[0].strip()
+            overrides["JH_JOB_NAME"] = os.path.splitext(os.path.basename(first))[0]
 
     return overrides
 
@@ -583,7 +584,10 @@ def _collect_overrides(profile, parsed_args) -> Dict[str, str]:
 def _apply_path_conversion(
     overrides: Dict[str, str], disk_mapping: Dict[str, str]
 ) -> Dict[str, str]:
-    """Convert Windows paths in upload-type parameters."""
+    """Convert Windows paths in upload-type parameters.
+
+    Handles comma-separated multi-file values.
+    """
     is_windows = platform.system() == "Windows"
     if not is_windows or not disk_mapping:
         return overrides
@@ -611,10 +615,17 @@ def _apply_path_conversion(
     result = {}
     for key, value in overrides.items():
         if key in upload_params and value:
-            value = convert_windows_path(value, disk_mapping)
-            if not os.path.isabs(value):
-                value = os.path.abspath(value)
-        result[key] = value
+            # Handle comma-separated multi-file values
+            parts = [p.strip() for p in value.split(",")]
+            new_parts = []
+            for part in parts:
+                converted = convert_windows_path(part, disk_mapping)
+                if not os.path.isabs(converted):
+                    converted = os.path.abspath(converted)
+                new_parts.append(converted)
+            result[key] = ",".join(new_parts)
+        else:
+            result[key] = value
 
     return result
 
