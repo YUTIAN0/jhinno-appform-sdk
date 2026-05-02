@@ -2164,6 +2164,9 @@ def handle_jobs_files_command(args: argparse.Namespace):
             sys.exit(1)
     finally:
         client.close()
+
+
+def handle_apps_command(args: argparse.Namespace):
     client = create_client(args)
     if args.apps_command == "list":
         result = client.apps.list_all()
