@@ -600,6 +600,24 @@ class SFTPAPI:
         except KeyboardInterrupt:
             pass
         finally:
+            # 1. Send EOF to the remote shell → terminates tail -f
+            try:
+                channel.shutdown_write()
+            except Exception:
+                pass
+            # 2. Drain any remaining output before closing
+            for _ in range(10):
+                if channel.recv_ready():
+                    data = channel.recv(65536)
+                    if data:
+                        sys.stdout.write(
+                            data.decode(encoding, errors="replace")
+                        )
+                        sys.stdout.flush()
+                else:
+                    break
+                time.sleep(0.05)
+            # 3. Close the SSH channel
             channel.close()
 
     def close(self):
