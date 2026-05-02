@@ -120,18 +120,64 @@ jobs:
 
           # Download all resolved dependencies for this Python on Linux
           mkdir -p bundle
+          DEPS=$(pip freeze | grep -v jhinno)
+
+          # Download binary wheels — pip picks the newest manylinux tag on the runner
           pip download \
             --dest bundle/ \
             --no-deps \
             --only-binary=:all: \
-            $(pip freeze | grep -v jhinno)
+            $DEPS
 
-          # Also download source-only deps (pure Python like urllib3, certifi, idna)
-          pip download \
-            --dest bundle/ \
-            --no-deps \
-            --no-binary :all: \
-            $(pip freeze | grep -v jhinno) 2>/dev/null || true
+          # For any wheel with manylinux tag > manylinux2014, also get the
+          # manylinux2014 variant and a source tarball for maximum compatibility
+          python3 << 'PYEOF'
+import glob, os, subprocess, sys, re
+
+bundle = "bundle"
+# Find manylinux_2_XX wheels (2_28, 2_31, 2_34 etc.) that are > manylinux2014
+bad = [f for f in glob.glob(os.path.join(bundle, "*-*.whl"))
+       if "manylinux_2_" in f and "manylinux2014" not in f]
+if not bad:
+    sys.exit(0)
+
+# Group by package name
+bad_by_pkg = {}
+for f in bad:
+    basename = os.path.basename(f)
+    m = re.match(r"([a-zA-Z0-9][\w.-]*)-", basename.replace("_", "-"))
+    if m:
+        pkg = m.group(1).lower()
+        bad_by_pkg.setdefault(pkg, []).append(f)
+
+print(f"=== Fixing {len(bad)} manylinux wheels for older glibc ===")
+for pkg, files in bad_by_pkg.items():
+    # Download manylinux2014 wheel
+    r = subprocess.run(
+        [sys.executable, "-m", "pip", "download", "--no-deps",
+         "--only-binary", ":all:", "--no-build-isolation",
+         "--platform", "manylinux2014_x86_64",
+         "--dest", bundle, pkg],
+        capture_output=True, text=True
+    )
+    if r.returncode == 0:
+        print(f"  + {pkg}: downloaded manylinux2014 wheel")
+    else:
+        # Fallback: source tarball
+        r2 = subprocess.run(
+            [sys.executable, "-m", "pip", "download", "--no-deps",
+             "--no-binary", ":all:", "--dest", bundle, pkg],
+            capture_output=True, text=True
+        )
+        if r2.returncode == 0:
+            print(f"  + {pkg}: downloaded source tarball (fallback)")
+        else:
+            print(f"  ! {pkg}: could not get compatible dist", file=sys.stderr)
+    # Remove incompatible wheels
+    for f in files:
+        os.remove(f)
+        print(f"  - removed: {os.path.basename(f)}")
+PYEOF
 
           # Copy SDK wheel into bundle
           cp "$WHEEL" bundle/
