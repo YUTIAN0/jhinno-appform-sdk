@@ -1,0 +1,143 @@
+.TH JOB_SUBMIT-ZH 1 "2026-05-02" "jhinno-appform-sdk" "用户命令"
+.SH NAME
+job_submit \- Appform 通用作业提交工具
+.SH SYNOPSIS
+.B job_submit
+[选项] \-a 应用 [应用选项]
+.SH DESCRIPTION
+.B job_submit
+是 Appform 的通用作业提交工具。它从 job_submit.yaml 配置文件读取应用配置，
+并提供应用特定的参数处理，支持 Windows 路径自动转换。
+.SH 选项
+.TP
+.BI \-a , \-\-app 应用
+选择应用类型（必填）。使用
+.B \-l
+列出可用的应用。
+.TP
+.BI \-l , \-\-list\-apps
+列出所有已配置的应用并退出。
+.TP
+.BI \-\-set KEY=VALUE
+覆盖任意 JH_* 参数。可重复使用以覆盖多个参数。
+.TP
+.BI \-\-params JSON
+以 JSON 字符串形式覆盖参数。
+.TP
+.B \-\-dry\-run
+仅显示最终参数，不提交作业。
+.TP
+.B \-\-base\-url URL
+API 基础 URL（或设置 APPFORM_BASE_URL）。
+.TP
+.B \-\-access\-key KEY
+访问密钥（或设置 APPFORM_ACCESS_KEY）。
+.TP
+.B \-\-access\-key\-secret SECRET
+访问密钥密码（或设置 APPFORM_ACCESS_KEY_SECRET）。
+.TP
+.B \-\-username USER
+用户名（或设置 APPFORM_USERNAME）。
+.TP
+.B \-\-profile\-config FILE
+作业配置文件路径（覆盖 APPFORM_JOB_PROFILE_CONFIG）。
+.SH 示例
+.PP
+提交 Star-CCM+ 作业：
+.RS
+.nf
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16
+.fi
+.RE
+.PP
+提交 Nastran 作业：
+.RS
+.nf
+job_submit \\-a nastran \\-\\-cas /path/to/test.bdf \\-\\-ncpu 16
+.fi
+.RE
+.PP
+使用 \-\-set 覆盖参数：
+.RS
+.nf
+job_submit \\-a starccm \\-\\-set JH_CAS=/path/to/file.sim \\-\\-set JH_NCPU=8
+.fi
+.RE
+.PP
+使用 \-\-params 覆盖参数：
+.RS
+.nf
+job_submit \\-a fluent \\-\\-params '{"JH_CAS":"/path/file.cas","JH_NCPU":"8"}'
+.fi
+.RE
+.PP
+预览而不提交：
+.RS
+.nf
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16 \\-\\-dry\\-run
+.fi
+.RE
+.PP
+列出可用应用：
+.RS
+.nf
+job_submit \\-l
+.fi
+.RE
+.SH Windows 路径转换
+.PP
+在 Windows 系统下，可通过 job_submit.yaml 中的
+.B windows_disk_mapping
+配置自动转换磁盘路径。示例配置：
+.RS
+.nf
+windows_disk_mapping:
+  'S:': '/apps'
+  'D:': '/data'
+.fi
+.RE
+.PP
+以上配置会将
+.B S:/project/file.sim
+转换为
+.B /apps/project/file.sim
+后再提交。转换适用于所有文件类型的参数（\-i, \-\-cas, \-\-input 等）。
+.SH 配置文件
+.PP
+作业配置文件（默认为 job_submit.yaml）定义了应用特定的参数。配置文件位置优先级：
+.RS
+.IP 1.
+通过 \-\-profile\-config 指定的路径
+.IP 2.
+APPFORM_JOB_PROFILE_CONFIG 环境变量
+.IP 3.
+配置文件 (~/.appform/config.json) 中的 job_profile_config 字段
+.RE
+.PP
+示例 job_submit.yaml：
+.RS
+.nf
+default_app: starccm
+windows_disk_mapping:
+  'S:': '/apps'
+applications:
+  \- app_id: starccm
+    name: STAR-CCM+
+    parameters:
+      \- name: JH_CAS
+        cli_arg: input
+        short_arg: 'i'
+        required: true
+        param_type: upload
+        description: 算例文件路径
+      \- name: JH_NCPU
+        cli_arg: ncpu
+        short_arg: 'n'
+        default: '2'
+        param_type: string
+        description: CPU 核心数
+.fi
+.RE
+.SH SEE ALSO
+.BR appform-zh (1),
+.BR appform-sdk-zh (3)

@@ -1,0 +1,632 @@
+.TH APPFORM-SDK-ZH 3 "2026-05-02" "jhinno-appform-sdk" "Python SDK 手册"
+.SH NAME
+appform-sdk \- Appform 6.0-6.6 API 的 Python SDK
+.SH SYNOPSIS
+.B from appform_sdk import AppformClient, Config
+.SH DESCRIPTION
+.B jhinno-appform-sdk
+提供完整的 Appform 6.0-6.6 API Python 客户端库，包含作业提交、
+会话管理、文件操作和组织管理等功能。
+.SH 快速开始
+.PP
+.RS
+.nf
+client = AppformClient(
+    base_url="https://your-server.com",
+    verify_ssl=False
+)
+client.auth.login(username="user", password="pass")
+jobs = client.jobs.list_jobs()
+.fi
+.RE
+.SH 配置
+.PP
+配置源（优先级从高到低）：
+.RS
+.IP 1.
+命令行参数 / 直接参数
+.IP 2.
+环境变量
+.IP 3.
+配置文件 (~/.appform/config.json)
+.RE
+.PP
+环境变量：
+.RS
+.TP
+.B APPFORM_BASE_URL
+API 基础 URL
+.TP
+.B APPFORM_ACCESS_KEY
+访问密钥
+.TP
+.B APPFORM_ACCESS_KEY_SECRET
+访问密钥密码
+.TP
+.B APPFORM_USERNAME
+用户名
+.TP
+.B APPFORM_PASSWORD
+密码
+.TP
+.B APPFORM_TOKEN
+认证令牌
+.TP
+.B APPFORM_AES_KEY
+AES 加密密钥（集群令牌认证）
+.TP
+.B APPFORM_TIMEOUT
+请求超时（秒）
+.TP
+.B APPFORM_VERIFY_SSL
+是否验证 SSL（true/false）
+.TP
+.B APPFORM_API_VERSION
+API 版本（默认 6.5）
+.TP
+.B APPFORM_EXTENSIONS_DIR
+扩展配置目录
+.TP
+.B APPFORM_JOB_PROFILE_CONFIG
+作业配置文件路径
+.TP
+.B APPFORM_OUTPUT_FORMAT
+输出格式（json/table/text/raw）
+.TP
+.B APPFORM_OUTPUT_TEMPLATE
+输出模板文件路径
+.TP
+.B APPFORM_DEFAULT_REMOTE_PATH
+文件操作默认远程路径
+.TP
+.B APPFORM_CHUNK_SIZE
+上传/下载分块大小（如 100M）
+.RE
+.SH 模块
+.SS AppformClient
+.PP
+Appform 客户端主类。
+.TP
+.BI AppformClient(base_url=None, token=None, access_key=None, access_key_secret=None, username=None, aes_key=None, timeout=30, max_retries=3, verify_ssl=None, api_version=None, extensions_dir=None, config=None)
+初始化客户端。所有参数均为可选，可通过 Config 对象或环境变量配置。
+.TP
+.B client.auth
+认证 API（AuthAPI）
+.TP
+.B client.jobs
+作业 API（JobsAPI）
+.TP
+.B client.sessions
+会话 API（SessionsAPI）
+.TP
+.B client.files
+文件 API（FilesAPI）
+.TP
+.B client.apps
+应用 API（AppsAPI）
+.TP
+.B client.organization
+组织 API（OrganizationAPI）
+.TP
+.B client.registry
+API 端点注册表
+.TP
+.B client.extension_manager
+动态扩展管理器
+.TP
+.B client.token
+获取或设置认证令牌
+.TP
+.BI client.get(path, **kwargs)
+发送 GET 请求
+.TP
+.BI client.post(path, **kwargs)
+发送 POST 请求
+.TP
+.BI client.put(path, **kwargs)
+发送 PUT 请求
+.TP
+.BI client.delete(path, **kwargs)
+发送 DELETE 请求
+.TP
+.BI client.call_endpoint(endpoint_name, path_params=None, **kwargs)
+按名称调用已注册的端点
+.TP
+.BI client.register_endpoint(name, path, method="GET", description="", override=False)
+注册自定义端点
+.TP
+.B client.close()
+关闭 HTTP 会话
+.SS Config
+.PP
+配置管理器，支持环境变量、配置文件和直接参数。
+.TP
+.BI Config(base_url=None, access_key=None, access_key_secret=None, username=None, password=None, token=None, aes_key=None, timeout=None, verify_ssl=None, api_version=None, extensions_dir=None, job_profile_config=None, output_format=None, output_template=None, chunk_size=None, config_file=None)
+创建配置实例。如果配置文件存在则自动读取。
+.TP
+.B Config.from_env()
+仅从环境变量创建配置
+.TP
+.BI Config.from_file(config_file)
+从配置文件创建配置
+.TP
+.B Config.get_default_config_path()
+返回默认配置文件路径 (~/.appform/config.json)
+.TP
+.B Config.get_default_extensions_dir()
+返回默认扩展目录 (~/.appform/extensions)
+.TP
+.BI Config.save_config_file(...)
+保存配置到文件
+.TP
+.B config.to_dict()
+将配置转换为字典（敏感字段已脱敏）
+.SS AuthAPI
+.PP
+认证操作（通过
+.B client.auth
+访问）。
+.TP
+.BI client.auth.login(username, password)
+使用用户名和密码登录。成功后返回包含令牌的响应。
+.TP
+.BI client.auth.login_with_token(username=None, timeout=None)
+使用 AES 加密的用户名令牌登录。仅限集群环境，需要配置 APPFORM_AES_KEY。
+.TP
+.BI client.auth.login_with_access_key(access_key, access_key_secret, username)
+配置 AccessKey 认证，供后续请求使用。
+.TP
+.B client.auth.logout()
+登出并失效当前会话。
+.TP
+.B client.auth.ping()
+测试服务是否可访问。
+.TP
+.BI client.auth.register(username, chusername, password, phone=None, mail=None, dep=None, card=None)
+注册新用户。
+.TP
+.B client.auth.is_authenticated()
+检查是否已配置任何认证方式。
+.TP
+.B client.auth.is_token_authenticated()
+检查令牌认证是否已激活。
+.TP
+.B client.auth.is_access_key_authenticated()
+检查 AccessKey 认证是否已配置。
+.TP
+.B client.auth.has_upload_permission()
+检查当前用户是否有上传权限。
+.TP
+.B client.auth.has_download_permission()
+检查当前用户是否有下载权限。
+.SS JobsAPI
+.PP
+作业管理操作（通过
+.B client.jobs
+访问）。
+.TP
+.BI client.jobs.submit(app_id, params)
+提交新作业。
+.B app_id : 应用 ID。
+.B params : 作业参数字典（JH_CAS, JH_NCPU 等）。
+.TP
+.BI client.jobs.submit_v2(app_id, params)
+使用 v2 API 提交作业（6.6+），使用 JSON 格式而非表单数据。
+.TP
+.BI client.jobs.get_job(job_id)
+获取作业详情。
+.TP
+.BI client.jobs.list_jobs(page=1, page_size=20, name_filter=None, status_filter=None, app_name_filter=None, queue_filter=None, condition=None)
+分页列出作业并支持过滤。状态值：RUN, PEND, UNKNOWN, PSUSP, USUSP, SSUSP, ZOMBI, DONE, EXIT。
+.TP
+.BI client.jobs.list_jobs_v2(page=1, page_size=20, condition=None)
+使用 v2 API 列出作业（6.6+）。
+.TP
+.BI client.jobs.list_jobs_by_ids(job_ids)
+按 ID 获取多个作业。
+.TP
+.BI client.jobs.list_history(page=1, page_size=20, condition=None)
+分页列出历史作业。
+.TP
+.BI client.jobs.stop(job_id)
+停止运行中的作业。
+.TP
+.BI client.jobs.suspend(job_id)
+暂停作业。
+.TP
+.BI client.jobs.resume(job_id)
+恢复已暂停的作业。
+.TP
+.BI client.jobs.requeue(job_id)
+重新排队作业。
+.TP
+.BI client.jobs.batch_stop(job_ids)
+批量停止作业。
+.TP
+.BI client.jobs.batch_suspend(job_ids)
+批量暂停作业。
+.TP
+.BI client.jobs.batch_resume(job_ids)
+批量恢复作业。
+.TP
+.BI client.jobs.batch_requeue(job_ids)
+批量重新排队。
+.TP
+.BI client.jobs.delete_job(job_id)
+删除作业（6.6+）。
+.TP
+.BI client.jobs.get_output(job_id)
+获取作业动态输出。
+.TP
+.BI client.jobs.get_files(job_id)
+获取作业文件列表。
+.TP
+.BI client.jobs.get_history(job_id)
+获取作业历史。
+.TP
+.BI client.jobs.get_batch_history(job_ids)
+批量获取作业历史。
+.TP
+.BI client.jobs.connect(job_id)
+连接作业的图形会话。
+.TP
+.BI client.jobs.get_form(app_id)
+获取作业提交表单定义（6.6+）。
+.TP
+.B client.jobs.get_tooltip()
+获取作业监控工具提示（6.6+）。
+.TP
+.B client.jobs.get_total_history_count()
+获取历史作业总数（6.6+）。
+.PP
+作业状态常量：
+.RS
+.TP
+.B JobsAPI.STATUS_RUNNING
+RUN \- 运行中
+.TP
+.B JobsAPI.STATUS_PENDING
+PEND \- 等待中
+.TP
+.B JobsAPI.STATUS_DONE
+DONE \- 已完成
+.TP
+.B JobsAPI.STATUS_EXIT
+EXIT \- 已退出
+.TP
+.B JobsAPI.STATUS_PSUSP
+等待中挂起
+.TP
+.B JobsAPI.STATUS_USUSP
+用户挂起
+.TP
+.B JobsAPI.STATUS_SSUSP
+系统挂起
+.TP
+.B JobsAPI.STATUS_ZOMBI
+僵尸
+.TP
+.B JobsAPI.STATUS_UNKNOWN
+状态不明
+.RE
+.SS SessionsAPI
+.PP
+会话管理操作（通过
+.B client.sessions
+访问）。
+.TP
+.BI client.sessions.start(app_id, start_new=None, cwd=None, work_file=None, param=None)
+启动新应用会话。
+.B app_id : 应用 ID（如 "gedit", "xterm"）。
+.TP
+.BI client.sessions.start_v2(app_id, start_new=None, cwd=None, work_file=None, param=None)
+使用 v2 API 启动会话（6.6+），同时返回 clientUrl 和 webUrl。
+.TP
+.BI client.sessions.list(session_ids=None, session_name=None)
+查询会话。无参数时返回当前用户会话。
+.TP
+.BI client.sessions.list_all(page=1, page_size=20)
+列出所有用户的会话。
+.TP
+.BI client.sessions.connect(session_id)
+获取会话连接信息。
+.TP
+.BI client.sessions.connect_and_launch(session_id, timeout=30)
+获取连接信息并自动启动 JHApp 客户端。检查本地 60540 端口。
+.TP
+.BI client.sessions.disconnect(session_id)
+断开会话。
+.TP
+.BI client.sessions.batch_disconnect(session_ids)
+批量断开会话。
+.TP
+.BI client.sessions.close(session_id)
+关闭（销毁）会话。
+.TP
+.BI client.sessions.batch_close(session_ids)
+批量关闭会话。
+.TP
+.BI client.sessions.share(session_id, usernames)
+共享会话给其他用户。
+.TP
+.BI client.sessions.cancel_share(session_id)
+取消会话共享。
+.TP
+.BI client.sessions.transfer_operation(session_id, username)
+将会话操作权转移给其他用户。
+.TP
+.BI client.sessions.webclient_connect(session_id)
+获取 Web 浏览器连接 URL。
+.SS FilesAPI
+.PP
+文件和目录操作（通过
+.B client.files
+访问）。
+.TP
+.BI client.files.list(path="/", page=1, page_size=100)
+列出远程目录文件。
+.TP
+.BI client.files.list_all(path="/")
+自动翻页列出所有文件。
+.TP
+.BI client.files.mkdir(path, force=True)
+创建远程目录。
+.TP
+.BI client.files.rename(old_path, new_name)
+重命名文件或目录。
+.TP
+.BI client.files.copy(src_path, dest_dir)
+复制文件或目录。
+.TP
+.BI client.files.move(src_path, dest_dir)
+移动或重命名文件或目录。
+.TP
+.BI client.files.delete(path)
+删除文件或目录。
+.TP
+.BI client.files.upload(file_path, remote_path, on_progress=None, chunk_size=104857600)
+上传本地文件。
+.B on_progress : 回调函数 (文件名, 已读字节, 总字节)。
+.TP
+.BI client.files.upload_directory(local_dir, remote_dir, on_progress=None, check_exists=None, confirm=None, chunk_size=104857600)
+递归上传整个目录。
+.TP
+.BI client.files.download(remote_path, local_path=None, on_progress=None, chunk_size=104857600)
+下载远程文件。
+.B on_progress : 回调函数 (文件名, 已下载字节, 总字节)。
+.TP
+.BI client.files.download_directory(remote_dir, local_dir, on_progress=None, chunk_size=104857600)
+递归下载整个远程目录。
+.TP
+.BI client.files.compress(source_dir, target_path)
+压缩远程目录。
+.TP
+.BI client.files.uncompress(archive_path, dest_dir, password=None)
+解压远程压缩包。
+.TP
+.B client.files.get_confidentiality_levels()
+获取可用密级列表。
+.TP
+.BI client.files.set_confidentiality(path, level)
+设置文件密级。
+.TP
+.B client.files.get_root_dir()
+获取根目录信息。
+.PP
+辅助函数：
+.TP
+.BI parse_size(size_str)
+解析人类可读的大小字符串为字节数。支持 "256K", "30M", "1G" 或原始字节数。
+.SS AppsAPI
+.PP
+应用查询操作（通过
+.B client.apps
+访问）。
+.TP
+.B client.apps.list_all()
+获取所有应用菜单。
+.TP
+.BI client.apps.list_v2()
+获取可用的计算、交互和 Web 应用（6.6+）。
+.TP
+.BI client.apps.get_url(app_name)
+获取特定应用的 URL。
+.TP
+.BI client.apps.get_form_params(app_id)
+获取计算应用表单参数。
+.TP
+.B client.apps.get_file_extensions()
+获取图形应用关联的文件后缀。
+.SS OrganizationAPI
+.PP
+部门和用户管理（通过
+.B client.organization
+访问）。
+.TP
+.B client.organization.get_departments()
+获取部门树形结构。
+.TP
+.BI client.organization.create_department(dep_name, dep_chname, parent_dep=None, description=None)
+创建部门。
+.B dep_name : 英文名称。
+.B dep_chname : 中文显示名。
+.TP
+.BI client.organization.update_department(dep_name, dep_chname=None, parent_dep=None, description=None)
+更新部门。
+.TP
+.BI client.organization.delete_department(dep_name)
+删除部门。
+.TP
+.BI client.organization.get_users(page=1, page_size=20, dep=None, username=None)
+列出用户（支持按部门/用户名过滤）。
+.TP
+.BI client.organization.create_user(username, chusername, password, dep=None, phone=None, mail=None, card=None)
+创建新用户。
+.TP
+.BI client.organization.update_user(username, chusername=None, dep=None, phone=None, mail=None, card=None)
+更新用户信息。
+.TP
+.BI client.organization.delete_user(username)
+删除用户。
+.TP
+.BI client.organization.reset_password(username, new_password)
+重置用户密码。
+.SS AESEncryptor
+.PP
+AES 加密工具，用于令牌认证。
+.TP
+.BI AESEncryptor(key=None)
+使用 AES 密钥初始化。如果为 None，从 APPFORM_AES_KEY 环境变量读取。
+.TP
+.BI encryptor.encrypt(plaintext)
+使用 AES/ECB/PKCS7 加密字符串。返回 Base64+URL 编码的密文。
+.TP
+.BI encryptor.decrypt(ciphertext)
+解密 Base64+URL 编码的密文字符串。
+.TP
+.BI encryptor.encrypt_username(username, timestamp=None)
+加密用户名和时间戳，用于令牌登录。
+.TP
+.BI encryptor.decrypt_username(ciphertext)
+解密令牌并提取用户名。
+.SS SignatureGenerator
+.PP
+HMAC-SHA256 签名生成器，用于 AccessKey 认证。
+.TP
+.BI SignatureGenerator.generate_signature(access_key, access_key_secret, username, current_time=None)
+生成签名。返回 (签名, 当前毫秒时间戳) 元组。
+.TP
+.BI SignatureGenerator.generate_auth_headers(access_key, access_key_secret, username)
+生成认证请求头字典。
+.SS check_cluster_environment()
+.PP
+检查当前节点是否在 HPC 集群环境中。验证 jversion 命令是否存在，以及当前主机名是否出现在 jhosts 输出中。
+.SH 异常
+.TP
+.B AppformError
+所有 SDK 异常基类
+.TP
+.B AuthenticationError
+认证失败或令牌过期
+.TP
+.B APIError
+API 返回错误响应。包含
+.B status_code
+和
+.B response
+属性
+.TP
+.B ValidationError
+输入验证失败
+.TP
+.B FileError
+文件操作失败
+.TP
+.B JobError
+作业操作失败
+.TP
+.B SessionError
+会话操作失败
+.SH 示例
+.SS 提交作业
+.RS
+.nf
+from appform_sdk import AppformClient
+
+client = AppformClient(
+    base_url="https://your-server.com",
+    access_key="YOUR_KEY",
+    access_key_secret="YOUR_SECRET",
+    username="your_username",
+)
+
+result = client.jobs.submit(
+    app_id="fluent",
+    params={
+        "JH_JOB_NAME": "simulation_001",
+        "JH_CAS": "/home/user/cases/test.cas",
+        "JH_NCPU": "16",
+        "JH_ITERATION": "1000",
+        "JH_GUI_ENABLED": "off",
+    },
+)
+print(f"作业 ID: {result['data']}")
+
+# 列出并监控
+jobs = client.jobs.list_jobs(status_filter=["RUN"])
+print(f"运行中作业: {jobs['data']['total']}")
+
+# 停止作业
+client.jobs.stop("494825")
+.fi
+.RE
+.SS 会话管理
+.RS
+.nf
+client = AppformClient(base_url="https://your-server.com")
+client.auth.login("user", "pass")
+
+# 启动会话
+result = client.sessions.start(
+    app_id="gedit",
+    start_new=True,
+    cwd="${HOME}",
+)
+
+# 列出当前用户会话
+sessions = client.sessions.list()
+
+# 连接并自动启动客户端
+client.sessions.connect_and_launch(
+    sessions["data"][0]["sessionId"]
+)
+.fi
+.RE
+.SS 文件操作
+.RS
+.nf
+client = AppformClient(base_url="https://your-server.com")
+client.auth.login("user", "pass")
+
+# 列出目录
+files = client.files.list(path="/home/user")
+
+# 上传（带进度）
+client.files.upload(
+    file_path="./local_file.txt",
+    remote_path="/home/user/",
+    on_progress=lambda name, current, total:
+        print(f"{name}: {current}/{total}"),
+)
+
+# 下载
+client.files.download(
+    remote_path="/home/user/output.txt",
+    local_path="./output.txt",
+)
+.fi
+.RE
+.SS 使用 Config
+.RS
+.nf
+from appform_sdk import AppformClient, Config
+
+# 从配置文件加载
+config = Config(config_file="~/.appform/config.json")
+client = AppformClient(config=config)
+
+# 或使用环境变量
+config = Config.from_env()
+client = AppformClient(config=config)
+.fi
+.RE
+.SH SEE ALSO
+.BR appform-zh (1),
+.BR job_submit-zh (1)
+.SH 相关文件
+.TP
+.I ~/.appform/config.json
+默认配置文件
+.TP
+.I ~/.appform/extensions/
+默认扩展目录
