@@ -7,6 +7,7 @@ Requires paramiko: pip install jhinno-appform-sdk[sftp]
 
 import os
 import stat
+import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
