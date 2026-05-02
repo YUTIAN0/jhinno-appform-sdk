@@ -439,6 +439,14 @@ EXIT \- 已退出
 .B client.files.get_root_dir()
 获取根目录信息。
 .PP
+SFTP 模块（\fBclient.sftp\fP）：
+.TP
+.BI client.sftp.tailf(remote_path, encoding="utf-8")
+通过 SSH exec channel 在远程执行 \fBtail -f\fP，实时流式输出，退出时返回 (tail_pid, channel)。需要 \fBpip install jhinno-appform-sdk[sftp]\fP。
+.TP
+.BI client.sftp.kill_tail(tail_pid)
+通过新 SSH session 终止 tailf() 启动的 tail 进程。
+.PP
 辅助函数：
 .TP
 .BI parse_size(size_str)
@@ -447,7 +455,7 @@ EXIT \- 已退出
 SFTP 为可选功能。安装方式：
 .B pip install jhinno-appform-sdk[sftp]
 .PP
-使用 SFTP 时，所有文件操作（ls, mkdir, cp, mv, rm, put, get, cat）均可脱离 API 网关工作。
+使用 SFTP 时，所有文件操作（ls, mkdir, cp, mv, rm, put, get, cat, tailf）均可脱离 API 网关工作。
 .SS AppsAPI
 .PP
 应用查询操作（通过

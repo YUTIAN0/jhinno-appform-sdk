@@ -442,15 +442,20 @@ Set file confidentiality level.
 .B client.files.get_root_dir()
 Get root directory information.
 .PP
-Helper function:
+SFTP module (\fBclient.sftp\fP):
 .TP
-.BI parse_size(size_str)
-Parse human-readable size string to bytes. Supports "256K", "30M", "1G", or raw bytes.
+.BI client.sftp.tailf(remote_path, encoding="utf-8")
+Run \fBtail -f\fP on a remote file via SSH exec channel. Streams output in
+real-time and returns (tail_pid, channel) on exit. Requires
+\fBpip install jhinno-appform-sdk[sftp]\fP.
+.TP
+.BI client.sftp.kill_tail(tail_pid)
+Kill a tail process started by tailf() via a new SSH session.
 .PP
 SFTP configuration is optional. Install with:
 .B pip install jhinno-appform-sdk[sftp]
 .PP
-When using SFTP, all file operations (ls, mkdir, cp, mv, rm, put, get, cat) work without the API gateway.
+When using SFTP, all file operations (ls, mkdir, cp, mv, rm, put, get, cat, tailf) work without the API gateway.
 .SS AppsAPI
 .PP
 Application query operations (accessed via

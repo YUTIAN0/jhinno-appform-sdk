@@ -179,6 +179,9 @@ Download remote file or directory to local
 .B files cat PATH [\-\-head N] [\-\-tail N] [\-\-lines RANGE] [\-\-start N] [\-\-end N] [\-\-all] [\-\-encoding ENC]
 View remote text file content (SFTP only); \-\-lines examples: 10\-20 or 10\-; \-\-all forces full output
 .TP
+.B files tailf PATH [\-\-encoding ENC]
+Follow remote file output in real-time via SSH (SFTP only), Ctrl+C to stop
+.TP
 .B files compress SOURCE TARGET
 Compress a remote directory into an archive
 .TP
