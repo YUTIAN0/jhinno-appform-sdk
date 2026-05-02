@@ -453,6 +453,13 @@ def create_parser() -> argparse.ArgumentParser:
     )
     jf_cat.add_argument("--encoding", default="utf-8", help="Text encoding")
 
+    # jobs files tailf <path>
+    jf_tailf = jobs_files_subparsers.add_parser(
+        "tailf", help="Follow file output in real-time (SFTP only)"
+    )
+    jf_tailf.add_argument("path", help="File path")
+    jf_tailf.add_argument("--encoding", default="utf-8", help="Text encoding")
+
     jobs_history_page_parser = jobs_subparsers.add_parser(
         "history-page", help="List history jobs with pagination"
     )
@@ -769,6 +776,13 @@ def create_parser() -> argparse.ArgumentParser:
         default="utf-8",
         help="Text encoding (default: utf-8)",
     )
+
+    # tailf — follow file output
+    files_tailf_parser = files_subparsers.add_parser(
+        "tailf", help="Follow file output in real-time (SFTP only)"
+    )
+    files_tailf_parser.add_argument("path", help="Remote file path")
+    files_tailf_parser.add_argument("--encoding", default="utf-8", help="Text encoding")
 
     # Apps
     apps_parser = subparsers.add_parser("apps", help="Application operations")
@@ -1869,6 +1883,9 @@ def handle_files_command(args: argparse.Namespace):
                 for line in lines:
                     print(line)
 
+            elif args.files_command == "tailf":
+                client.sftp.tailf(remote_path=args.path, encoding=args.encoding)
+
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)
             client.close()
@@ -2148,6 +2165,12 @@ def handle_jobs_files_command(args: argparse.Namespace):
                 )
                 for line in lines:
                     print(line)
+
+            elif cmd == "tailf":
+                client.sftp.tailf(
+                    remote_path=resolve_jobs_path(args.path),
+                    encoding=args.encoding,
+                )
             else:
                 print(f"Error: Unknown files command: {cmd}", file=sys.stderr)
                 client.close()

@@ -562,6 +562,43 @@ class SFTPAPI:
         # No selector on large file: default to last 20 lines
         return _read_tail(sftp, remote_path, 20, encoding, file_size)
 
+    def tailf(self, remote_path: str, encoding: str = "utf-8"):
+        """Run `tail -f` on a remote file via SSH exec channel.
+
+        Blocks and prints output in real-time until interrupted with Ctrl+C.
+        Requires an SFTP connection with password or key auth (Transport available).
+
+        Args:
+            remote_path: Remote file path to tail
+            encoding: Text encoding (default: utf-8)
+        """
+        import shlex
+        import time
+
+        manager = self._get_manager()
+        transport = manager._transport
+        if transport is None:
+            raise SFTPError("SFTP transport not connected")
+
+        channel = transport.open_session()
+        channel.set_timeout(0)  # non-blocking
+        channel.exec_command(f"tail -f {shlex.quote(remote_path)}")
+
+        try:
+            while not channel.closed:
+                if channel.recv_ready():
+                    data = channel.recv(65536)
+                    if not data:
+                        break
+                    sys.stdout.write(data.decode(encoding, errors="replace"))
+                    sys.stdout.flush()
+                else:
+                    time.sleep(0.1)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            channel.close()
+
     def close(self):
         if self._manager:
             self._manager.close()
