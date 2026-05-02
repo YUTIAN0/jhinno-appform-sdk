@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jhinno-appform-sdk"
-version = "0.0.4"
+dynamic = ["version"]
 description = "Python SDK for Appform 6.0-6.6 API"
 readme = "README.md"
 license = {text = "MIT"}
@@ -54,12 +54,15 @@ Homepage = "https://github.com/YUTIAN0/jhinno-appform-sdk"
 Documentation = "https://github.com/YUTIAN0/jhinno-appform-sdk#readme"
 Repository = "https://github.com/YUTIAN0/jhinno-appform-sdk"
 
+[tool.setuptools.dynamic]
+version = {file = "appform_sdk/VERSION"}
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["appform_sdk*"]
 
 [tool.setuptools.package-data]
-"appform_sdk" = ["*.yaml", "*.yml", "*.json"]
+"appform_sdk" = ["*.yaml", "*.yml", "*.json", "VERSION"]
 "appform_sdk.completions" = ["*.bash", "*.zsh", "*.fish"]
 "appform_sdk.man.man1" = ["*.1"]
 "appform_sdk.man.man3" = ["*.3"]

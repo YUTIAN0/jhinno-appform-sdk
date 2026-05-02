@@ -2,6 +2,8 @@
 Appform SDK - Python client library for Appform 6.0-6.6 API
 """
 
+from pathlib import Path
+
 from .apps import AppsAPI
 from .auth import AuthAPI
 from .client import AppformClient
@@ -52,7 +54,9 @@ from .utils import AESEncryptor, SignatureGenerator, check_cluster_environment
 # Use: from appform_sdk.xml2table import export, create_sdk_yaml, ...
 # Or:  python -m appform_sdk.xml2table
 
-__version__ = "0.0.4"
+__version__ = (
+    Path(__file__).resolve().parent.joinpath("VERSION").read_text().strip()
+)
 __all__ = [
     # Client
     "AppformClient",
