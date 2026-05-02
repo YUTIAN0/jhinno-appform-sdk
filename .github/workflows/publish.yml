@@ -108,8 +108,9 @@ jobs:
           # Create venv and install SDK to resolve all deps
           python -m venv venv
           source venv/bin/activate
-          python -m pip install dist/jhinno_appform_sdk-*-py3-none-any.whl
-          python -m pip install "dist/jhinno_appform_sdk-*-py3-none-any.whl[sftp]"
+          WHEEL=$(ls dist/jhinno_appform_sdk-*-py3-none-any.whl)
+          python -m pip install "$WHEEL"
+          python -m pip install "$WHEEL[sftp]"
 
           # List resolved dependencies
           echo "=== Resolved dependencies ==="
@@ -131,7 +132,7 @@ jobs:
             $(pip freeze | grep -v jhinno) 2>/dev/null || true
 
           # Copy SDK wheel into bundle
-          cp dist/jhinno_appform_sdk-*-py3-none-any.whl bundle/
+          cp "$WHEEL" bundle/
 
           echo "=== Bundle contents ==="
           ls -la bundle/
@@ -174,8 +175,9 @@ jobs:
           # Create venv and install SDK to resolve all deps
           python -m venv venv
           & .\venv\Scripts\Activate.ps1
-          python -m pip install dist\jhinno_appform_sdk-*-py3-none-any.whl
-          python -m pip install "dist\jhinno_appform_sdk-*-py3-none-any.whl[sftp]"
+          $WHEEL = (Get-ChildItem dist\jhinno_appform_sdk-*-py3-none-any.whl).FullName
+          python -m pip install $WHEEL
+          python -m pip install "$WHEEL[sftp]"
 
           # List resolved dependencies
           Write-Host "=== Resolved dependencies ==="
