@@ -98,6 +98,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Build and bundle for Linux py${{ matrix.python-version }}
+        continue-on-error: true
         run: |
           PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
 
@@ -139,16 +140,23 @@ jobs:
           ls -la bundle/
 
       - name: Create tarball
+        if: always()
         run: |
           VERSION=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
           PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
-          tar czf "jhinno-appform-sdk-${VERSION}-linux-x86_64-cp${PYVER}.tar.gz" bundle/
+          if [ -d "bundle" ] && [ "$(ls -A bundle/ 2>/dev/null)" ]; then
+            tar czf "jhinno-appform-sdk-${VERSION}-linux-x86_64-cp${PYVER}.tar.gz" bundle/
+          else
+            echo "No bundle directory found, skipping tarball creation"
+          fi
 
       - name: Upload artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: linux-cp${{ matrix.python-version }}
           path: jhinno-appform-sdk-*-linux-x86_64-cp*.tar.gz
+          if-no-files-found: ignore
 
   build_windows:
     needs: test
@@ -165,6 +173,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Build and bundle for Windows py${{ matrix.python-version }}
+        continue-on-error: true
         run: |
           $ErrorActionPreference = "Stop"
           $PYVER = "${{ matrix.python-version }}".Replace('.','')
@@ -220,20 +229,33 @@ jobs:
           Write-Host "Total files: $((Get-ChildItem bundle\).Count)"
 
       - name: Create zip
+        if: always()
         run: |
           $VERSION = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches.Groups[1].Value
           $PYVER = "${{ matrix.python-version }}".Replace('.','')
           $NAME = "jhinno-appform-sdk-$VERSION-windows-x86_64-cp$PYVER.zip"
-          Compress-Archive -Path "bundle\*" -DestinationPath $NAME -Force
+          if (Test-Path "bundle") {
+            $FILES = Get-ChildItem bundle\
+            if ($FILES.Count -gt 0) {
+              Compress-Archive -Path "bundle\*" -DestinationPath $NAME -Force
+            } else {
+              Write-Host "No bundle contents found, skipping zip creation"
+            }
+          } else {
+            Write-Host "No bundle directory found, skipping zip creation"
+          }
 
       - name: Upload artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: windows-cp${{ matrix.python-version }}
           path: jhinno-appform-sdk-*-windows-x86_64-cp*.zip
+          if-no-files-found: ignore
 
   release:
     needs: [build_pkg, build_linux, build_windows]
+    if: always() && (needs.build_pkg.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -250,14 +272,42 @@ jobs:
       - name: Create release body
         run: |
           VERSION="${GITHUB_REF#refs/tags/v}"
-          cat > release_body.md << 'ENDBODY'
+
+          # Collect successfully built bundles
+          LINUX_VERSIONS=""
+          for f in dist/jhinno-appform-sdk-${VERSION}-linux-x86_64-cp*.tar.gz; do
+            if [ -f "$f" ]; then
+              BASENAME=$(basename "$f" | sed "s/jhinno-appform-sdk-${VERSION}-linux-x86_64-cp//" | sed 's/.tar.gz//')
+              PYVER=$(echo "$BASENAME" | sed 's/cp//')
+              if [ -n "$LINUX_VERSIONS" ]; then
+                LINUX_VERSIONS="${LINUX_VERSIONS}, ${PYVER}"
+              else
+                LINUX_VERSIONS="${PYVER}"
+              fi
+            fi
+          done
+
+          WINDOWS_VERSIONS=""
+          for f in dist/jhinno-appform-sdk-${VERSION}-windows-x86_64-cp*.zip; do
+            if [ -f "$f" ]; then
+              BASENAME=$(basename "$f" | sed "s/jhinno-appform-sdk-${VERSION}-windows-x86_64-cp//" | sed 's/.zip//')
+              PYVER=$(echo "$BASENAME" | sed 's/cp//')
+              if [ -n "$WINDOWS_VERSIONS" ]; then
+                WINDOWS_VERSIONS="${WINDOWS_VERSIONS}, ${PYVER}"
+              else
+                WINDOWS_VERSIONS="${PYVER}"
+              fi
+            fi
+          done
+
+          cat > release_body.md << ENDBODY
           ## Installation
 
           ### Standard installation (recommended)
 
-          ```bash
+          \`\`\`bash
           pip install jhinno-appform-sdk
-          ```
+          \`\`\`
 
           ### Offline installation
 
@@ -265,19 +315,19 @@ jobs:
 
           **Linux:**
 
-          ```bash
+          \`\`\`bash
           tar xzf jhinno-appform-sdk-VERSION-linux-x86_64-cp<pyver>.tar.gz
           pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
-          ```
+          \`\`\`
 
           **Windows:**
 
-          ```powershell
+          \`\`\`powershell
           Expand-Archive jhinno-appform-sdk-VERSION-windows-x86_64-cp<pyver>.zip
           pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
-          ```
+          \`\`\`
 
-          > Replace `VERSION` with the release version (e.g., `0.0.1`) and `<pyver>` with your Python version (e.g., `cp312` for Python 3.12).
+          > Replace \`VERSION\` with the release version (e.g., \`0.0.1\`) and \`<pyver>\` with your Python version (e.g., \`cp312\` for Python 3.12).
 
           ## Package contents
 
@@ -287,8 +337,8 @@ jobs:
 
           | Platform | Python versions |
           |----------|----------------|
-          | Linux x86_64 (manylinux2014) | 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 |
-          | Windows x86_64 | 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 |
+          | Linux x86_64 (manylinux2014) | ${LINUX_VERSIONS:-none} |
+          | Windows x86_64 | ${WINDOWS_VERSIONS:-none} |
           ENDBODY
           sed -i "s/VERSION/${VERSION}/g" release_body.md
 
