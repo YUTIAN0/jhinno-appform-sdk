@@ -15,9 +15,9 @@ jobs:
       - name: Check tag matches version
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          PKG_VERSION=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
+          PKG_VERSION=$(cat appform_sdk/VERSION | tr -d '[:space:]')
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag v${TAG_VERSION} does not match pyproject.toml version ${PKG_VERSION}"
+            echo "::error::Tag v${TAG_VERSION} does not match VERSION file ${PKG_VERSION}"
             exit 1
           fi
 
@@ -142,7 +142,7 @@ jobs:
       - name: Create tarball
         if: always()
         run: |
-          VERSION=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
+          VERSION=$(cat appform_sdk/VERSION | tr -d '[:space:]')
           PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
           if [ -d "bundle" ] && [ "$(ls -A bundle/ 2>/dev/null)" ]; then
             tar czf "jhinno-appform-sdk-${VERSION}-linux-x86_64-cp${PYVER}.tar.gz" bundle/
@@ -231,7 +231,7 @@ jobs:
       - name: Create zip
         if: always()
         run: |
-          $VERSION = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches.Groups[1].Value
+          $VERSION = (Get-Content appform_sdk\VERSION).Trim()
           $PYVER = "${{ matrix.python-version }}".Replace('.','')
           $NAME = "jhinno-appform-sdk-$VERSION-windows-x86_64-cp$PYVER.zip"
           if (Test-Path "bundle") {
