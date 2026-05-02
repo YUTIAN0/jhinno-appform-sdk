@@ -333,12 +333,125 @@ def create_parser() -> argparse.ArgumentParser:
         "suspend",
         "resume",
         "output",
-        "files",
         "history",
         "delete",
     ):
         p = jobs_subparsers.add_parser(cmd, help=f"{cmd.capitalize()} a job")
         p.add_argument("job_id", help="Job ID")
+
+    # Jobs files — file operations within a job's working directory
+    jobs_files_parser = jobs_subparsers.add_parser(
+        "files", help="Browse and manage job files"
+    )
+    jobs_files_parser.add_argument("job_id", help="Job ID")
+    jobs_files_parser.add_argument(
+        "--method",
+        dest="default_method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Default transfer method for all file operations",
+    )
+    jobs_files_subparsers = jobs_files_parser.add_subparsers(
+        dest="jobs_files_command", help="Job file commands"
+    )
+
+    # jobs files ls [path]
+    jf_ls = jobs_files_subparsers.add_parser("ls", help="List directory contents")
+    jf_ls.add_argument(
+        "path", nargs="?", default=None, help="Directory path (relative to job cwd)"
+    )
+    jf_ls.add_argument("--page", type=int, default=1, help="Page number")
+    jf_ls.add_argument("--page-size", type=int, default=100, help="Page size")
+    jf_ls.add_argument(
+        "--all", "-a", action="store_true", dest="list_all", help="List all items"
+    )
+    jf_ls.add_argument(
+        "--method", choices=["http", "sftp"], default=None, help="Transfer method"
+    )
+
+    # jobs files cp <src> <dest>
+    jf_cp = jobs_files_subparsers.add_parser("cp", help="Copy file or directory")
+    jf_cp.add_argument("src", help="Source path")
+    jf_cp.add_argument("dest", help="Destination path")
+    jf_cp.add_argument(
+        "--method", choices=["http", "sftp"], default=None, help="Transfer method"
+    )
+
+    # jobs files mv <src> <dest>
+    jf_mv = jobs_files_subparsers.add_parser("mv", help="Move/rename file or directory")
+    jf_mv.add_argument("src", help="Source path")
+    jf_mv.add_argument("dest", help="Destination path")
+    jf_mv.add_argument(
+        "--method", choices=["http", "sftp"], default=None, help="Transfer method"
+    )
+
+    # jobs files rm <path>
+    jf_rm = jobs_files_subparsers.add_parser("rm", help="Delete file or directory")
+    jf_rm.add_argument("path", help="Path to delete")
+    jf_rm.add_argument(
+        "--method", choices=["http", "sftp"], default=None, help="Transfer method"
+    )
+
+    # jobs files mkdir <path>
+    jf_mkdir = jobs_files_subparsers.add_parser("mkdir", help="Create directory")
+    jf_mkdir.add_argument("path", help="Directory path to create")
+    jf_mkdir.add_argument(
+        "--no-force", action="store_true", dest="no_force", help="Fail if exists"
+    )
+    jf_mkdir.add_argument(
+        "--method", choices=["http", "sftp"], default=None, help="Transfer method"
+    )
+
+    # jobs files put <local> [remote]
+    jf_put = jobs_files_subparsers.add_parser(
+        "put", help="Upload local file or directory to job directory"
+    )
+    jf_put.add_argument("local", help="Local file or directory path")
+    jf_put.add_argument(
+        "remote",
+        nargs="?",
+        default=None,
+        help="Remote path within job directory (default: job cwd)",
+    )
+    jf_put.add_argument(
+        "-f", "--force", action="store_true", help="Overwrite without confirmation"
+    )
+    jf_put.add_argument("--chunk-size", dest="chunk_size", help="Read chunk size")
+    jf_put.add_argument(
+        "--method", choices=["http", "sftp"], default=None, help="Transfer method"
+    )
+
+    # jobs files get <remote> [local]
+    jf_get = jobs_files_subparsers.add_parser(
+        "get", help="Download file or directory from job directory"
+    )
+    jf_get.add_argument("remote", help="Remote file or directory path")
+    jf_get.add_argument(
+        "local", nargs="?", default=".", help="Local destination (default: .)"
+    )
+    jf_get.add_argument("--chunk-size", dest="chunk_size", help="Read chunk size")
+    jf_get.add_argument(
+        "--method", choices=["http", "sftp"], default=None, help="Transfer method"
+    )
+
+    # jobs files cat <path>
+    jf_cat = jobs_files_subparsers.add_parser(
+        "cat", help="View remote text file content"
+    )
+    jf_cat.add_argument("path", help="File path")
+    jf_cat.add_argument("--head", type=int, default=None, help="First N lines")
+    jf_cat.add_argument("--tail", type=int, default=None, help="Last N lines")
+    jf_cat.add_argument(
+        "--lines",
+        default=None,
+        help="Line range, e.g. '10-20' or '10-'",
+    )
+    jf_cat.add_argument("--start", type=int, default=None, help="Start line (1-based)")
+    jf_cat.add_argument("--end", type=int, default=None, help="End line (1-based)")
+    jf_cat.add_argument(
+        "--all", action="store_true", dest="all_lines", help="Output all lines"
+    )
+    jf_cat.add_argument("--encoding", default="utf-8", help="Text encoding")
 
     jobs_history_page_parser = jobs_subparsers.add_parser(
         "history-page", help="List history jobs with pagination"
@@ -1401,8 +1514,14 @@ def handle_jobs_command(args: argparse.Namespace, submit_extra_args=None):
         result = client.jobs.get_output(args.job_id)
         output_result(result, args.output, "jobs.output")
     elif args.jobs_command == "files":
-        result = client.jobs.get_files(args.job_id)
-        output_result(result, args.output, "jobs.files")
+        # If a subcommand was specified, use the new files handler
+        jobs_files_cmd = getattr(args, "jobs_files_command", None)
+        if jobs_files_cmd:
+            handle_jobs_files_command(args)
+        else:
+            # Fallback: just list job files (backward compatible)
+            result = client.jobs.get_files(args.job_id)
+            output_result(result, args.output, "jobs.files")
     elif args.jobs_command == "history":
         result = client.jobs.get_history(args.job_id)
         output_result(result, args.output, "jobs.history")
@@ -1763,7 +1882,288 @@ def handle_files_command(args: argparse.Namespace):
         client.close()
 
 
-def handle_apps_command(args: argparse.Namespace):
+def handle_jobs_files_command(args: argparse.Namespace):
+    """Handle file operations within a job's working directory."""
+    client = create_client(args)
+    config = Config(config_file=getattr(args, "config_file", None))
+
+    # Get job's working directory
+    job_info = client.jobs.get_job(args.job_id)
+    job_cwd = job_info.get("data", {}).get("cwd", "/")
+
+    def resolve_jobs_path(path):
+        """Resolve a path relative to job cwd if not absolute."""
+        if path and path.startswith("/"):
+            return path
+        if not path:
+            return job_cwd
+        return f"{job_cwd.rstrip('/')}/{path}"
+
+    try:
+        method = (
+            getattr(args, "default_method", None) or config.default_method or "http"
+        )
+        cmd = args.jobs_files_command
+
+        try:
+            if cmd == "ls":
+                cmd_method = getattr(args, "method", None) or method
+                remote = resolve_jobs_path(args.path)
+                if args.list_all:
+                    items = client.files.list_all(
+                        path=remote, transfer_method=cmd_method
+                    )
+                    result = {"data": items, "path": remote, "count": len(items)}
+                else:
+                    result = client.files.list(
+                        path=remote,
+                        page=args.page,
+                        page_size=args.page_size,
+                        transfer_method=cmd_method,
+                    )
+                output_result(result, args.output, "files.list")
+
+            elif cmd == "cp":
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.copy(
+                    src_path=resolve_jobs_path(args.src),
+                    dest_dir=resolve_jobs_path(args.dest),
+                    transfer_method=cmd_method,
+                )
+                output_result(result, args.output, "files.copy")
+
+            elif cmd == "mv":
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.move(
+                    src_path=resolve_jobs_path(args.src),
+                    dest_dir=resolve_jobs_path(args.dest),
+                    transfer_method=cmd_method,
+                )
+                output_result(result, args.output, "files.rename")
+
+            elif cmd == "rm":
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.delete(
+                    path=resolve_jobs_path(args.path), transfer_method=cmd_method
+                )
+                output_result(result, args.output, "files.delete")
+
+            elif cmd == "mkdir":
+                force = not args.no_force
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.mkdir(
+                    path=resolve_jobs_path(args.path),
+                    force=force,
+                    transfer_method=cmd_method,
+                )
+                output_result(result, args.output, "files.mkdir")
+
+            elif cmd == "put":
+                local = args.local
+                remote = resolve_jobs_path(args.remote)
+                force = getattr(args, "force", False)
+                cmd_method = getattr(args, "method", None) or method
+
+                local_path = Path(local)
+                cs_arg = getattr(args, "chunk_size", None)
+                if cs_arg:
+                    from .files import parse_size
+
+                    chunk_size = parse_size(cs_arg)
+                else:
+                    chunk_size = config.chunk_size or 104857600
+                if local_path.is_dir():
+                    from .files import _ProgressTracker
+
+                    progress = _ProgressTracker(label="Uploading")
+                    if cmd_method == "sftp":
+                        results = client.files.upload_directory(
+                            local_dir=local,
+                            remote_dir=remote,
+                            on_progress=progress.update,
+                            chunk_size=chunk_size,
+                            transfer_method=cmd_method,
+                        )
+                    else:
+                        results = client.files.upload_directory(
+                            local_dir=local,
+                            remote_dir=remote,
+                            on_progress=progress.update,
+                            check_exists=lambda fname: _remote_file_exists(
+                                client, remote, fname
+                            )
+                            and not force,
+                            confirm=_confirm_overwrite,
+                            chunk_size=chunk_size,
+                            transfer_method=cmd_method,
+                        )
+                    progress.finish()
+                    uploaded = [r for r in results if r.get("result")]
+                    print(f"Uploaded {len(uploaded)} file(s) to {remote}")
+                    if args.output == "json":
+                        output_result(
+                            {
+                                "uploaded": results,
+                                "count": len(uploaded),
+                                "remote_dir": remote,
+                            },
+                            args.output,
+                            "files.upload",
+                        )
+                elif local_path.is_file():
+                    fname = local_path.name
+                    saved = f"{remote.rstrip('/')}/{fname}"
+                    if (
+                        cmd_method == "http"
+                        and not force
+                        and _remote_file_exists(client, remote, fname)
+                    ):
+                        if not _confirm_overwrite(fname):
+                            print("Upload cancelled.")
+                            client.close()
+                            return
+                    from .files import _ProgressTracker
+
+                    progress = _ProgressTracker(label="Uploading")
+                    result = client.files.upload(
+                        file_path=local,
+                        remote_path=remote,
+                        on_progress=progress.update,
+                        chunk_size=chunk_size,
+                        transfer_method=cmd_method,
+                    )
+                    progress.finish()
+                    print(f"Uploaded to {saved}")
+                    if args.output == "json":
+                        output_result(result, args.output, "files.upload")
+                else:
+                    print(f"Error: Local path not found: {local}", file=sys.stderr)
+                    client.close()
+                    sys.exit(1)
+
+            elif cmd == "get":
+                remote = resolve_jobs_path(args.remote)
+                local = args.local
+                cmd_method = getattr(args, "method", None) or method
+                cs_arg = getattr(args, "chunk_size", None)
+                if cs_arg:
+                    from .files import parse_size
+
+                    chunk_size = parse_size(cs_arg)
+                else:
+                    chunk_size = config.chunk_size or 104857600
+
+                # Check if remote path is a directory by listing it
+                is_dir = False
+                if cmd_method == "http":
+                    try:
+                        items = client.files.list(path=remote, page=1, page_size=1)
+                        data = items.get("data", [])
+                        if isinstance(data, dict):
+                            file_list = data.get("files", data.get("records", []))
+                        elif isinstance(data, list):
+                            file_list = data
+                        else:
+                            file_list = []
+
+                        is_dir = len(file_list) > 0
+                    except Exception:
+                        is_dir = False
+                else:
+                    is_dir = remote.endswith("/")
+
+                if is_dir:
+                    from .files import _ProgressTracker
+
+                    local_path = Path(local)
+                    save_dir = local_path if local_path.is_dir() else Path(local)
+                    progress = _ProgressTracker(label="Downloading")
+                    results = client.files.download_directory(
+                        remote_dir=remote,
+                        local_dir=str(save_dir),
+                        on_progress=progress.update,
+                        chunk_size=chunk_size,
+                        transfer_method=cmd_method,
+                    )
+                    progress.finish()
+                    downloaded = [r for r in results if r.get("status") == "ok"]
+                    print(f"Downloaded {len(downloaded)} file(s) to {save_dir}")
+                    if args.output == "json":
+                        output_result(
+                            {
+                                "downloaded": results,
+                                "count": len(downloaded),
+                                "local_dir": str(save_dir),
+                            },
+                            args.output,
+                            "files.download",
+                        )
+                else:
+                    local_path = Path(local)
+                    if local_path.is_dir() or local == ".":
+                        save_path = str(local_path / Path(remote).name)
+                    else:
+                        save_path = local
+                    from .files import _ProgressTracker
+
+                    progress = _ProgressTracker(label="Downloading")
+                    client.files.download(
+                        remote_path=remote,
+                        local_path=save_path,
+                        on_progress=progress.update,
+                        chunk_size=chunk_size,
+                        transfer_method=cmd_method,
+                    )
+                    progress.finish()
+                    print(f"Downloaded to {save_path}")
+
+            elif cmd == "cat":
+                cmd_method = getattr(args, "method", None) or method
+                head = args.head
+                tail = args.tail
+                start = args.start
+                end = args.end
+                all_lines = getattr(args, "all_lines", False)
+
+                if args.lines:
+                    parts = args.lines.split("-", 1)
+                    if len(parts) == 2:
+                        if parts[0]:
+                            start = int(parts[0])
+                        if parts[1]:
+                            end = int(parts[1])
+                        else:
+                            end = None
+                    elif len(parts) == 1:
+                        start = int(parts[0])
+
+                lines = client.files.cat(
+                    remote_path=resolve_jobs_path(args.path),
+                    head=head,
+                    tail=tail,
+                    start=start,
+                    end=end,
+                    encoding=args.encoding,
+                    all_lines=all_lines,
+                )
+                for line in lines:
+                    print(line)
+            else:
+                print(f"Error: Unknown files command: {cmd}", file=sys.stderr)
+                client.close()
+                sys.exit(1)
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
+        except Exception as e:
+            msg = str(e)
+            print(f"Error: {msg}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
+    finally:
+        client.close()
     client = create_client(args)
     if args.apps_command == "list":
         result = client.apps.list_all()
