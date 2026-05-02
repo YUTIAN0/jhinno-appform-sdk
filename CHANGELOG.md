@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-05-02
+
+### Added
+- **SFTP file transfer** as alternative to HTTP API for all file operations
+  - `pip install jhinno-appform-sdk[sftp]` installs paramiko dependency
+  - Lazy SFTP connection with reuse via `SFTPClientManager`
+  - All file commands support `--method {http,sftp}` parameter
+  - `files --method` group-level default affects all subcommands
+  - `config set --default-method {http,sftp}` persistent configuration
+  - `APPFORM_DEFAULT_METHOD` environment variable support
+  - SFTP config: `sftp_host`, `sftp_port`, `sftp_username`, `sftp_password`, `sftp_key_file`, `sftp_key_password`
+- **`files cat` command** — view remote text file content via SFTP
+  - `--head N` — first N lines
+  - `--tail N` — last N lines
+  - `--lines 10-20` — line range (supports `10-` for from line 10 to EOF)
+  - `--start N` / `--end N` — 1-based line range
+  - `--all` — force output all lines for large files
+  - `--encoding ENC` — text encoding (default: utf-8)
+- **`SFTPAPI`** class with full file operation coverage: `list`, `list_all`, `mkdir`, `move`, `copy`, `delete`, `upload`, `upload_directory`, `download`, `download_directory`, `cat`
+- **`SFTPError`** exception for SFTP-specific errors
+
+### Changed
+- All `FilesAPI` methods (`list`, `list_all`, `mkdir`, `copy`, `move`, `delete`, `upload`, `upload_directory`, `download`, `download_directory`) accept `transfer_method` parameter
+- `move` / `copy` now detect whether destination is a directory or file path, enabling rename-like usage (`mv /a/file /a/file2`)
+- `handle_files_command` added unified exception handling — errors output to stderr with clean messages instead of Python tracebacks
+
+### Fixed
+- SFTP `mv`/`cp` correctly treats second argument as destination file path when it doesn't exist
+- SFTP `cat` on directory raises `IsADirectoryError` with clear message
+- SFTP `ls` on file returns single-item result instead of `FileNotFoundError`
+- SFTP connection robust to paramiko version differences (missing `.closed` attribute)
+- Config password and credentials correctly passed to `AppformClient` for SFTP auth
+- `_copy_recursive` creates parent directory before writing files
+
 ## [0.0.2] - 2026-05-01
 
 ### Added
