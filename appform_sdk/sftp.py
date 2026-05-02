@@ -149,6 +149,7 @@ class SFTPAPI:
     def get_home_dir(self) -> str:
         """Get remote user's home directory via SSH exec 'echo ~'."""
         manager = self._get_manager()
+        _ = manager.sftp
         if manager._transport is None:
             raise SFTPError("SFTP transport not connected")
         channel = manager._transport.open_session()
