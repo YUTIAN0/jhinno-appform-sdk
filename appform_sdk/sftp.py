@@ -576,6 +576,8 @@ class SFTPAPI:
         import time
 
         manager = self._get_manager()
+        # Trigger lazy connection so transport is established
+        _ = manager.sftp
         transport = manager._transport
         if transport is None:
             raise SFTPError("SFTP transport not connected")
