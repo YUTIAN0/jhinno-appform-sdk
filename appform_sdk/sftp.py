@@ -585,7 +585,12 @@ class SFTPAPI:
 
         channel = transport.open_session()
         channel.setblocking(False)
-        channel.exec_command(f"tail -f {shlex.quote(remote_path)}")
+        # exec tail: replaces the shell process with tail so closing the
+        # channel kills tail directly instead of orphaning it as a child.
+        channel.exec_command(
+            f"exec tail -f {shlex.quote(remote_path)} 2>&1",
+            get_pty=False,
+        )
 
         try:
             while not channel.closed:
@@ -600,24 +605,8 @@ class SFTPAPI:
         except KeyboardInterrupt:
             pass
         finally:
-            # 1. Send EOF to the remote shell → terminates tail -f
-            try:
-                channel.shutdown_write()
-            except Exception:
-                pass
-            # 2. Drain any remaining output before closing
-            for _ in range(10):
-                if channel.recv_ready():
-                    data = channel.recv(65536)
-                    if data:
-                        sys.stdout.write(
-                            data.decode(encoding, errors="replace")
-                        )
-                        sys.stdout.flush()
-                else:
-                    break
-                time.sleep(0.05)
-            # 3. Close the SSH channel
+            # exec replaced the shell with tail, so channel.close() sends
+            # SIGHUP directly to the tail process itself, killing it cleanly.
             channel.close()
 
     def close(self):
