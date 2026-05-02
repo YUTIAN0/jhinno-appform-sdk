@@ -52,7 +52,7 @@ from .utils import AESEncryptor, SignatureGenerator, check_cluster_environment
 # Use: from appform_sdk.xml2table import export, create_sdk_yaml, ...
 # Or:  python -m appform_sdk.xml2table
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 __all__ = [
     # Client
     "AppformClient",

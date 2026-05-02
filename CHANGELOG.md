@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.0.4] - 2026-05-03
 
 ### Added
 - **`files tailf` command** — real-time remote file output tracking via SSH exec channel
@@ -12,8 +12,9 @@ All notable changes to this project will be documented in this file.
   - `client.sftp.tailf()` returns (tail_pid, channel) for programmatic control
   - `client.sftp.kill_tail(tail_pid)` to stop a remote tail process via SSH
   - Requires `pip install jhinno-appform-sdk[sftp]`
+- **`jobs.history` text output format** — job history text with cleaned column spacing,
+  via new `type: text` output template type
 
-### Added
 ## [0.0.3] - 2026-05-02
 
 ### Added
