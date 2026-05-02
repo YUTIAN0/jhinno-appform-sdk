@@ -209,6 +209,11 @@ def _upload_files(
     return uploaded
 
 
+# ---------------------------------------------------------------------------
+# Replace local paths with remote ones for upload-type params
+# ---------------------------------------------------------------------------
+
+
 def _apply_uploaded_paths(
     overrides: Dict[str, str],
     upload_params: List[Any],
@@ -232,44 +237,6 @@ def _apply_uploaded_paths(
             new_parts.append(mapped)
         result[key] = ",".join(new_parts)
     return result
-
-
-def _validate_no_windows_paths(
-    overrides: Dict[str, str],
-    upload_params: List[Any],
-    disk_mapping: Dict[str, str],
-) -> bool:
-    """Check that no upload-type param contains unmapped Windows drive paths.
-
-    Returns True if valid (no unmapped drives), False otherwise.
-    """
-    upload_param_names = {p.name for p in upload_params}
-    unmapped_drives: set = set()
-
-    for key in upload_param_names:
-        value = overrides.get(key, "")
-        if not value:
-            continue
-        for part in value.split(","):
-            p = part.strip()
-            if len(p) >= 2 and p[1] == ":" and p[0].isalpha():
-                drive = p[:2].upper()
-                if drive not in disk_mapping:
-                    unmapped_drives.add(drive)
-
-    if unmapped_drives:
-        print("Error: Unmapped Windows drive(s) found:", file=sys.stderr)
-        for d in sorted(unmapped_drives):
-            print(
-                f"  {d} - no mapping configured in windows_disk_mapping",
-                file=sys.stderr,
-            )
-        print(
-            "The API does not accept Windows paths. "
-            "Add a mapping to job_submit.yaml or use a mapped path.",
-            file=sys.stderr,
-        )
-    return not unmapped_drives
 
 
 # ---------------------------------------------------------------------------
@@ -860,12 +827,6 @@ def main(args=None):
     # --- Build params ---
     overrides = _collect_overrides(profile, parsed)
     overrides = _apply_path_conversion(overrides, disk_mapping)
-
-    # Validate: no unmapped Windows drive paths left (API doesn't accept them)
-    if platform.system() == "Windows":
-        upload_params_list = profile.get_upload_params()
-        if not _validate_no_windows_paths(overrides, upload_params_list, disk_mapping):
-            sys.exit(1)
 
     # --- Create SDK client and authenticate ---
     from .client import AppformClient
