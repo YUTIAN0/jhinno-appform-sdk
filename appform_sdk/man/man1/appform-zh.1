@@ -1,0 +1,325 @@
+.TH APPFORM-ZH 1 "2026-05-02" "jhinno-appform-sdk" "用户命令"
+.SH NAME
+appform \- Appform 6.0-6.6 API 命令行客户端
+.SH SYNOPSIS
+.B appform
+[全局选项] [命令] [子命令] [选项]
+.SH DESCRIPTION
+.B appform
+命令提供对 Appform 6.0-6.6 API 的完整命令行接口，支持作业提交、会话管理、
+文件操作、应用管理和组织管理。
+.SH 全局选项
+.TP
+.B \-\-base\-url URL
+API 基础 URL（或设置 APPFORM_BASE_URL 环境变量）
+.TP
+.B \-\-access\-key KEY
+访问密钥（或设置 APPFORM_ACCESS_KEY 环境变量）
+.TP
+.B \-\-access\-key\-secret SECRET
+访问密钥密码（或设置 APPFORM_ACCESS_KEY_SECRET 环境变量）
+.TP
+.B \-\-username USER
+用户名（或设置 APPFORM_USERNAME 环境变量）
+.TP
+.B \-\-password PASS
+密码（或设置 APPFORM_PASSWORD 环境变量）
+.TP
+.B \-\-token TOKEN
+认证令牌（或设置 APPFORM_TOKEN 环境变量）
+.TP
+.B \-\-api\-version VER
+API 版本（默认 6.5）
+.TP
+.B \-\-extensions\-dir DIR
+扩展配置目录
+.TP
+.B \-\-config FILE
+配置文件路径（默认 ~/.appform/config.json）
+.TP
+.BI \-o , \-\-output FORMAT
+输出格式：json | raw | table | text（默认 table）
+.TP
+.B \-\-output\-template FILE
+输出模板文件路径 (.yaml/.yml/.json)
+.TP
+.B \-\-profile\-config FILE
+作业配置文件路径
+.TP
+.B \-\-generate\-completion SHELL
+生成 Shell 补全脚本 (bash | zsh | fish)
+.TP
+.B \-\-version
+显示版本号
+.SH 命令
+.SS config \- 配置管理
+.TP
+.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] ...
+设置一个或多个配置项
+.TP
+.B config show
+显示当前配置
+.SS auth \- 认证操作
+.TP
+.B auth login \-\-username USER \-\-password PASS
+使用用户名和密码登录
+.TP
+.B auth ping
+测试连接与认证状态
+.TP
+.B auth logout
+登出并失效当前会话
+.SS jobs \- 作业管理
+.TP
+.B jobs apps
+列出已配置的应用
+.TP
+.B jobs params APP_ID
+查看应用参数
+.TP
+.B jobs submit \-a APP [选项]
+使用应用自定义参数提交作业
+.TP
+.B jobs submit \-l
+列出所有已配置应用
+.TP
+.B jobs submit\-raw \-\-app\-id APP \-\-params JSON
+使用原始 JSON 参数提交作业
+.TP
+.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N]
+列出作业（可按状态/名称/作业号过滤）
+.TP
+.B jobs status [RUN|PEND|DONE|EXIT|all]
+按状态查看作业
+.TP
+.B jobs get JOB_ID
+获取作业详情
+.TP
+.B jobs stop JOB_ID
+停止作业
+.TP
+.B jobs suspend JOB_ID
+暂停作业
+.TP
+.B jobs resume JOB_ID
+恢复作业
+.TP
+.B jobs delete JOB_ID
+删除作业（6.6+）
+.TP
+.B jobs output JOB_ID
+获取作业输出
+.TP
+.B jobs files JOB_ID
+获取作业文件列表
+.TP
+.B jobs history JOB_ID
+获取作业历史
+.TP
+.B jobs history\-page [\-\-page N] [\-\-page\-size N]
+分页查看历史作业
+.TP
+.B jobs form APP_ID
+获取作业提交表单（6.6+）
+.TP
+.B jobs tooltip
+获取作业监控信息（6.6+）
+.SS sessions \- 会话管理
+.TP
+.B sessions start \-\-app\-id APP [\-\-start\-new] [\-\-cwd DIR] [\-\-work\-file FILE]
+启动应用会话
+.TP
+.B sessions list [\-\-ids IDs] [\-\-name NAME]
+查询会话（默认：当前用户）
+.TP
+.B sessions list\-all [\-\-page N] [\-\-page\-size N]
+列出所有用户的会话
+.TP
+.B sessions connect SESSION_ID
+获取会话连接信息
+.TP
+.B sessions connect\-launch SESSION_ID
+获取连接信息并自动启动 JHApp 客户端
+.TP
+.B sessions disconnect SESSION_ID
+断开会话
+.TP
+.B sessions close SESSION_ID
+关闭会话
+.TP
+.B sessions share SESSION_ID \-\-usernames USER1,USER2
+共享会话给其他用户
+.SS files \- 文件管理
+.TP
+.B files ls [路径] [\-\-all] [\-\-page N] [\-\-page\-size N]
+列出远程目录（默认 /）
+.TP
+.B files mkdir 路径
+创建远程目录
+.TP
+.B files cp 源 目标
+复制远程文件
+.TP
+.B files mv 源 目标
+移动/重命名远程文件
+.TP
+.B files rm 路径
+删除远程文件
+.TP
+.B files put 本地 [远程] [\-\-force]
+上传本地文件到远程
+.TP
+.B files get 远程 [本地]
+从远程下载文件
+.TP
+.B files compress 源 目标
+压缩远程目录
+.TP
+.B files uncompress 压缩包 目标 [\-\-password 密码]
+解压远程压缩包
+.TP
+.B files conf \-\-get\-levels
+获取可用密级列表
+.TP
+.B files conf \-\-set 路径 密级
+设置文件密级
+.SS apps \- 应用管理
+.TP
+.B apps list
+列出所有应用（6.0+）
+.TP
+.B apps list\-v2
+列出可用的计算/交互/Web 应用（6.6+）
+.SS departments \- 部门管理
+.TP
+.B departments list
+以树形结构列出部门
+.TP
+.B departments create \-\-name 名称 \-\-display\-name 显示名 \-\-parent 父部门 [\-\-description 描述]
+创建部门
+.TP
+.B departments update \-\-name 名称 [\-\-display\-name 显示名] [\-\-parent 父部门] [\-\-description 描述]
+更新部门
+.TP
+.B departments delete \-\-name 名称
+删除部门
+.SS users \- 用户管理
+.TP
+.B users list [\-\-page N] [\-\-page\-size N] [\-\-dep 部门] [\-\-filter\-username 用户名]
+列出用户（支持过滤）
+.TP
+.B users create \-\-user 用户名 \-\-display\-name 显示名 \-\-new\-password 密码 [\-\-dep 部门] [\-\-phone 电话] [\-\-mail 邮箱] [\-\-card 工号]
+创建用户
+.TP
+.B users update \-\-user 用户名 [\-\-display\-name 显示名] [\-\-dep 部门] [\-\-phone 电话] [\-\-mail 邮箱] [\-\-card 工号]
+更新用户
+.TP
+.B users delete \-\-user 用户名
+删除用户
+.TP
+.B users reset\-password \-\-user 用户名 \-\-new\-password 新密码
+重置用户密码
+.SS extension \- 扩展管理
+.TP
+.B extension list
+列出已加载扩展
+.TP
+.B extension load 文件
+加载扩展配置
+.SS endpoint \- 端点管理
+.TP
+.B endpoint list [\-\-version VER]
+列出已注册的 API 端点
+.TP
+.B endpoint call 名称 [\-\-params JSON] [\-\-data JSON] [\-\-path\-params JSON]
+按名称调用端点
+.SH 输出格式
+.TP
+.B table
+表格格式（默认），人类可读
+.TP
+.B json
+JSON 格式，模板过滤后的字段
+.TP
+.B raw
+原始 API 响应，无过滤和格式化
+.TP
+.B text
+纯文本格式
+.SH Shell 补全
+生成 Shell 补全脚本：
+.IP
+.B appform \-\-generate\-completion bash > /etc/bash_completion.d/appform
+.IP
+.B appform \-\-generate\-completion zsh > ~/.zsh/appform\-completion.zsh
+.IP
+.B appform \-\-generate\-completion fish > ~/.config/fish/completions/appform.fish
+.SH 配置文件
+配置优先级（从高到低）：
+.RS
+.IP 1.
+命令行参数
+.IP 2.
+环境变量
+.IP 3.
+配置文件 (~/.appform/config.json)
+.RE
+.SH 环境变量
+.TP
+.B APPFORM_BASE_URL
+API 基础 URL
+.TP
+.B APPFORM_ACCESS_KEY
+访问密钥
+.TP
+.B APPFORM_ACCESS_KEY_SECRET
+访问密钥密码
+.TP
+.B APPFORM_USERNAME
+用户名
+.TP
+.B APPFORM_PASSWORD
+密码
+.TP
+.B APPFORM_TOKEN
+认证令牌
+.TP
+.B APPFORM_AES_KEY
+AES 加密密钥（集群令牌认证）
+.TP
+.B APPFORM_TIMEOUT
+请求超时（秒，默认 30）
+.TP
+.B APPFORM_VERIFY_SSL
+是否验证 SSL（true/false）
+.TP
+.B APPFORM_API_VERSION
+API 版本（默认 6.5）
+.TP
+.B APPFORM_EXTENSIONS_DIR
+扩展配置目录
+.TP
+.B APPFORM_JOB_PROFILE_CONFIG
+作业配置文件路径
+.TP
+.B APPFORM_OUTPUT_FORMAT
+默认输出格式
+.TP
+.B APPFORM_OUTPUT_TEMPLATE
+输出模板文件路径
+.TP
+.B APPFORM_DEFAULT_REMOTE_PATH
+文件操作默认远程路径
+.TP
+.B APPFORM_CHUNK_SIZE
+上传/下载分块大小（如 100M、1G）
+.SH 相关文件
+.TP
+.I ~/.appform/config.json
+默认配置文件
+.TP
+.I ~/.appform/extensions/
+默认扩展目录
+.SH SEE ALSO
+.BR appform-sdk-zh (3),
+.BR job_submit-zh (1)

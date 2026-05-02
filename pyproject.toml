@@ -58,6 +58,12 @@ include = ["appform_sdk*"]
 [tool.setuptools.package-data]
 "appform_sdk" = ["*.yaml", "*.yml", "*.json"]
 "appform_sdk.completions" = ["*.bash", "*.zsh", "*.fish"]
+"appform_sdk.man.man1" = ["*.1"]
+"appform_sdk.man.man3" = ["*.3"]
+
+[tool.setuptools.data-files]
+"share/man/man1" = ["appform_sdk/man/man1/appform.1", "appform_sdk/man/man1/appform-zh.1", "appform_sdk/man/man1/job_submit.1", "appform_sdk/man/man1/job_submit-zh.1"]
+"share/man/man3" = ["appform_sdk/man/man3/appform-sdk.3", "appform_sdk/man/man3/appform-sdk-zh.3"]
 
 [tool.black]
 line-length = 88

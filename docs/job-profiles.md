@@ -69,6 +69,90 @@ job_submit_config:
 | `cli_arg` | 自定义 CLI 长参数名（可选） |
 | `short_arg` | 自定义 CLI 短参数（可选） |
 
+## Windows/Linux 磁盘路径映射
+
+在 Windows 客户端提交作业时，Windows 盘符路径（如 `S:/project/file.sim`）需要自动转换为 Linux 集群路径（如 `/apps/project/file.sim`）。该功能通过 `job_submit.yaml` 中的 `windows_disk_mapping` 配置实现。
+
+### 配置方式
+
+```yaml
+job_submit_config:
+  version: '1.0'
+  appform_base_url: https://server/appform
+  windows_disk_mapping:
+    'S:': '/apps'
+    'D:': '/data'
+    'E:': '/home/shared'
+  applications:
+    starccm:
+      name: STAR-CCM+
+      parameters:
+      - name: JH_CAS
+        type: upload
+        required: true
+        cli_arg: input
+        short_arg: i
+        description: 算例文件路径
+      - name: JH_NCPU
+        type: text
+        default: '2'
+        cli_arg: ncpu
+        short_arg: n
+        description: CPU 核心数
+```
+
+### 转换规则
+
+| Windows 路径 | 映射配置 | 转换后 Linux 路径 |
+|-------------|---------|------------------|
+| `S:/project/file.sim` | `'S:': '/apps'` | `/apps/project/file.sim` |
+| `D:/cases/test.cas` | `'D:': '/data'` | `/data/cases/test.cas` |
+| `E:/shared/input.k` | `'E:': '/home/shared'` | `/home/shared/input.k` |
+| `C:/local/file.txt` | 未配置 | 不转换，保持原路径 |
+
+### 工作原理
+
+1. 仅在 **Windows 系统**上生效（Linux/Mac 下不转换）
+2. 仅对 `type: upload` 类型的文件路径参数进行转换
+3. 自动检测路径中的盘符（如 `S:`, `D:`），匹配配置后替换盘符为 Linux 路径前缀
+4. 反斜杠 `\` 自动转换为正斜杠 `/`
+5. 未配置的盘符不作转换，原样提交并输出警告
+
+### 命令行输出
+
+提交作业时，会自动显示当前生效的路径映射：
+
+```
+Supported applications: starccm, fluent, nastran
+
+Windows path mapping:
+  S: -> /apps
+  D: -> /data
+
+Application: starccm (STAR-CCM+)
+Parameters:
+{
+  "JH_CAS": "/apps/project/file.sim",
+  "JH_NCPU": "16"
+}
+```
+
+### 适用范围
+
+路径映射功能在以下两个命令中均生效：
+
+| 命令 | 说明 |
+|------|------|
+| `job_submit -a starccm -i S:/project/file.sim` | 自动转换为 `/apps/project/file.sim` |
+| `appform jobs submit -a starccm -i S:/project/file.sim` | 自动转换为 `/apps/project/file.sim` |
+
+如果通过 `--set` 或 `--params` 直接指定路径，同样会自动转换：
+
+```bash
+job_submit -a starccm --set JH_CAS=S:/project/file.sim --set JH_NCPU=8
+appform jobs submit -a starccm --params '{"JH_CAS":"S:/project/file.sim","JH_NCPU":"8"}'
+```
+
 ## 配置文件路径
 
 配置文件按以下优先级查找：
