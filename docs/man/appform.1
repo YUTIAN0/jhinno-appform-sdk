@@ -1,0 +1,329 @@
+.TH APPFORM 1 "2026-05-02" "jhinno-appform-sdk" "User Commands"
+.SH NAME
+appform \- Command-line client for Appform 6.0-6.6 API
+.SH SYNOPSIS
+.B appform
+[RW]GLOBAL OPTIONS[RW]
+[RW]COMMAND
+[RW] [SUBCOMMAND] [OPTIONS]
+.SH DESCRIPTION
+The
+.B appform
+command provides a complete command-line interface to the Appform 6.0-6.6 API.
+It supports job submission, session management, file operations,
+application management, and organization administration.
+.SH GLOBAL OPTIONS
+.TP
+.B \-\-base\-url URL
+API base URL (or set APPFORM_BASE_URL env var)
+.TP
+.B \-\-access\-key KEY
+Access key (or set APPFORM_ACCESS_KEY env var)
+.TP
+.B \-\-access\-key\-secret SECRET
+Access key secret (or set APPFORM_ACCESS_KEY_SECRET env var)
+.TP
+.B \-\-username USER
+Username (or set APPFORM_USERNAME env var)
+.TP
+.B \-\-password PASS
+Password (or set APPFORM_PASSWORD env var)
+.TP
+.B \-\-token TOKEN
+Authentication token (or set APPFORM_TOKEN env var)
+.TP
+.B \-\-api\-version VER
+API version to use (default: 6.5)
+.TP
+.B \-\-extensions\-dir DIR
+Directory containing extension configurations
+.TP
+.B \-\-config FILE
+Path to configuration file (default: ~/.appform/config.json)
+.TP
+.BI \-o , \-\-output FORMAT
+Output format: json | raw | table | text (default: table)
+.TP
+.B \-\-output\-template FILE
+Path to output template file (.yaml/.yml/.json)
+.TP
+.B \-\-profile\-config FILE
+Job profile configuration file path
+.TP
+.B \-\-generate\-completion SHELL
+Generate shell completion script (bash | zsh | fish)
+.TP
+.B \-\-version
+Show version number
+.SH COMMANDS
+.SS config \- Manage configuration
+.TP
+.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] ...
+Set one or more configuration values
+.TP
+.B config show
+Display current configuration
+.SS auth \- Authentication
+.TP
+.B auth login \-\-username USER \-\-password PASS
+Login with username and password
+.TP
+.B auth ping
+Test connection with current authentication
+.TP
+.B auth logout
+Logout and invalidate current session
+.SS jobs \- Job operations
+.TP
+.B jobs apps
+List configured applications
+.TP
+.B jobs params APP_ID
+Show parameters for an application
+.TP
+.B jobs submit \-a APP [OPTIONS]
+Submit a job with application-specific parameters
+.TP
+.B jobs submit \-l
+List all configured applications
+.TP
+.B jobs submit\-raw \-\-app\-id APP \-\-params JSON
+Submit a job with raw JSON parameters
+.TP
+.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N]
+List jobs with optional filters
+.TP
+.B jobs status [RUN|PEND|DONE|EXIT|all]
+List jobs by status
+.TP
+.B jobs get JOB_ID
+Get detailed information for a job
+.TP
+.B jobs stop JOB_ID
+Stop a running job
+.TP
+.B jobs suspend JOB_ID
+Suspend a job
+.TP
+.B jobs resume JOB_ID
+Resume a suspended job
+.TP
+.B jobs delete JOB_ID
+Delete a job (6.6+)
+.TP
+.B jobs output JOB_ID
+Get job dynamic output
+.TP
+.B jobs files JOB_ID
+Get job file list
+.TP
+.B jobs history JOB_ID
+Get job history
+.TP
+.B jobs history\-page [\-\-page N] [\-\-page\-size N]
+List historical jobs with pagination
+.TP
+.B jobs form APP_ID
+Get job submission form definition (6.6+)
+.TP
+.B jobs tooltip
+Get job monitoring tooltip info (6.6+)
+.SS sessions \- Session operations
+.TP
+.B sessions start \-\-app\-id APP [\-\-start\-new] [\-\-cwd DIR] [\-\-work\-file FILE]
+Start a new application session
+.TP
+.B sessions list [\-\-ids IDs] [\-\-name NAME]
+Query sessions (default: current user only)
+.TP
+.B sessions list\-all [\-\-page N] [\-\-page\-size N]
+List all sessions across all users
+.TP
+.B sessions connect SESSION_ID
+Get session connection information
+.TP
+.B sessions connect\-launch SESSION_ID
+Get connection info and auto-launch JHApp client if available
+.TP
+.B sessions disconnect SESSION_ID
+Disconnect a session
+.TP
+.B sessions close SESSION_ID
+Close (destroy) a session
+.TP
+.B sessions share SESSION_ID \-\-usernames USER1,USER2
+Share a session with other users
+.SS files \- File operations
+.TP
+.B files ls [PATH] [\-\-all] [\-\-page N] [\-\-page\-size N]
+List remote directory contents (default: /)
+.TP
+.B files mkdir PATH
+Create a remote directory
+.TP
+.B files cp SRC DEST
+Copy a remote file or directory
+.TP
+.B files mv SRC DEST
+Move or rename a remote file
+.TP
+.B files rm PATH
+Delete a remote file or directory
+.TP
+.B files put LOCAL [REMOTE] [\-\-force]
+Upload local file or directory to remote
+.TP
+.B files get REMOTE [LOCAL]
+Download remote file or directory to local
+.TP
+.B files compress SOURCE TARGET
+Compress a remote directory into an archive
+.TP
+.B files uncompress ARCHIVE DEST [\-\-password PASS]
+Uncompress a remote archive
+.TP
+.B files conf \-\-get\-levels
+Get available confidentiality levels
+.TP
+.B files conf \-\-set PATH LEVEL
+Set confidentiality level for a remote file
+.SS apps \- Application management
+.TP
+.B apps list
+List all applications (6.0+)
+.TP
+.B apps list\-v2
+List available compute, interactive, and web apps (6.6+)
+.SS departments \- Department management
+.TP
+.B departments list
+List departments as a tree structure
+.TP
+.B departments create \-\-name NAME \-\-display\-name DNAME \-\-parent PARENT [\-\-description DESC]
+Create a new department
+.TP
+.B departments update \-\-name NAME [\-\-display\-name DNAME] [\-\-parent PARENT] [\-\-description DESC]
+Update an existing department
+.TP
+.B departments delete \-\-name NAME
+Delete a department
+.SS users \- User management
+.TP
+.B users list [\-\-page N] [\-\-page\-size N] [\-\-dep DEP] [\-\-filter\-username USER]
+List users with optional filters
+.TP
+.B users create \-\-user USER \-\-display\-name DNAME \-\-new\-password PASS [\-\-dep DEP] [\-\-phone PH] [\-\-mail MAIL] [\-\-card CARD]
+Create a new user
+.TP
+.B users update \-\-user USER [\-\-display\-name DNAME] [\-\-dep DEP] [\-\-phone PH] [\-\-mail MAIL] [\-\-card CARD]
+Update an existing user
+.TP
+.B users delete \-\-user USER
+Delete a user
+.TP
+.B users reset\-password \-\-user USER \-\-new\-password PASS
+Reset a user's password
+.SS extension \- Extension management
+.TP
+.B extension list
+List loaded extensions
+.TP
+.B extension load FILE
+Load an extension from a JSON configuration file
+.SS endpoint \- Endpoint management
+.TP
+.B endpoint list [\-\-version VER]
+List registered API endpoints
+.TP
+.B endpoint call NAME [\-\-params JSON] [\-\-data JSON] [\-\-path\-params JSON]
+Call a registered endpoint by name
+.SH OUTPUT FORMATS
+.TP
+.B table
+Formatted table output (default), human-readable
+.TP
+.B json
+JSON output with template-filtered fields
+.TP
+.B raw
+Raw API response with no filtering or formatting
+.TP
+.B text
+Plain text output
+.SH SHELL COMPLETION
+Generate shell completion scripts:
+.IP
+.B appform \-\-generate\-completion bash > /etc/bash_completion.d/appform
+.IP
+.B appform \-\-generate\-completion zsh > ~/.zsh/appform\-completion.zsh
+.IP
+.B appform \-\-generate\-completion fish > ~/.config/fish/completions/appform.fish
+.SH CONFIGURATION
+Configuration priority (highest to lowest):
+.RS
+.IP 1.
+CLI arguments
+.IP 2.
+Environment variables
+.IP 3.
+Configuration file (~/.appform/config.json)
+.RE
+.SH ENVIRONMENT VARIABLES
+.TP
+.B APPFORM_BASE_URL
+API base URL
+.TP
+.B APPFORM_ACCESS_KEY
+Access key for authentication
+.TP
+.B APPFORM_ACCESS_KEY_SECRET
+Access key secret
+.TP
+.B APPFORM_USERNAME
+Username for authentication
+.TP
+.B APPFORM_PASSWORD
+Password for authentication
+.TP
+.B APPFORM_TOKEN
+Pre-existing authentication token
+.TP
+.B APPFORM_AES_KEY
+AES encryption key for cluster token auth
+.TP
+.B APPFORM_TIMEOUT
+Request timeout in seconds (default: 30)
+.TP
+.B APPFORM_VERIFY_SSL
+Whether to verify SSL certificates (true/false)
+.TP
+.B APPFORM_API_VERSION
+API version to use (default: 6.5)
+.TP
+.B APPFORM_EXTENSIONS_DIR
+Directory containing extension configurations
+.TP
+.B APPFORM_JOB_PROFILE_CONFIG
+Path to job profile configuration file
+.TP
+.B APPFORM_OUTPUT_FORMAT
+Default output format (json/table/text/raw)
+.TP
+.B APPFORM_OUTPUT_TEMPLATE
+Path to output template file
+.TP
+.B APPFORM_DEFAULT_REMOTE_PATH
+Default remote path for file operations
+.TP
+.B APPFORM_CHUNK_SIZE
+Chunk size for upload/download (e.g., 100M, 1G)
+.SH FILES
+.TP
+.I ~/.appform/config.json
+Default configuration file
+.TP
+.I ~/.appform/extensions/
+Default extensions directory
+.SH SEE ALSO
+.BR appform-sdk (3),
+.BR job_submit (1)

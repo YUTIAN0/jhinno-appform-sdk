@@ -1,0 +1,147 @@
+.TH JOB_SUBMIT 1 "2026-05-02" "jhinno-appform-sdk" "User Commands"
+.SH NAME
+job_submit \- Universal job submission tool for Appform
+.SH SYNOPSIS
+.B job_submit
+[OPTIONS] \-a APP [APP\-OPTIONS]
+.SH DESCRIPTION
+The
+.B job_submit
+command is a universal job submission tool for Appform. It reads application
+configurations from job_submit.yaml and provides application-specific parameter
+handling with automatic Windows path conversion.
+.SH OPTIONS
+.TP
+.BI \-a , \-\-app APP
+Select application type (required). Use
+.B \-l
+to list available applications.
+.TP
+.BI \-l , \-\-list\-apps
+List all supported applications and exit.
+.TP
+.BI \-\-set KEY=VALUE
+Override any JH_* parameter. Repeatable for multiple parameters.
+.TP
+.BI \-\-params JSON
+Override parameters as a JSON string.
+.TP
+.B \-\-dry\-run
+Show final parameters without submitting.
+.TP
+.B \-\-base\-url URL
+API base URL (or set APPFORM_BASE_URL).
+.TP
+.B \-\-access\-key KEY
+Access key (or set APPFORM_ACCESS_KEY).
+.TP
+.B \-\-access\-key\-secret SECRET
+Access key secret (or set APPFORM_ACCESS_KEY_SECRET).
+.TP
+.B \-\-username USER
+Username (or set APPFORM_USERNAME).
+.TP
+.B \-\-profile\-config FILE
+Path to job profile configuration file (overrides APPFORM_JOB_PROFILE_CONFIG).
+.SH EXAMPLES
+.PP
+Submit a Star-CCM+ job:
+.RS
+.nf
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16
+.fi
+.RE
+.PP
+Submit a Nastran job:
+.RS
+.nf
+job_submit \\-a nastran \\-\\-cas /path/to/test.bdf \\-\\-ncpu 16
+.fi
+.RE
+.PP
+Override parameters with \-\-set:
+.RS
+.nf
+job_submit \\-a starccm \\-\\-set JH_CAS=/path/to/file.sim \\-\\-set JH_NCPU=8
+.fi
+.RE
+.PP
+Override parameters with \-\-params:
+.RS
+.nf
+job_submit \\-a fluent \\-\\-params '{"JH_CAS":"/path/file.cas","JH_NCPU":"8"}'
+.fi
+.RE
+.PP
+Preview without submitting:
+.RS
+.nf
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16 \\-\\-dry\\-run
+.fi
+.RE
+.PP
+List available applications:
+.RS
+.nf
+job_submit \\-l
+.fi
+.RE
+.SH WINDOWS PATH CONVERSION
+.PP
+On Windows, disk paths are automatically converted using the
+.B windows_disk_mapping
+configuration in job_submit.yaml. Example configuration:
+.RS
+.nf
+windows_disk_mapping:
+  'S:': '/apps'
+  'D:': '/data'
+.fi
+.RE
+.PP
+This converts paths such as
+.B S:/project/file.sim
+to
+.B /apps/project/file.sim
+before submission.
+The conversion applies to all file-type parameters (\-i, \-\-cas, \-\-input, etc.).
+.SH CONFIGURATION FILE
+.PP
+The job profile configuration file (default: job_submit.yaml) defines
+application-specific parameters. Common locations:
+.RS
+.IP 1.
+Path specified via \-\-profile\-config
+.IP 2.
+Path from APPFORM_JOB_PROFILE_CONFIG environment variable
+.IP 3.
+Path from config file (~/.appform/config.json) field job_profile_config
+.RE
+.PP
+Example job_submit.yaml:
+.RS
+.nf
+default_app: starccm
+windows_disk_mapping:
+  'S:': '/apps'
+applications:
+  \- app_id: starccm
+    name: Star\-CCM+
+    parameters:
+      \- name: JH_CAS
+        cli_arg: input
+        short_arg: 'i'
+        required: true
+        param_type: upload
+        description: Case file path
+      \- name: JH_NCPU
+        cli_arg: ncpu
+        short_arg: 'n'
+        default: '2'
+        param_type: string
+        description: Number of CPU cores
+.fi
+.RE
+.SH SEE ALSO
+.BR appform (1),
+.BR appform-sdk (3)

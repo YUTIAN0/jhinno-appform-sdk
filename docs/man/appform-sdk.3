@@ -1,0 +1,633 @@
+.TH APPFORM-SDK 3 "2026-05-02" "jhinno-appform-sdk" "Python SDK Manual"
+.SH NAME
+appform-sdk \- Python SDK for Appform 6.0-6.6 API
+.SH SYNOPSIS
+.B from appform_sdk import AppformClient, Config
+.SH DESCRIPTION
+The
+.B jhinno-appform-sdk
+provides a complete Python client library for the Appform 6.0-6.6 API,
+including job submission, session management, file operations,
+and organization administration.
+.SH QUICK START
+.PP
+.RS
+.nf
+client = AppformClient(
+    base_url="https://your-server.com",
+    verify_ssl=False
+)
+client.auth.login(username="user", password="pass")
+jobs = client.jobs.list_jobs()
+.fi
+.RE
+.SH CONFIGURATION
+.PP
+Configuration sources (highest to lowest priority):
+.RS
+.IP 1.
+CLI arguments / direct parameters
+.IP 2.
+Environment variables
+.IP 3.
+Configuration file (~/.appform/config.json)
+.RE
+.PP
+Environment variables:
+.RS
+.TP
+.B APPFORM_BASE_URL
+API base URL
+.TP
+.B APPFORM_ACCESS_KEY
+Access key for authentication
+.TP
+.B APPFORM_ACCESS_KEY_SECRET
+Access key secret
+.TP
+.B APPFORM_USERNAME
+Username for authentication
+.TP
+.B APPFORM_PASSWORD
+Password for authentication
+.TP
+.B APPFORM_TOKEN
+Pre-existing authentication token
+.TP
+.B APPFORM_AES_KEY
+AES encryption key for cluster token auth
+.TP
+.B APPFORM_TIMEOUT
+Request timeout in seconds
+.TP
+.B APPFORM_VERIFY_SSL
+Verify SSL certificates (true/false)
+.TP
+.B APPFORM_API_VERSION
+API version (default: 6.5)
+.TP
+.B APPFORM_EXTENSIONS_DIR
+Extension configuration directory
+.TP
+.B APPFORM_JOB_PROFILE_CONFIG
+Job profile configuration file path
+.TP
+.B APPFORM_OUTPUT_FORMAT
+Output format (json/table/text/raw)
+.TP
+.B APPFORM_OUTPUT_TEMPLATE
+Output template file path
+.TP
+.B APPFORM_DEFAULT_REMOTE_PATH
+Default remote path for file operations
+.TP
+.B APPFORM_CHUNK_SIZE
+Upload/download chunk size (e.g., 100M)
+.RE
+.SH INSTALLED MODULES
+.SS AppformClient
+.PP
+The main client class for interacting with Appform API.
+.TP
+.BI AppformClient(base_url=None, token=None, access_key=None, access_key_secret=None, username=None, aes_key=None, timeout=30, max_retries=3, verify_ssl=None, api_version=None, extensions_dir=None, config=None)
+Initialize the Appform client. All parameters are optional; values can be provided via Config object or environment variables.
+.TP
+.B client.auth
+Access authentication APIs (AuthAPI)
+.TP
+.B client.jobs
+Access job APIs (JobsAPI)
+.TP
+.B client.sessions
+Access session APIs (SessionsAPI)
+.TP
+.B client.files
+Access file APIs (FilesAPI)
+.TP
+.B client.apps
+Access application APIs (AppsAPI)
+.TP
+.B client.organization
+Access organization APIs (OrganizationAPI)
+.TP
+.B client.registry
+Access API endpoint registry
+.TP
+.B client.extension_manager
+Manage dynamic extensions
+.TP
+.B client.token
+Get or set authentication token
+.TP
+.BI client.get(path, **kwargs)
+Make a GET request
+.TP
+.BI client.post(path, **kwargs)
+Make a POST request
+.TP
+.BI client.put(path, **kwargs)
+Make a PUT request
+.TP
+.BI client.delete(path, **kwargs)
+Make a DELETE request
+.TP
+.BI client.call_endpoint(endpoint_name, path_params=None, **kwargs)
+Call a registered endpoint by name
+.TP
+.BI client.register_endpoint(name, path, method="GET", description="", override=False)
+Register a custom endpoint
+.TP
+.B client.close()
+Close the HTTP session
+.SS Config
+.PP
+Configuration manager with support for environment variables, config files, and direct parameters.
+.TP
+.BI Config(base_url=None, access_key=None, access_key_secret=None, username=None, password=None, token=None, aes_key=None, timeout=None, verify_ssl=None, api_version=None, extensions_dir=None, job_profile_config=None, output_format=None, output_template=None, chunk_size=None, config_file=None)
+Create a configuration instance. Reads from config file if exists.
+.TP
+.B Config.from_env()
+Create configuration from environment variables only
+.TP
+.BI Config.from_file(config_file)
+Create configuration from a file
+.TP
+.B Config.get_default_config_path()
+Return default config file path (~/.appform/config.json)
+.TP
+.B Config.get_default_extensions_dir()
+Return default extensions directory (~/.appform/extensions)
+.TP
+.BI Config.save_config_file(...)
+Save configuration to file
+.TP
+.B config.to_dict()
+Convert configuration to dictionary (sensitive values masked)
+.SS AuthAPI
+.PP
+Authentication operations (accessed via
+.B client.auth
+).
+.TP
+.BI client.auth.login(username, password)
+Login with username and password. Returns response with token on success.
+.TP
+.BI client.auth.login_with_token(username=None, timeout=None)
+Login using AES encrypted username token. Restricted to cluster environments only. Requires APPFORM_AES_KEY.
+.TP
+.BI client.auth.login_with_access_key(access_key, access_key_secret, username)
+Configure AccessKey authentication for subsequent requests.
+.TP
+.B client.auth.logout()
+Logout and invalidate current session.
+.TP
+.B client.auth.ping()
+Test if service is accessible with current authentication.
+.TP
+.BI client.auth.register(username, chusername, password, phone=None, mail=None, dep=None, card=None)
+Register a new user.
+.TP
+.B client.auth.is_authenticated()
+Check if any authentication method is configured.
+.TP
+.B client.auth.is_token_authenticated()
+Check if token authentication is active.
+.TP
+.B client.auth.is_access_key_authenticated()
+Check if AccessKey authentication is configured.
+.TP
+.B client.auth.has_upload_permission()
+Check if current user has upload permission.
+.TP
+.B client.auth.has_download_permission()
+Check if current user has download permission.
+.SS JobsAPI
+.PP
+Job management operations (accessed via
+.B client.jobs
+).
+.TP
+.BI client.jobs.submit(app_id, params)
+Submit a new job.
+.B app_id : Application ID.
+.B params : Dict of job parameters (JH_CAS, JH_NCPU, etc.).
+.TP
+.BI client.jobs.submit_v2(app_id, params)
+Submit a job using v2 API (6.6+). Uses JSON body instead of form-data.
+.TP
+.BI client.jobs.get_job(job_id)
+Get detailed job information.
+.TP
+.BI client.jobs.list_jobs(page=1, page_size=20, name_filter=None, status_filter=None, app_name_filter=None, queue_filter=None, condition=None)
+List jobs with pagination and optional filters.
+Status values: RUN, PEND, UNKNOWN, PSUSP, USUSP, SSUSP, ZOMBI, DONE, EXIT.
+.TP
+.BI client.jobs.list_jobs_v2(page=1, page_size=20, condition=None)
+List jobs using v2 API (6.6+).
+.TP
+.BI client.jobs.list_jobs_by_ids(job_ids)
+Get multiple jobs by IDs.
+.TP
+.BI client.jobs.list_history(page=1, page_size=20, condition=None)
+List historical jobs with pagination.
+.TP
+.BI client.jobs.stop(job_id)
+Stop a running job.
+.TP
+.BI client.jobs.suspend(job_id)
+Suspend a job.
+.TP
+.BI client.jobs.resume(job_id)
+Resume a suspended job.
+.TP
+.BI client.jobs.requeue(job_id)
+Requeue a job.
+.TP
+.BI client.jobs.batch_stop(job_ids)
+Stop multiple jobs.
+.TP
+.BI client.jobs.batch_suspend(job_ids)
+Suspend multiple jobs.
+.TP
+.BI client.jobs.batch_resume(job_ids)
+Resume multiple jobs.
+.TP
+.BI client.jobs.batch_requeue(job_ids)
+Requeue multiple jobs.
+.TP
+.BI client.jobs.delete_job(job_id)
+Delete a job (6.6+).
+.TP
+.BI client.jobs.get_output(job_id)
+Get job dynamic output.
+.TP
+.BI client.jobs.get_files(job_id)
+Get job file list.
+.TP
+.BI client.jobs.get_history(job_id)
+Get job history.
+.TP
+.BI client.jobs.get_batch_history(job_ids)
+Get history for multiple jobs.
+.TP
+.BI client.jobs.connect(job_id)
+Connect to a job's graphical session.
+.TP
+.BI client.jobs.get_form(app_id)
+Get job submission form definition (6.6+).
+.TP
+.B client.jobs.get_tooltip()
+Get job monitoring tooltip info (6.6+).
+.TP
+.B client.jobs.get_total_history_count()
+Get total historical job count (6.6+).
+.PP
+Job status constants:
+.RS
+.TP
+.B JobsAPI.STATUS_RUNNING
+RUN \- Running
+.TP
+.B JobsAPI.STATUS_PENDING
+PEND \- Pending
+.TP
+.B JobsAPI.STATUS_DONE
+DONE \- Completed
+.TP
+.B JobsAPI.STATUS_EXIT
+EXIT \- Exited
+.TP
+.B JobsAPI.STATUS_PSUSP
+Pending suspended
+.TP
+.B JobsAPI.STATUS_USUSP
+User suspended
+.TP
+.B JobsAPI.STATUS_SSUSP
+System suspended
+.TP
+.B JobsAPI.STATUS_ZOMBI
+Zombie
+.TP
+.B JobsAPI.STATUS_UNKNOWN
+Unknown status
+.RE
+.SS SessionsAPI
+.PP
+Session management operations (accessed via
+.B client.sessions
+).
+.TP
+.BI client.sessions.start(app_id, start_new=None, cwd=None, work_file=None, param=None)
+Start a new application session.
+.B app_id : Application ID (e.g., "gedit", "xterm").
+.TP
+.BI client.sessions.start_v2(app_id, start_new=None, cwd=None, work_file=None, param=None)
+Start a session using v2 API (6.6+). Returns both clientUrl and webUrl.
+.TP
+.BI client.sessions.list(session_ids=None, session_name=None)
+Query sessions. When called without arguments, returns current user's sessions.
+.TP
+.BI client.sessions.list_all(page=1, page_size=20)
+List all sessions across all users.
+.TP
+.BI client.sessions.connect(session_id)
+Get session connection information.
+.TP
+.BI client.sessions.connect_and_launch(session_id, timeout=30)
+Get connection info and auto-launch JHApp client. Checks local port 60540 for client availability.
+.TP
+.BI client.sessions.disconnect(session_id)
+Disconnect a session.
+.TP
+.BI client.sessions.batch_disconnect(session_ids)
+Disconnect multiple sessions.
+.TP
+.BI client.sessions.close(session_id)
+Close (destroy) a session.
+.TP
+.BI client.sessions.batch_close(session_ids)
+Close multiple sessions.
+.TP
+.BI client.sessions.share(session_id, usernames)
+Share a session with other users.
+.TP
+.BI client.sessions.cancel_share(session_id)
+Cancel session sharing.
+.TP
+.BI client.sessions.transfer_operation(session_id, username)
+Transfer session operation to another user.
+.TP
+.BI client.sessions.webclient_connect(session_id)
+Get web browser connection URL for a session.
+.SS FilesAPI
+.PP
+File and directory operations (accessed via
+.B client.files
+).
+.TP
+.BI client.files.list(path="/", page=1, page_size=100)
+List files in a remote directory.
+.TP
+.BI client.files.list_all(path="/")
+List all files in a directory with automatic pagination.
+.TP
+.BI client.files.mkdir(path, force=True)
+Create a remote directory.
+.TP
+.BI client.files.rename(old_path, new_name)
+Rename a file or directory.
+.TP
+.BI client.files.copy(src_path, dest_dir)
+Copy a file or directory.
+.TP
+.BI client.files.move(src_path, dest_dir)
+Move or rename a file or directory.
+.TP
+.BI client.files.delete(path)
+Delete a file or directory.
+.TP
+.BI client.files.upload(file_path, remote_path, on_progress=None, chunk_size=104857600)
+Upload a local file.
+.B on_progress : callback(filename, bytes_read, total_bytes).
+.TP
+.BI client.files.upload_directory(local_dir, remote_dir, on_progress=None, check_exists=None, confirm=None, chunk_size=104857600)
+Upload an entire directory recursively.
+.TP
+.BI client.files.download(remote_path, local_path=None, on_progress=None, chunk_size=104857600)
+Download a remote file.
+.B on_progress : callback(filename, bytes_downloaded, total_bytes).
+.TP
+.BI client.files.download_directory(remote_dir, local_dir, on_progress=None, chunk_size=104857600)
+Download an entire remote directory recursively.
+.TP
+.BI client.files.compress(source_dir, target_path)
+Compress a remote directory into an archive.
+.TP
+.BI client.files.uncompress(archive_path, dest_dir, password=None)
+Uncompress a remote archive.
+.TP
+.B client.files.get_confidentiality_levels()
+Get available file confidentiality levels.
+.TP
+.BI client.files.set_confidentiality(path, level)
+Set file confidentiality level.
+.TP
+.B client.files.get_root_dir()
+Get root directory information.
+.PP
+Helper function:
+.TP
+.BI parse_size(size_str)
+Parse human-readable size string to bytes. Supports "256K", "30M", "1G", or raw bytes.
+.SS AppsAPI
+.PP
+Application query operations (accessed via
+.B client.apps
+).
+.TP
+.B client.apps.list_all()
+Get all application menus.
+.TP
+.BI client.apps.list_v2()
+Get available compute, interactive, and web applications (6.6+).
+.TP
+.BI client.apps.get_url(app_name)
+Get URL for a specific application.
+.TP
+.BI client.apps.get_form_params(app_id)
+Get form parameters for a compute application.
+.TP
+.B client.apps.get_file_extensions()
+Get file extension associations for graphical applications.
+.SS OrganizationAPI
+.PP
+Department and user management (accessed via
+.B client.organization
+).
+.TP
+.B client.organization.get_departments()
+Get department tree structure.
+.TP
+.BI client.organization.create_department(dep_name, dep_chname, parent_dep=None, description=None)
+Create a new department.
+.B dep_name : English name.
+.B dep_chname : Chinese display name.
+.TP
+.BI client.organization.update_department(dep_name, dep_chname=None, parent_dep=None, description=None)
+Update a department.
+.TP
+.BI client.organization.delete_department(dep_name)
+Delete a department.
+.TP
+.BI client.organization.get_users(page=1, page_size=20, dep=None, username=None)
+List users with optional filters.
+.TP
+.BI client.organization.create_user(username, chusername, password, dep=None, phone=None, mail=None, card=None)
+Create a new user.
+.TP
+.BI client.organization.update_user(username, chusername=None, dep=None, phone=None, mail=None, card=None)
+Update a user.
+.TP
+.BI client.organization.delete_user(username)
+Delete a user.
+.TP
+.BI client.organization.reset_password(username, new_password)
+Reset a user's password.
+.SS AESEncryptor
+.PP
+AES encryption utility for token-based authentication.
+.TP
+.BI AESEncryptor(key=None)
+Initialize with AES key. If None, reads from APPFORM_AES_KEY environment variable.
+.TP
+.BI encryptor.encrypt(plaintext)
+Encrypt a string using AES/ECB/PKCS7. Returns base64+URL encoded ciphertext.
+.TP
+.BI encryptor.decrypt(ciphertext)
+Decrypt a base64+URL encoded ciphertext string.
+.TP
+.BI encryptor.encrypt_username(username, timestamp=None)
+Encrypt username with timestamp for token-based login.
+.TP
+.BI encryptor.decrypt_username(ciphertext)
+Decrypt and extract username from encrypted token.
+.SS SignatureGenerator
+.PP
+HMAC-SHA256 signature generator for AccessKey authentication.
+.TP
+.BI SignatureGenerator.generate_signature(access_key, access_key_secret, username, current_time=None)
+Generate signature. Returns tuple (signature, current_time_millis).
+.TP
+.BI SignatureGenerator.generate_auth_headers(access_key, access_key_secret, username)
+Generate authentication headers dict.
+.SS check_cluster_environment()
+.PP
+Check if current node is in an HPC cluster environment. Verifies jversion command exists and current hostname appears in jhosts output.
+.SH EXCEPTIONS
+.TP
+.B AppformError
+Base exception for all SDK errors
+.TP
+.B AuthenticationError
+Authentication failed or token expired
+.TP
+.B APIError
+API returned an error response. Contains
+.B status_code
+and
+.B response
+attributes
+.TP
+.B ValidationError
+Input validation failed
+.TP
+.B FileError
+File operation failed
+.TP
+.B JobError
+Job operation failed
+.TP
+.B SessionError
+Session operation failed
+.SH EXAMPLES
+.SS Job submission
+.RS
+.nf
+from appform_sdk import AppformClient
+
+client = AppformClient(
+    base_url="https://your-server.com",
+    access_key="YOUR_KEY",
+    access_key_secret="YOUR_SECRET",
+    username="your_username",
+)
+
+result = client.jobs.submit(
+    app_id="fluent",
+    params={
+        "JH_JOB_NAME": "simulation_001",
+        "JH_CAS": "/home/user/cases/test.cas",
+        "JH_NCPU": "16",
+        "JH_ITERATION": "1000",
+        "JH_GUI_ENABLED": "off",
+    },
+)
+print(f"Job ID: {result['data']}")
+
+# List and monitor
+jobs = client.jobs.list_jobs(status_filter=["RUN"])
+print(f"Running jobs: {jobs['data']['total']}")
+
+# Stop a job
+client.jobs.stop("494825")
+.fi
+.RE
+.SS Session management
+.RS
+.nf
+client = AppformClient(base_url="https://your-server.com")
+client.auth.login("user", "pass")
+
+# Start a session
+result = client.sessions.start(
+    app_id="gedit",
+    start_new=True,
+    cwd="${HOME}",
+)
+
+# List current user sessions
+sessions = client.sessions.list()
+
+# Connect and auto-launch client
+client.sessions.connect_and_launch(sessions["data"][0]["sessionId"])
+.fi
+.RE
+.SS File operations
+.RS
+.nf
+client = AppformClient(base_url="https://your-server.com")
+client.auth.login("user", "pass")
+
+# List directory
+files = client.files.list(path="/home/user")
+
+# Upload with progress
+client.files.upload(
+    file_path="./local_file.txt",
+    remote_path="/home/user/",
+    on_progress=lambda name, current, total:
+        print(f"{name}: {current}/{total}"),
+)
+
+# Download
+client.files.download(
+    remote_path="/home/user/output.txt",
+    local_path="./output.txt",
+)
+.fi
+.RE
+.SS Using Config
+.RS
+.nf
+from appform_sdk import AppformClient, Config
+
+# Load from config file
+config = Config(config_file="~/.appform/config.json")
+client = AppformClient(config=config)
+
+# Or use environment variables
+config = Config.from_env()
+client = AppformClient(config=config)
+.fi
+.RE
+.SH SEE ALSO
+.BR appform (1),
+.BR job_submit (1)
+.SH FILES
+.TP
+.I ~/.appform/config.json
+Default configuration file
+.TP
+.I ~/.appform/extensions/
+Default extensions directory
