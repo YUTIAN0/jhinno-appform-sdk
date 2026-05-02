@@ -608,7 +608,7 @@ def _format_text_template(template: dict, response: dict) -> str:
             if length <= 15:
                 return " "
             before_char = val[m.start() - 1] if m.start() > 0 else " "
-            rest = val[m.end():]
+            rest = val[m.end() :]
             after_char = ""
             for ch in rest:
                 if ch != " ":
