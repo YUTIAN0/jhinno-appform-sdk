@@ -148,10 +148,9 @@ def _is_path_mapped(file_path: str, disk_mapping: Dict[str, str]) -> bool:
 
 
 def _get_default_upload_path() -> str:
-    """Generate default upload path as $HOME/<YYYYMMDD_HHMMSS>/."""
-    home = os.path.expanduser("~")
+    """Generate default upload path as $HOME/<YYYYMMDD_HHMMSS>/ on remote."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"{home}/{timestamp}"
+    return f"$HOME/{timestamp}"
 
 
 def _upload_files(
@@ -164,7 +163,15 @@ def _upload_files(
 
     Returns a ``{local_path: remote_path}`` mapping.  Directories are
     uploaded recursively; every contained file gets its own entry.
+
+    If *remote_path* contains ``$HOME``, it is resolved automatically:
+    the HTTP API handles it server-side; SFTP resolves it via SSH ``echo ~``.
     """
+    # Resolve $HOME for SFTP (HTTP API handles it on the server)
+    if transfer_method == "sftp" and "$HOME" in remote_path:
+        remote_home = client.sftp.get_home_dir()
+        remote_path = remote_path.replace("$HOME", remote_home)
+
     uploaded: Dict[str, str] = {}
     seen_local: set = set()
 

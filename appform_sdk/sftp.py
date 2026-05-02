@@ -146,6 +146,21 @@ class SFTPAPI:
             )
         return self._manager
 
+    def get_home_dir(self) -> str:
+        """Get remote user's home directory via SSH exec 'echo ~'."""
+        manager = self._get_manager()
+        if manager._transport is None:
+            raise SFTPError("SFTP transport not connected")
+        channel = manager._transport.open_session()
+        channel.set_timeout(10)
+        channel.exec_command("echo ~")
+        home = channel.recv(4096).decode("utf-8", errors="replace").strip()
+        channel.recv_exit_status()
+        channel.close()
+        if not home or home == "~":
+            home = "/"
+        return home
+
     def upload(
         self,
         file_path: str,
