@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from pathlib import Path
+
 from setuptools import find_packages, setup
+
+VERSION_FILE = Path(__file__).resolve().parent / "appform_sdk" / "VERSION"
+version = VERSION_FILE.read_text(encoding="utf-8").strip()
 
 setup(
     name="jhinno-appform-sdk",
-    version="0.0.4",
+    version=version,
     description="Python SDK for Appform 6.0-6.6 API",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -15,7 +20,7 @@ setup(
     license="MIT",
     packages=find_packages(exclude=["tests", "tests.*"]),
     package_data={
-        "appform_sdk": ["*.yaml", "*.yml", "*.json"],
+        "appform_sdk": ["*.yaml", "*.yml", "*.json", "VERSION"],
     },
     install_requires=[
         "requests>=2.28.0",
