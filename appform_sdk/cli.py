@@ -568,6 +568,41 @@ def create_parser() -> argparse.ArgumentParser:
         help="Set file confidentiality level",
     )
 
+    # cat — view remote text file content
+    files_cat_parser = files_subparsers.add_parser(
+        "cat", help="View remote text file content (SFTP only)"
+    )
+    files_cat_parser.add_argument("path", help="Remote file path")
+    files_cat_parser.add_argument(
+        "--head",
+        type=int,
+        default=None,
+        help="Number of lines from the beginning",
+    )
+    files_cat_parser.add_argument(
+        "--tail",
+        type=int,
+        default=None,
+        help="Number of lines from the end",
+    )
+    files_cat_parser.add_argument(
+        "--start",
+        type=int,
+        default=None,
+        help="Start line number (1-based, inclusive)",
+    )
+    files_cat_parser.add_argument(
+        "--end",
+        type=int,
+        default=None,
+        help="End line number (1-based, inclusive)",
+    )
+    files_cat_parser.add_argument(
+        "--encoding",
+        default="utf-8",
+        help="Text encoding (default: utf-8)",
+    )
+
     # Apps
     apps_parser = subparsers.add_parser("apps", help="Application operations")
     apps_subparsers = apps_parser.add_subparsers(
@@ -1598,6 +1633,18 @@ def handle_files_command(args: argparse.Namespace):
                     path=args.set_conf[0], level=args.set_conf[1]
                 )
                 output_result(result, args.output, "files.conf")
+
+        elif args.files_command == "cat":
+            lines = client.files.cat(
+                remote_path=args.path,
+                head=args.head,
+                tail=args.tail,
+                start=args.start,
+                end=args.end,
+                encoding=args.encoding,
+            )
+            for line in lines:
+                print(line)
     finally:
         client.close()
 

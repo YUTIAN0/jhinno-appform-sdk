@@ -663,6 +663,37 @@ class FilesAPI:
 
         return results
 
+    def cat(
+        self,
+        remote_path: str,
+        head: Optional[int] = None,
+        tail: Optional[int] = None,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        encoding: str = "utf-8",
+    ) -> List[str]:
+        """Read selected lines from a remote text file via SFTP.
+
+        Args:
+            remote_path: Remote file full path
+            head: Number of lines from the beginning
+            tail: Number of lines from the end
+            start: Start line number (1-based, inclusive)
+            end: End line number (1-based, inclusive)
+            encoding: Text encoding (default: utf-8)
+
+        Returns:
+            List of lines (with newlines stripped)
+        """
+        return self._client.sftp.cat(
+            remote_path=remote_path,
+            head=head,
+            tail=tail,
+            start=start,
+            end=end,
+            encoding=encoding,
+        )
+
     def compress(
         self,
         source_dir: str,

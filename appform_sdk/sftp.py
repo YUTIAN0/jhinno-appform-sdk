@@ -319,6 +319,68 @@ class SFTPAPI:
             sftp, remote_dir, local_base, on_progress, chunk_size
         )
 
+    def cat(
+        self,
+        remote_path: str,
+        head: Optional[int] = None,
+        tail: Optional[int] = None,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        encoding: str = "utf-8",
+        small_threshold: int = 1048576,
+    ) -> List[str]:
+        """Read selected lines from a remote text file via SFTP.
+
+        Args:
+            remote_path: Remote file full path
+            head: Number of lines from the beginning
+            tail: Number of lines from the end
+            start: Start line number (1-based, inclusive)
+            end: End line number (1-based, inclusive)
+            encoding: Text encoding (default: utf-8)
+            small_threshold: Byte threshold below which the file is read entirely
+
+        Returns:
+            List of lines (with newlines stripped)
+        """
+        sftp = self._get_manager().sftp
+
+        try:
+            file_size = sftp.stat(remote_path).st_size
+        except IOError:
+            raise FileNotFoundError(f"Remote file not found: {remote_path}")
+
+        # Small file: read all into memory
+        if file_size < small_threshold:
+            import io
+
+            buf = io.BytesIO()
+            sftp.getfo(remote_path, buf)
+            text = buf.getvalue().decode(encoding, errors="replace")
+            lines = text.splitlines()
+
+            if head is not None:
+                return lines[:head]
+            if tail is not None:
+                return lines[-tail:] if tail else []
+            if start is not None and end is not None:
+                return lines[start - 1 : end]
+            if start is not None:
+                return lines[start - 1 :]
+            return lines
+
+        # Large file: seek-based partial read
+        if head is not None:
+            return _read_head(sftp, remote_path, head, encoding)
+        if tail is not None:
+            return _read_tail(sftp, remote_path, tail, encoding, file_size)
+        if start is not None:
+            if end is not None:
+                return _read_range(sftp, remote_path, start, end, encoding)
+            return _read_from(sftp, remote_path, start, encoding)
+        # No selector on large file: default to last 20 lines
+        return _read_tail(sftp, remote_path, 20, encoding, file_size)
+
     def close(self):
         if self._manager:
             self._manager.close()
@@ -385,3 +447,79 @@ def _download_dir_recursive(sftp, remote_dir, local_base, on_progress, chunk_siz
         results.extend(sub_results)
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Partial read helpers for cat()
+# ---------------------------------------------------------------------------
+
+
+def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
+    """Read first n lines from a remote file without downloading it fully."""
+    import io
+
+    buf = io.BytesIO()
+    sftp.getfo(remote_path, buf)
+    buf.seek(0)
+    lines = []
+    for line in buf:
+        lines.append(line.decode(encoding, errors="replace").rstrip("\n\r"))
+        if len(lines) >= n:
+            break
+    return lines
+
+
+def _read_tail(sftp, remote_path: str, n: int, encoding: str, file_size: int) -> List[str]:
+    """Read last n lines from a remote file by seeking near the end."""
+    import io
+
+    chunk_size = 8192
+    collected = []
+    pos = file_size
+
+    while pos > 0 and len(collected) < n + 1:
+        read_start = max(0, pos - chunk_size)
+        amount = pos - read_start
+        buf = io.BytesIO()
+        sftp.getfo(remote_path, buf, read_start, amount)
+        chunk = buf.getvalue()
+        lines = chunk.decode(encoding, errors="replace").splitlines()
+        if read_start > 0:
+            lines[0] = ""
+        collected = lines + collected
+        pos = read_start
+
+    if pos > 0 and len(collected) > n:
+        collected.pop(0)
+
+    return collected[-n:] if len(collected) > n else collected
+
+
+def _read_range(sftp, remote_path: str, start: int, end: int, encoding: str) -> List[str]:
+    """Read lines start..end (1-based inclusive) from a remote file."""
+    import io
+
+    buf = io.BytesIO()
+    sftp.getfo(remote_path, buf)
+    buf.seek(0)
+    lines = []
+    for i, line in enumerate(buf, 1):
+        if i >= start:
+            lines.append(line.decode(encoding, errors="replace").rstrip("\n\r"))
+        if i > end:
+            break
+    return lines
+
+
+def _read_from(sftp, remote_path: str, start: int, encoding: str) -> List[str]:
+    """Read from line start to EOF (1-based) from a remote file."""
+    import io
+
+    buf = io.BytesIO()
+    sftp.getfo(remote_path, buf)
+    buf.seek(0)
+    lines = []
+    for i, line in enumerate(buf, 1):
+        if i >= start:
+            lines.append(line.decode(encoding, errors="replace").rstrip("\n\r"))
+    return lines
