@@ -25,6 +25,12 @@ Appform SDK 支持多种配置方式，按优先级从高到低：
 | `APPFORM_OUTPUT_FORMAT` | 默认输出格式 | `json` / `table` / `text` |
 | `APPFORM_OUTPUT_TEMPLATE` | 输出模板文件路径 | `/path/to/template.yaml` |
 | `APPFORM_DEFAULT_REMOTE_PATH` | 文件操作默认远程路径 | `/home/user/` |
+| `APPFORM_CHUNK_SIZE` | 上传/下载分块大小 | `100M` |
+| `APPFORM_DEFAULT_METHOD` | 文件操作默认传输方式 | `http` |
+| `APPFORM_SFTP_HOST` | SFTP 服务器主机名 | 从 base_url 提取 |
+| `APPFORM_SFTP_PORT` | SFTP 服务器端口 | `22` |
+| `APPFORM_SFTP_KEY_FILE` | SSH 私钥文件路径 | — |
+| `APPFORM_SFTP_KEY_PASSWORD` | SSH 私钥密码 | — |
 
 ```bash
 # 密码认证（适用于所有版本）
@@ -76,6 +82,14 @@ appform config set --aes-key your_aes_key
 
 # 设置默认输出格式
 appform config set --output-format table
+
+# 设置默认文件传输方式
+appform config set --default-method sftp
+
+# SFTP 配置
+appform config set --sftp-host mycluster.example.com
+appform config set --sftp-port 22
+appform config set --sftp-key-file ~/.ssh/id_rsa
 
 # 查看当前配置
 appform config show

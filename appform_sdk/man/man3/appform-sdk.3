@@ -83,6 +83,21 @@ Default remote path for file operations
 .TP
 .B APPFORM_CHUNK_SIZE
 Upload/download chunk size (e.g., 100M)
+.TP
+.B APPFORM_DEFAULT_METHOD
+Default transfer method for file operations (http/sftp)
+.TP
+.B APPFORM_SFTP_HOST
+SFTP server hostname
+.TP
+.B APPFORM_SFTP_PORT
+SFTP server port
+.TP
+.B APPFORM_SFTP_KEY_FILE
+SSH private key file for SFTP
+.TP
+.B APPFORM_SFTP_KEY_PASSWORD
+SSH key passphrase
 .RE
 .SH INSTALLED MODULES
 .SS AppformClient
@@ -364,41 +379,52 @@ Get web browser connection URL for a session.
 .PP
 File and directory operations (accessed via
 .B client.files
-).
+). All file operations support
+.B transfer_method="http"
+(default, via API) or
+.B transfer_method="sftp"
+(direct file transfer).
 .TP
-.BI client.files.list(path="/", page=1, page_size=100)
+.BI client.files.list(path="/", page=1, page_size=100, transfer_method="http")
 List files in a remote directory.
 .TP
-.BI client.files.list_all(path="/")
+.BI client.files.list_all(path="/", transfer_method="http")
 List all files in a directory with automatic pagination.
 .TP
-.BI client.files.mkdir(path, force=True)
+.BI client.files.mkdir(path, force=True, transfer_method="http")
 Create a remote directory.
 .TP
 .BI client.files.rename(old_path, new_name)
 Rename a file or directory.
 .TP
-.BI client.files.copy(src_path, dest_dir)
+.BI client.files.copy(src_path, dest_dir, transfer_method="http")
 Copy a file or directory.
 .TP
-.BI client.files.move(src_path, dest_dir)
+.BI client.files.move(src_path, dest_dir, transfer_method="http")
 Move or rename a file or directory.
 .TP
-.BI client.files.delete(path)
+.BI client.files.delete(path, transfer_method="http")
 Delete a file or directory.
 .TP
-.BI client.files.upload(file_path, remote_path, on_progress=None, chunk_size=104857600)
+.BI client.files.cat(remote_path, head=None, tail=None, start=None, end=None, encoding="utf-8", all_lines=False)
+Read selected lines from a remote text file (SFTP only).
+.B head : lines from beginning.
+.B tail : lines from end.
+.B start/end : 1-based line range.
+.B all_lines : force output all lines for large files.
+.TP
+.BI client.files.upload(file_path, remote_path, on_progress=None, chunk_size=104857600, transfer_method="http")
 Upload a local file.
 .B on_progress : callback(filename, bytes_read, total_bytes).
 .TP
-.BI client.files.upload_directory(local_dir, remote_dir, on_progress=None, check_exists=None, confirm=None, chunk_size=104857600)
+.BI client.files.upload_directory(local_dir, remote_dir, on_progress=None, check_exists=None, confirm=None, chunk_size=104857600, transfer_method="http")
 Upload an entire directory recursively.
 .TP
-.BI client.files.download(remote_path, local_path=None, on_progress=None, chunk_size=104857600)
+.BI client.files.download(remote_path, local_path=None, on_progress=None, chunk_size=104857600, transfer_method="http")
 Download a remote file.
 .B on_progress : callback(filename, bytes_downloaded, total_bytes).
 .TP
-.BI client.files.download_directory(remote_dir, local_dir, on_progress=None, chunk_size=104857600)
+.BI client.files.download_directory(remote_dir, local_dir, on_progress=None, chunk_size=104857600, transfer_method="http")
 Download an entire remote directory recursively.
 .TP
 .BI client.files.compress(source_dir, target_path)
@@ -420,6 +446,11 @@ Helper function:
 .TP
 .BI parse_size(size_str)
 Parse human-readable size string to bytes. Supports "256K", "30M", "1G", or raw bytes.
+.PP
+SFTP configuration is optional. Install with:
+.B pip install jhinno-appform-sdk[sftp]
+.PP
+When using SFTP, all file operations (ls, mkdir, cp, mv, rm, put, get, cat) work without the API gateway.
 .SS AppsAPI
 .PP
 Application query operations (accessed via
@@ -530,6 +561,9 @@ Job operation failed
 .TP
 .B SessionError
 Session operation failed
+.TP
+.B SFTPError
+SFTP operation failed
 .SH EXAMPLES
 .SS Job submission
 .RS

@@ -223,6 +223,7 @@ class FilesAPI:
         path: str = "/",
         page: int = 1,
         page_size: int = 100,
+        transfer_method: str = "http",
     ) -> Dict[str, Any]:
         """
         List files in a directory.
@@ -231,25 +232,27 @@ class FilesAPI:
             path: Directory path
             page: Page number
             page_size: Number of items per page
-
-        Returns:
-            List of files and directories
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.list(
+                path=path, page=page, page_size=page_size
+            )
         return self._client.get(
             "/appform/ws/api/files",
             params={"dir": path, "page": page, "pageSize": page_size},
         )
 
-    def list_all(self, path: str = "/") -> List[Dict[str, Any]]:
+    def list_all(self, path: str = "/", transfer_method: str = "http") -> List[Dict[str, Any]]:
         """
         List all files in a directory (auto-pagination).
 
         Args:
             path: Directory path
-
-        Returns:
-            List of all file items
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.list_all(path=path)
         page = 1
         all_items = []
         while True:
@@ -275,17 +278,17 @@ class FilesAPI:
                 break
         return all_items
 
-    def mkdir(self, path: str, force: bool = True) -> Dict[str, Any]:
+    def mkdir(self, path: str, force: bool = True, transfer_method: str = "http") -> Dict[str, Any]:
         """
         Create a directory.
 
         Args:
             path: Full directory path to create
             force: Force creation even if exists (default: True)
-
-        Returns:
-            Creation result
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.mkdir(path=path, force=force)
         return self._client.post(
             "/appform/ws/api/files/mkdir",
             json={"dirPath": path, "isForce": str(force).lower()},
@@ -307,23 +310,23 @@ class FilesAPI:
             json={"oldFileName": old_path, "newFileName": new_name},
         )
 
-    def copy(self, src_path: str, dest_dir: str) -> Dict[str, Any]:
+    def copy(self, src_path: str, dest_dir: str, transfer_method: str = "http") -> Dict[str, Any]:
         """
         Copy a file or directory.
 
         Args:
             src_path: Source file/directory full path
-            dest_dir: Destination directory full path
-
-        Returns:
-            Copy result
+            dest_dir: Destination directory full path, or destination file full path
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.copy(src_path=src_path, dest_dir=dest_dir)
         return self._client.put(
             "/appform/ws/api/files/copy",
             json={"sourceFileName": src_path, "targetDirectory": dest_dir},
         )
 
-    def move(self, src_path: str, dest_dir: str) -> Dict[str, Any]:
+    def move(self, src_path: str, dest_dir: str, transfer_method: str = "http") -> Dict[str, Any]:
         """
         Move/rename a file or directory.
 
@@ -333,10 +336,13 @@ class FilesAPI:
         Args:
             src_path: Source file/directory full path
             dest_dir: Destination directory or new name
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
 
         Returns:
             Move result
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.move(src_path=src_path, dest_dir=dest_dir)
         if "/" not in dest_dir.rstrip("/"):
             # Simple rename in same directory
             return self.rename(src_path, dest_dir)
@@ -353,16 +359,16 @@ class FilesAPI:
             self.delete(src_path)
             return result
 
-    def delete(self, path: str) -> Dict[str, Any]:
+    def delete(self, path: str, transfer_method: str = "http") -> Dict[str, Any]:
         """
         Delete a file or directory.
 
         Args:
             path: File/directory full path to delete
-
-        Returns:
-            Delete result
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.delete(path=path)
         return self._client.delete(
             "/appform/ws/api/files/delete",
             params={"fileName": path},
@@ -671,6 +677,7 @@ class FilesAPI:
         start: Optional[int] = None,
         end: Optional[int] = None,
         encoding: str = "utf-8",
+        all_lines: bool = False,
     ) -> List[str]:
         """Read selected lines from a remote text file via SFTP.
 
@@ -681,6 +688,7 @@ class FilesAPI:
             start: Start line number (1-based, inclusive)
             end: End line number (1-based, inclusive)
             encoding: Text encoding (default: utf-8)
+            all_lines: Output all lines (including large files, default: False)
 
         Returns:
             List of lines (with newlines stripped)
@@ -692,6 +700,7 @@ class FilesAPI:
             start=start,
             end=end,
             encoding=encoding,
+            all_lines=all_lines,
         )
 
     def compress(

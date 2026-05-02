@@ -81,6 +81,21 @@ API 版本（默认 6.5）
 .TP
 .B APPFORM_CHUNK_SIZE
 上传/下载分块大小（如 100M）
+.TP
+.B APPFORM_DEFAULT_METHOD
+文件操作默认传输方式（http/sftp）
+.TP
+.B APPFORM_SFTP_HOST
+SFTP 服务器主机名
+.TP
+.B APPFORM_SFTP_PORT
+SFTP 服务器端口
+.TP
+.B APPFORM_SFTP_KEY_FILE
+SFTP SSH 私钥文件路径
+.TP
+.B APPFORM_SFTP_KEY_PASSWORD
+SSH 私钥密码
 .RE
 .SH 模块
 .SS AppformClient
@@ -361,41 +376,52 @@ EXIT \- 已退出
 .PP
 文件和目录操作（通过
 .B client.files
-访问）。
+访问）。所有文件操作支持
+.B transfer_method="http"
+（默认，通过 API）或
+.B transfer_method="sftp"
+（直连文件传输）。
 .TP
-.BI client.files.list(path="/", page=1, page_size=100)
+.BI client.files.list(path="/", page=1, page_size=100, transfer_method="http")
 列出远程目录文件。
 .TP
-.BI client.files.list_all(path="/")
+.BI client.files.list_all(path="/", transfer_method="http")
 自动翻页列出所有文件。
 .TP
-.BI client.files.mkdir(path, force=True)
+.BI client.files.mkdir(path, force=True, transfer_method="http")
 创建远程目录。
 .TP
 .BI client.files.rename(old_path, new_name)
 重命名文件或目录。
 .TP
-.BI client.files.copy(src_path, dest_dir)
+.BI client.files.copy(src_path, dest_dir, transfer_method="http")
 复制文件或目录。
 .TP
-.BI client.files.move(src_path, dest_dir)
+.BI client.files.move(src_path, dest_dir, transfer_method="http")
 移动或重命名文件或目录。
 .TP
-.BI client.files.delete(path)
+.BI client.files.delete(path, transfer_method="http")
 删除文件或目录。
 .TP
-.BI client.files.upload(file_path, remote_path, on_progress=None, chunk_size=104857600)
+.BI client.files.cat(remote_path, head=None, tail=None, start=None, end=None, encoding="utf-8", all_lines=False)
+读取远程文本文件的指定行（仅 SFTP）。
+.B head : 从开头取 N 行。
+.B tail : 从末尾取 N 行。
+.B start/end : 1-based 行范围。
+.B all_lines : 强制输出大文件的所有行。
+.TP
+.BI client.files.upload(file_path, remote_path, on_progress=None, chunk_size=104857600, transfer_method="http")
 上传本地文件。
 .B on_progress : 回调函数 (文件名, 已读字节, 总字节)。
 .TP
-.BI client.files.upload_directory(local_dir, remote_dir, on_progress=None, check_exists=None, confirm=None, chunk_size=104857600)
+.BI client.files.upload_directory(local_dir, remote_dir, on_progress=None, check_exists=None, confirm=None, chunk_size=104857600, transfer_method="http")
 递归上传整个目录。
 .TP
-.BI client.files.download(remote_path, local_path=None, on_progress=None, chunk_size=104857600)
+.BI client.files.download(remote_path, local_path=None, on_progress=None, chunk_size=104857600, transfer_method="http")
 下载远程文件。
 .B on_progress : 回调函数 (文件名, 已下载字节, 总字节)。
 .TP
-.BI client.files.download_directory(remote_dir, local_dir, on_progress=None, chunk_size=104857600)
+.BI client.files.download_directory(remote_dir, local_dir, on_progress=None, chunk_size=104857600, transfer_method="http")
 递归下载整个远程目录。
 .TP
 .BI client.files.compress(source_dir, target_path)
@@ -417,6 +443,11 @@ EXIT \- 已退出
 .TP
 .BI parse_size(size_str)
 解析人类可读的大小字符串为字节数。支持 "256K", "30M", "1G" 或原始字节数。
+.PP
+SFTP 为可选功能。安装方式：
+.B pip install jhinno-appform-sdk[sftp]
+.PP
+使用 SFTP 时，所有文件操作（ls, mkdir, cp, mv, rm, put, get, cat）均可脱离 API 网关工作。
 .SS AppsAPI
 .PP
 应用查询操作（通过

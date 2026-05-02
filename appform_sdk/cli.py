@@ -187,6 +187,12 @@ def create_parser() -> argparse.ArgumentParser:
         dest="chunk_size",
         help="Read chunk size for upload/download (e.g. '100M', '1G', or bytes, default: 100M)",
     )
+    config_set_parser.add_argument(
+        "--default-method",
+        dest="default_method",
+        choices=["http", "sftp"],
+        help="Default transfer method for file operations (default: http)",
+    )
     config_set_parser.add_argument("--config-file", help="Config file path")
     config_set_parser.add_argument(
         "--sftp-host",
@@ -430,6 +436,13 @@ def create_parser() -> argparse.ArgumentParser:
     files_parser = subparsers.add_parser(
         "files", help="File operations (Linux-like commands)"
     )
+    files_parser.add_argument(
+        "--method",
+        dest="default_method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Default transfer method for all file operations (overridden by per-command --method)",
+    )
     files_subparsers = files_parser.add_subparsers(
         dest="files_command", help="Files commands"
     )
@@ -450,6 +463,12 @@ def create_parser() -> argparse.ArgumentParser:
         dest="list_all",
         help="List all items (auto-pagination)",
     )
+    files_ls_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default via API) or sftp",
+    )
 
     # cp <src> <dest>
     files_cp_parser = files_subparsers.add_parser(
@@ -457,6 +476,12 @@ def create_parser() -> argparse.ArgumentParser:
     )
     files_cp_parser.add_argument("src", help="Source remote path")
     files_cp_parser.add_argument("dest", help="Destination remote directory")
+    files_cp_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default via API) or sftp",
+    )
 
     # mv <src> <dest>
     files_mv_parser = files_subparsers.add_parser(
@@ -464,12 +489,24 @@ def create_parser() -> argparse.ArgumentParser:
     )
     files_mv_parser.add_argument("src", help="Source remote path")
     files_mv_parser.add_argument("dest", help="Destination path or new name")
+    files_mv_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default via API) or sftp",
+    )
 
     # rm <path>
     files_rm_parser = files_subparsers.add_parser(
         "rm", help="Delete remote file or directory"
     )
     files_rm_parser.add_argument("path", help="Remote path to delete")
+    files_rm_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default via API) or sftp",
+    )
 
     # mkdir <path>
     files_mkdir_parser = files_subparsers.add_parser(
@@ -481,6 +518,12 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="no_force",
         help="Fail if directory already exists",
+    )
+    files_mkdir_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default via API) or sftp",
     )
 
     # put <local> [remote]  — upload
@@ -586,6 +629,11 @@ def create_parser() -> argparse.ArgumentParser:
         help="Number of lines from the end",
     )
     files_cat_parser.add_argument(
+        "--lines",
+        default=None,
+        help="Line range (1-based, inclusive), e.g. '10-20' or '10-' (from 10 to EOF)",
+    )
+    files_cat_parser.add_argument(
         "--start",
         type=int,
         default=None,
@@ -596,6 +644,12 @@ def create_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help="End line number (1-based, inclusive)",
+    )
+    files_cat_parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="all_lines",
+        help="Output all lines (including large files)",
     )
     files_cat_parser.add_argument(
         "--encoding",
@@ -1120,6 +1174,7 @@ def create_client(args: argparse.Namespace) -> AppformClient:
             extensions_dir=config.extensions_dir,
             timeout=config.timeout,
             verify_ssl=config.verify_ssl,
+            config=config,
         )
     elif config.token:
         client = AppformClient(
@@ -1129,6 +1184,7 @@ def create_client(args: argparse.Namespace) -> AppformClient:
             extensions_dir=config.extensions_dir,
             timeout=config.timeout,
             verify_ssl=config.verify_ssl,
+            config=config,
         )
     else:
         client = AppformClient(
@@ -1137,6 +1193,7 @@ def create_client(args: argparse.Namespace) -> AppformClient:
             extensions_dir=config.extensions_dir,
             timeout=config.timeout,
             verify_ssl=config.verify_ssl,
+            config=config,
         )
         # Password login if credentials available
         if config.username and config.password:
@@ -1187,6 +1244,7 @@ def handle_config_command(args: argparse.Namespace):
             output_template=getattr(args, "output_template", None),
             default_remote_path=getattr(args, "default_remote_path", None),
             chunk_size=cs,
+            default_method=getattr(args, "default_method", None),
             config_file=config_file,
             sftp_host=getattr(args, "sftp_host", None),
             sftp_port=getattr(args, "sftp_port", None),
@@ -1426,225 +1484,262 @@ def handle_files_command(args: argparse.Namespace):
     config = Config(config_file=getattr(args, "config_file", None))
 
     try:
-        if args.files_command == "ls":
-            if args.list_all:
-                items = client.files.list_all(path=args.path)
-                result = {"data": items, "path": args.path, "count": len(items)}
-            else:
-                result = client.files.list(
-                    path=args.path, page=args.page, page_size=args.page_size
-                )
-            output_result(result, args.output, "files.list")
+        method = getattr(args, "default_method", None) or config.default_method or "http"
 
-        elif args.files_command == "cp":
-            result = client.files.copy(src_path=args.src, dest_dir=args.dest)
-            output_result(result, args.output, "files.copy")
-
-        elif args.files_command == "mv":
-            result = client.files.move(src_path=args.src, dest_dir=args.dest)
-            output_result(result, args.output, "files.rename")
-
-        elif args.files_command == "rm":
-            result = client.files.delete(path=args.path)
-            output_result(result, args.output, "files.delete")
-
-        elif args.files_command == "mkdir":
-            force = not args.no_force
-            result = client.files.mkdir(path=args.path, force=force)
-            output_result(result, args.output, "files.mkdir")
-
-        elif args.files_command == "put":
-            local = args.local
-            remote = args.remote
-            force = getattr(args, "force", False)
-            method = getattr(args, "method", None) or "http"
-            if remote is None:
-                remote = config.default_remote_path or "/"
-            remote = _resolve_remote_path(remote, config)
-
-            local_path = Path(local)
-            cs_arg = getattr(args, "chunk_size", None)
-            if cs_arg:
-                from .files import parse_size
-
-                chunk_size = parse_size(cs_arg)
-            else:
-                chunk_size = config.chunk_size or 104857600
-            if local_path.is_dir():
-                from .files import _ProgressTracker
-
-                progress = _ProgressTracker(label="Uploading")
-                if method == "sftp":
-                    # SFTP: no HTTP-based exists check, skip confirm
-                    results = client.files.upload_directory(
-                        local_dir=local,
-                        remote_dir=remote,
-                        on_progress=progress.update,
-                        chunk_size=chunk_size,
-                        transfer_method=method,
-                    )
+        try:
+            if args.files_command == "ls":
+                cmd_method = getattr(args, "method", None) or method
+                if args.list_all:
+                    items = client.files.list_all(path=args.path, transfer_method=cmd_method)
+                    result = {"data": items, "path": args.path, "count": len(items)}
                 else:
-                    results = client.files.upload_directory(
-                        local_dir=local,
-                        remote_dir=remote,
-                        on_progress=progress.update,
-                        check_exists=lambda fname: _remote_file_exists(
-                            client, remote, fname
+                    result = client.files.list(
+                        path=args.path, page=args.page, page_size=args.page_size, transfer_method=cmd_method
+                    )
+                output_result(result, args.output, "files.list")
+
+            elif args.files_command == "cp":
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.copy(src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method)
+                output_result(result, args.output, "files.copy")
+
+            elif args.files_command == "mv":
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.move(src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method)
+                output_result(result, args.output, "files.rename")
+
+            elif args.files_command == "rm":
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.delete(path=args.path, transfer_method=cmd_method)
+                output_result(result, args.output, "files.delete")
+
+            elif args.files_command == "mkdir":
+                force = not args.no_force
+                cmd_method = getattr(args, "method", None) or method
+                result = client.files.mkdir(path=args.path, force=force, transfer_method=cmd_method)
+                output_result(result, args.output, "files.mkdir")
+
+            elif args.files_command == "put":
+                local = args.local
+                remote = args.remote
+                force = getattr(args, "force", False)
+                cmd_method = getattr(args, "method", None) or method
+                if remote is None:
+                    remote = config.default_remote_path or "/"
+                remote = _resolve_remote_path(remote, config)
+
+                local_path = Path(local)
+                cs_arg = getattr(args, "chunk_size", None)
+                if cs_arg:
+                    from .files import parse_size
+
+                    chunk_size = parse_size(cs_arg)
+                else:
+                    chunk_size = config.chunk_size or 104857600
+                if local_path.is_dir():
+                    from .files import _ProgressTracker
+
+                    progress = _ProgressTracker(label="Uploading")
+                    if cmd_method == "sftp":
+                        results = client.files.upload_directory(
+                            local_dir=local,
+                            remote_dir=remote,
+                            on_progress=progress.update,
+                            chunk_size=chunk_size,
+                            transfer_method=cmd_method,
                         )
-                        and not force,
-                        confirm=_confirm_overwrite,
-                        chunk_size=chunk_size,
-                        transfer_method=method,
-                    )
-                progress.finish()
-                uploaded = [r for r in results if r.get("result")]
-                print(f"Uploaded {len(uploaded)} file(s) to {remote}")
-                if args.output == "json":
-                    output_result(
-                        {
-                            "uploaded": results,
-                            "count": len(uploaded),
-                            "remote_dir": remote,
-                        },
-                        args.output,
-                        "files.upload",
-                    )
-            elif local_path.is_file():
-                fname = local_path.name
-                saved = f"{remote.rstrip('/')}/{fname}"
-                if method == "http" and not force and _remote_file_exists(client, remote, fname):
-                    if not _confirm_overwrite(fname):
-                        print("Upload cancelled.")
-                        return
-                from .files import _ProgressTracker
-
-                progress = _ProgressTracker(label="Uploading")
-                result = client.files.upload(
-                    file_path=local,
-                    remote_path=remote,
-                    on_progress=progress.update,
-                    chunk_size=chunk_size,
-                    transfer_method=method,
-                )
-                progress.finish()
-                print(f"Uploaded to {saved}")
-                if args.output == "json":
-                    output_result(result, args.output, "files.upload")
-            else:
-                print(f"Error: Local path not found: {local}", file=sys.stderr)
-                sys.exit(1)
-
-        elif args.files_command == "get":
-            remote = args.remote
-            local = args.local
-            method = getattr(args, "method", None) or "http"
-            cs_arg = getattr(args, "chunk_size", None)
-            if cs_arg:
-                from .files import parse_size
-
-                chunk_size = parse_size(cs_arg)
-            else:
-                chunk_size = config.chunk_size or 104857600
-
-            # Check if remote path is a directory by listing it
-            is_dir = False
-            if method == "http":
-                try:
-                    items = client.files.list(path=remote, page=1, page_size=1)
-                    data = items.get("data", [])
-                    if isinstance(data, dict):
-                        file_list = data.get("files", data.get("records", []))
-                    elif isinstance(data, list):
-                        file_list = data
                     else:
-                        file_list = []
+                        results = client.files.upload_directory(
+                            local_dir=local,
+                            remote_dir=remote,
+                            on_progress=progress.update,
+                            check_exists=lambda fname: _remote_file_exists(
+                                client, remote, fname
+                            )
+                            and not force,
+                            confirm=_confirm_overwrite,
+                            chunk_size=chunk_size,
+                            transfer_method=cmd_method,
+                        )
+                    progress.finish()
+                    uploaded = [r for r in results if r.get("result")]
+                    print(f"Uploaded {len(uploaded)} file(s) to {remote}")
+                    if args.output == "json":
+                        output_result(
+                            {
+                                "uploaded": results,
+                                "count": len(uploaded),
+                                "remote_dir": remote,
+                            },
+                            args.output,
+                            "files.upload",
+                        )
+                elif local_path.is_file():
+                    fname = local_path.name
+                    saved = f"{remote.rstrip('/')}/{fname}"
+                    if cmd_method == "http" and not force and _remote_file_exists(client, remote, fname):
+                        if not _confirm_overwrite(fname):
+                            print("Upload cancelled.")
+                            client.close()
+                            return
+                    from .files import _ProgressTracker
 
-                    is_dir = len(file_list) > 0
-                except Exception:
-                    is_dir = False
-            else:
-                # For SFTP, infer from path ending or user knows
-                # Default to file unless --method sftp with trailing /
-                is_dir = remote.endswith("/")
-
-            if is_dir:
-                from .files import _ProgressTracker
-
-                local_path = Path(local)
-                save_dir = local_path if local_path.is_dir() else Path(local)
-                progress = _ProgressTracker(label="Downloading")
-                results = client.files.download_directory(
-                    remote_dir=remote,
-                    local_dir=str(save_dir),
-                    on_progress=progress.update,
-                    chunk_size=chunk_size,
-                    transfer_method=method,
-                )
-                progress.finish()
-                downloaded = [r for r in results if r.get("status") == "ok"]
-                print(f"Downloaded {len(downloaded)} file(s) to {save_dir}")
-                if args.output == "json":
-                    output_result(
-                        {
-                            "downloaded": results,
-                            "count": len(downloaded),
-                            "local_dir": str(save_dir),
-                        },
-                        args.output,
-                        "files.download",
+                    progress = _ProgressTracker(label="Uploading")
+                    result = client.files.upload(
+                        file_path=local,
+                        remote_path=remote,
+                        on_progress=progress.update,
+                        chunk_size=chunk_size,
+                        transfer_method=cmd_method,
                     )
-            else:
-                local_path = Path(local)
-                if local_path.is_dir() or local == ".":
-                    save_path = str(local_path / Path(remote).name)
+                    progress.finish()
+                    print(f"Uploaded to {saved}")
+                    if args.output == "json":
+                        output_result(result, args.output, "files.upload")
                 else:
-                    save_path = local
-                from .files import _ProgressTracker
+                    print(f"Error: Local path not found: {local}", file=sys.stderr)
+                    client.close()
+                    sys.exit(1)
 
-                progress = _ProgressTracker(label="Downloading")
-                client.files.download(
-                    remote_path=remote,
-                    local_path=save_path,
-                    on_progress=progress.update,
-                    chunk_size=chunk_size,
-                    transfer_method=method,
+            elif args.files_command == "get":
+                remote = args.remote
+                local = args.local
+                cmd_method = getattr(args, "method", None) or method
+                cs_arg = getattr(args, "chunk_size", None)
+                if cs_arg:
+                    from .files import parse_size
+
+                    chunk_size = parse_size(cs_arg)
+                else:
+                    chunk_size = config.chunk_size or 104857600
+
+                # Check if remote path is a directory by listing it
+                is_dir = False
+                if cmd_method == "http":
+                    try:
+                        items = client.files.list(path=remote, page=1, page_size=1)
+                        data = items.get("data", [])
+                        if isinstance(data, dict):
+                            file_list = data.get("files", data.get("records", []))
+                        elif isinstance(data, list):
+                            file_list = data
+                        else:
+                            file_list = []
+
+                        is_dir = len(file_list) > 0
+                    except Exception:
+                        is_dir = False
+                else:
+                    is_dir = remote.endswith("/")
+
+                if is_dir:
+                    from .files import _ProgressTracker
+
+                    local_path = Path(local)
+                    save_dir = local_path if local_path.is_dir() else Path(local)
+                    progress = _ProgressTracker(label="Downloading")
+                    results = client.files.download_directory(
+                        remote_dir=remote,
+                        local_dir=str(save_dir),
+                        on_progress=progress.update,
+                        chunk_size=chunk_size,
+                        transfer_method=cmd_method,
+                    )
+                    progress.finish()
+                    downloaded = [r for r in results if r.get("status") == "ok"]
+                    print(f"Downloaded {len(downloaded)} file(s) to {save_dir}")
+                    if args.output == "json":
+                        output_result(
+                            {
+                                "downloaded": results,
+                                "count": len(downloaded),
+                                "local_dir": str(save_dir),
+                            },
+                            args.output,
+                            "files.download",
+                        )
+                else:
+                    local_path = Path(local)
+                    if local_path.is_dir() or local == ".":
+                        save_path = str(local_path / Path(remote).name)
+                    else:
+                        save_path = local
+                    from .files import _ProgressTracker
+
+                    progress = _ProgressTracker(label="Downloading")
+                    client.files.download(
+                        remote_path=remote,
+                        local_path=save_path,
+                        on_progress=progress.update,
+                        chunk_size=chunk_size,
+                        transfer_method=cmd_method,
+                    )
+                    progress.finish()
+                    print(f"Downloaded to {save_path}")
+
+            elif args.files_command == "compress":
+                result = client.files.compress(
+                    source_dir=args.source, target_path=args.target
                 )
-                progress.finish()
-                print(f"Downloaded to {save_path}")
+                output_result(result, args.output, "files.compress")
 
-        elif args.files_command == "compress":
-            result = client.files.compress(
-                source_dir=args.source, target_path=args.target
-            )
-            output_result(result, args.output, "files.compress")
-
-        elif args.files_command == "uncompress":
-            result = client.files.uncompress(
-                archive_path=args.archive, dest_dir=args.dest, password=args.password
-            )
-            output_result(result, args.output, "files.uncompress")
-
-        elif args.files_command == "conf":
-            if args.get_levels:
-                result = client.files.get_confidentiality_levels()
-                output_result(result, args.output, "files.conf")
-            elif args.set_conf:
-                result = client.files.set_confidentiality(
-                    path=args.set_conf[0], level=args.set_conf[1]
+            elif args.files_command == "uncompress":
+                result = client.files.uncompress(
+                    archive_path=args.archive, dest_dir=args.dest, password=args.password
                 )
-                output_result(result, args.output, "files.conf")
+                output_result(result, args.output, "files.uncompress")
 
-        elif args.files_command == "cat":
-            lines = client.files.cat(
-                remote_path=args.path,
-                head=args.head,
-                tail=args.tail,
-                start=args.start,
-                end=args.end,
-                encoding=args.encoding,
-            )
-            for line in lines:
-                print(line)
+            elif args.files_command == "conf":
+                if args.get_levels:
+                    result = client.files.get_confidentiality_levels()
+                    output_result(result, args.output, "files.conf")
+                elif args.set_conf:
+                    result = client.files.set_confidentiality(
+                        path=args.set_conf[0], level=args.set_conf[1]
+                    )
+                    output_result(result, args.output, "files.conf")
+
+            elif args.files_command == "cat":
+                # Resolve line range from --lines if provided
+                head = args.head
+                tail = args.tail
+                start = args.start
+                end = args.end
+                all_lines = getattr(args, "all_lines", False)
+
+                if args.lines:
+                    parts = args.lines.split("-", 1)
+                    if len(parts) == 2:
+                        if parts[0]:
+                            start = int(parts[0])
+                        if parts[1]:
+                            end = int(parts[1])
+                        else:
+                            end = None  # to EOF
+                    elif len(parts) == 1:
+                        start = int(parts[0])
+
+                lines = client.files.cat(
+                    remote_path=args.path,
+                    head=head,
+                    tail=tail,
+                    start=start,
+                    end=end,
+                    encoding=args.encoding,
+                    all_lines=all_lines,
+                )
+                for line in lines:
+                    print(line)
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
+        except Exception as e:
+            msg = str(e)
+            print(f"Error: {msg}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
     finally:
         client.close()
 

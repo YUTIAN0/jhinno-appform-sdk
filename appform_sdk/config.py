@@ -36,6 +36,7 @@ class Config:
     ENV_DEFAULT_REMOTE_PATH = "APPFORM_DEFAULT_REMOTE_PATH"
     ENV_OUTPUT_TEMPLATE = "APPFORM_OUTPUT_TEMPLATE"
     ENV_CHUNK_SIZE = "APPFORM_CHUNK_SIZE"
+    ENV_DEFAULT_METHOD = "APPFORM_DEFAULT_METHOD"
     ENV_SFTP_HOST = "APPFORM_SFTP_HOST"
     ENV_SFTP_PORT = "APPFORM_SFTP_PORT"
     ENV_SFTP_KEY_FILE = "APPFORM_SFTP_KEY_FILE"
@@ -141,6 +142,9 @@ class Config:
         )
         self.chunk_size = self._get_int_value(
             chunk_size, self.ENV_CHUNK_SIZE, "chunk_size", default=104857600
+        )
+        self.default_method = self._get_value(
+            None, self.ENV_DEFAULT_METHOD, "default_method", default="http"
         )
 
         # SFTP configuration
@@ -302,6 +306,7 @@ class Config:
         output_template: Optional[str] = None,
         default_remote_path: Optional[str] = None,
         chunk_size: Optional[int] = None,
+        default_method: Optional[str] = None,
         config_file: Optional[str] = None,
         sftp_host: Optional[str] = None,
         sftp_port: Optional[int] = None,
@@ -382,6 +387,8 @@ class Config:
             existing["default_remote_path"] = default_remote_path
         if chunk_size is not None:
             existing["chunk_size"] = chunk_size
+        if default_method:
+            existing["default_method"] = default_method
         if sftp_host:
             existing["sftp_host"] = sftp_host
         if sftp_port is not None:
@@ -417,6 +424,7 @@ class Config:
             "output_template": self.output_template,
             "default_remote_path": self.default_remote_path,
             "chunk_size": self.chunk_size,
+            "default_method": self.default_method,
             "sftp_host": self.sftp_host,
             "sftp_port": self.sftp_port,
             "sftp_username": self.sftp_username,

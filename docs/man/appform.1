@@ -58,7 +58,7 @@ Show version number
 .SH COMMANDS
 .SS config \- Manage configuration
 .TP
-.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] ...
+.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file PATH] [\-\-default\-method {http,sftp}] ...
 Set one or more configuration values
 .TP
 .B config show
@@ -155,26 +155,29 @@ Close (destroy) a session
 Share a session with other users
 .SS files \- File operations
 .TP
-.B files ls [PATH] [\-\-all] [\-\-page N] [\-\-page\-size N]
+.B files [\-\-method {http,sftp}] ls [PATH] [\-\-all] [\-\-page N] [\-\-page\-size N] [\-\-method {http,sftp}]
 List remote directory contents (default: /)
 .TP
-.B files mkdir PATH
+.B files [\-\-method {http,sftp}] mkdir PATH [\-\-no\-force] [\-\-method {http,sftp}]
 Create a remote directory
 .TP
-.B files cp SRC DEST
+.B files [\-\-method {http,sftp}] cp SRC DEST [\-\-method {http,sftp}]
 Copy a remote file or directory
 .TP
-.B files mv SRC DEST
+.B files [\-\-method {http,sftp}] mv SRC DEST [\-\-method {http,sftp}]
 Move or rename a remote file
 .TP
-.B files rm PATH
+.B files [\-\-method {http,sftp}] rm PATH [\-\-method {http,sftp}]
 Delete a remote file or directory
 .TP
-.B files put LOCAL [REMOTE] [\-\-force]
+.B files [\-\-method {http,sftp}] put LOCAL [REMOTE] [\-\-force] [\-\-method {http,sftp}]
 Upload local file or directory to remote
 .TP
-.B files get REMOTE [LOCAL]
+.B files [\-\-method {http,sftp}] get REMOTE [LOCAL] [\-\-method {http,sftp}]
 Download remote file or directory to local
+.TP
+.B files cat PATH [\-\-head N] [\-\-tail N] [\-\-lines RANGE] [\-\-start N] [\-\-end N] [\-\-all] [\-\-encoding ENC]
+View remote text file content (SFTP only); \-\-lines examples: 10\-20 or 10\-; \-\-all forces full output
 .TP
 .B files compress SOURCE TARGET
 Compress a remote directory into an archive
@@ -187,6 +190,14 @@ Get available confidentiality levels
 .TP
 .B files conf \-\-set PATH LEVEL
 Set confidentiality level for a remote file
+.PP
+The
+.B \-\-method
+option can be set at the
+.B files
+command level (affects all subcommands) or per subcommand (overrides the level default).
+Default method can be persisted via
+.B config set \-\-default\-method {http,sftp}.
 .SS apps \- Application management
 .TP
 .B apps list
@@ -317,6 +328,21 @@ Default remote path for file operations
 .TP
 .B APPFORM_CHUNK_SIZE
 Chunk size for upload/download (e.g., 100M, 1G)
+.TP
+.B APPFORM_DEFAULT_METHOD
+Default transfer method for file operations (http/sftp)
+.TP
+.B APPFORM_SFTP_HOST
+SFTP server hostname (defaults to host from base_url)
+.TP
+.B APPFORM_SFTP_PORT
+SFTP server port (default: 22)
+.TP
+.B APPFORM_SFTP_KEY_FILE
+SSH private key file path for SFTP
+.TP
+.B APPFORM_SFTP_KEY_PASSWORD
+SSH key passphrase for SFTP
 .SH FILES
 .TP
 .I ~/.appform/config.json

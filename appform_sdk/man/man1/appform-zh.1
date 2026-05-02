@@ -54,7 +54,7 @@ API 版本（默认 6.5）
 .SH 命令
 .SS config \- 配置管理
 .TP
-.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] ...
+.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file 路径] [\-\-default\-method {http,sftp}] ...
 设置一个或多个配置项
 .TP
 .B config show
@@ -151,26 +151,29 @@ API 版本（默认 6.5）
 共享会话给其他用户
 .SS files \- 文件管理
 .TP
-.B files ls [路径] [\-\-all] [\-\-page N] [\-\-page\-size N]
+.B files [\-\-method {http,sftp}] ls [路径] [\-\-all] [\-\-page N] [\-\-page\-size N] [\-\-method {http,sftp}]
 列出远程目录（默认 /）
 .TP
-.B files mkdir 路径
+.B files [\-\-method {http,sftp}] mkdir 路径 [\-\-no\-force] [\-\-method {http,sftp}]
 创建远程目录
 .TP
-.B files cp 源 目标
+.B files [\-\-method {http,sftp}] cp 源 目标 [\-\-method {http,sftp}]
 复制远程文件
 .TP
-.B files mv 源 目标
+.B files [\-\-method {http,sftp}] mv 源 目标 [\-\-method {http,sftp}]
 移动/重命名远程文件
 .TP
-.B files rm 路径
+.B files [\-\-method {http,sftp}] rm 路径 [\-\-method {http,sftp}]
 删除远程文件
 .TP
-.B files put 本地 [远程] [\-\-force]
+.B files [\-\-method {http,sftp}] put 本地 [远程] [\-\-force] [\-\-method {http,sftp}]
 上传本地文件到远程
 .TP
-.B files get 远程 [本地]
+.B files [\-\-method {http,sftp}] get 远程 [本地] [\-\-method {http,sftp}]
 从远程下载文件
+.TP
+.B files cat 路径 [\-\-head N] [\-\-tail N] [\-\-lines 范围] [\-\-start N] [\-\-end N] [\-\-all] [\-\-encoding 编码]
+查看远程文本文件内容（仅 SFTP）；\-\-lines 例：10\-20 或 10\-；\-\-all 强制输出所有行
 .TP
 .B files compress 源 目标
 压缩远程目录
@@ -183,6 +186,14 @@ API 版本（默认 6.5）
 .TP
 .B files conf \-\-set 路径 密级
 设置文件密级
+.PP
+.B \-\-method
+选项可以在
+.B files
+命令级别设置（影响所有子命令），或为每个子命令单独设置（覆盖级别默认值）。
+默认传输方式可通过
+.B config set \-\-default\-method {http,sftp}
+持久化保存。
 .SS apps \- 应用管理
 .TP
 .B apps list
@@ -313,6 +324,21 @@ API 版本（默认 6.5）
 .TP
 .B APPFORM_CHUNK_SIZE
 上传/下载分块大小（如 100M、1G）
+.TP
+.B APPFORM_DEFAULT_METHOD
+文件操作默认传输方式（http/sftp）
+.TP
+.B APPFORM_SFTP_HOST
+SFTP 服务器主机名（默认为 base_url 中的主机）
+.TP
+.B APPFORM_SFTP_PORT
+SFTP 服务器端口（默认 22）
+.TP
+.B APPFORM_SFTP_KEY_FILE
+SFTP SSH 私钥文件路径
+.TP
+.B APPFORM_SFTP_KEY_PASSWORD
+SSH 私钥密码
 .SH 相关文件
 .TP
 .I ~/.appform/config.json

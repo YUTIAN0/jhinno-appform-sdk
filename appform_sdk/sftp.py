@@ -54,7 +54,7 @@ class SFTPClientManager:
     @property
     def sftp(self):
         """Lazy-init SFTP client, reusing if already connected."""
-        if self._sftp is None or self._sftp.closed:
+        if self._sftp is None or getattr(self._sftp, "closed", True):
             self._connect()
         return self._sftp
 
@@ -89,10 +89,16 @@ class SFTPClientManager:
         self._sftp = paramiko.SFTPClient.from_transport(self._transport)
 
     def close(self):
-        if self._sftp and not self._sftp.closed:
-            self._sftp.close()
+        try:
+            if self._sftp:
+                self._sftp.close()
+        except Exception:
+            pass
         if self._transport:
-            self._transport.close()
+            try:
+                self._transport.close()
+            except Exception:
+                pass
         self._sftp = None
         self._transport = None
 
@@ -106,7 +112,10 @@ def _mkdir_recursive(sftp_client, path: str):
         try:
             sftp_client.stat(current)
         except IOError:
-            sftp_client.mkdir(current)
+            try:
+                sftp_client.mkdir(current)
+            except IOError as e:
+                raise SFTPError(f"Failed to create directory '{current}': {e}")
 
 
 class SFTPAPI:
@@ -160,15 +169,18 @@ class SFTPAPI:
         except IOError:
             _mkdir_recursive(sftp, remote_dir)
 
-        if on_progress:
-            file_size = file_path.stat().st_size
+        try:
+            if on_progress:
+                file_size = file_path.stat().st_size
 
-            def callback(transferred, total):
-                on_progress(fname, transferred, total)
+                def callback(transferred, total):
+                    on_progress(fname, transferred, total)
 
-            sftp.put(str(file_path), remote_full, callback=callback)
-        else:
-            sftp.put(str(file_path), remote_full)
+                sftp.put(str(file_path), remote_full, callback=callback)
+            else:
+                sftp.put(str(file_path), remote_full)
+        except IOError as e:
+            raise SFTPError(f"Failed to upload '{file_path}' to '{remote_full}': {e}")
 
         return {"data": {"file": fname, "remote": remote_full, "result": "success"}}
 
@@ -283,9 +295,19 @@ class SFTPAPI:
                 def callback(transferred, total):
                     on_progress(fname, transferred, total)
 
-                sftp.get(remote_path, str(local), callback=callback)
+                try:
+                    sftp.get(remote_path, str(local), callback=callback)
+                except IOError as e:
+                    raise SFTPError(
+                        f"Failed to download '{remote_path}' to '{local}': {e}"
+                    )
             else:
-                sftp.get(remote_path, str(local))
+                try:
+                    sftp.get(remote_path, str(local))
+                except IOError as e:
+                    raise SFTPError(
+                        f"Failed to download '{remote_path}' to '{local}': {e}"
+                    )
 
             return None
         else:
@@ -297,9 +319,15 @@ class SFTPAPI:
                 def callback(transferred, total):
                     on_progress(fname, transferred, total)
 
-                sftp.getfo(remote_path, buf, callback=callback)
+                try:
+                    sftp.getfo(remote_path, buf, callback=callback)
+                except IOError as e:
+                    raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
             else:
-                sftp.getfo(remote_path, buf)
+                try:
+                    sftp.getfo(remote_path, buf)
+                except IOError as e:
+                    raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
             return buf.getvalue()
 
     def download_directory(
@@ -319,6 +347,145 @@ class SFTPAPI:
             sftp, remote_dir, local_base, on_progress, chunk_size
         )
 
+    def list(
+        self,
+        path: str = "/",
+        page: int = 1,
+        page_size: int = 100,
+    ) -> Dict[str, Any]:
+        """List remote directory contents via SFTP."""
+        sftp = self._get_manager().sftp
+        items = []
+
+        try:
+            attr = sftp.stat(path)
+            if stat.S_ISREG(attr.st_mode):
+                # Path is a file — return single item
+                name = Path(path).name
+                items.append({
+                    "fileName": name,
+                    "path": path,
+                    "fileType": "file",
+                    "size": attr.st_size,
+                    "modifiedDate": _format_mtime(attr.st_mtime),
+                })
+        except IOError:
+            pass
+
+        if not items:
+            try:
+                entries = sftp.listdir_attr(path)
+            except IOError as e:
+                raise FileNotFoundError(f"Remote path not found: {path}") from e
+
+            for attr in entries:
+                if attr.filename in (".", ".."):
+                    continue
+                items.append({
+                    "fileName": attr.filename,
+                    "path": f"{path.rstrip('/')}/{attr.filename}",
+                    "fileType": "directory" if stat.S_ISDIR(attr.st_mode) else "file",
+                    "size": attr.st_size if stat.S_ISREG(attr.st_mode) else 0,
+                    "modifiedDate": _format_mtime(attr.st_mtime),
+                })
+
+        start = (page - 1) * page_size
+        end = start + page_size
+        return {
+            "data": items[start:end],
+            "total": len(items),
+            "page": page,
+            "pageSize": page_size,
+        }
+
+    def mkdir(self, path: str, force: bool = True) -> Dict[str, Any]:
+        """Create a remote directory."""
+        sftp = self._get_manager().sftp
+        try:
+            sftp.stat(path)
+            if not force:
+                return {"result": False, "message": f"Directory already exists: {path}"}
+            return {"result": True, "message": "Directory already exists"}
+        except IOError:
+            pass
+
+        try:
+            _mkdir_recursive(sftp, path)
+            return {"result": True, "message": "Directory created"}
+        except IOError as e:
+            raise SFTPError(f"Failed to create directory '{path}': {e}")
+
+    def move(self, src_path: str, dest_dir: str) -> Dict[str, Any]:
+        """Move/rename a remote file or directory."""
+        sftp = self._get_manager().sftp
+
+        # Verify source exists
+        try:
+            src_attr = sftp.stat(src_path)
+        except IOError:
+            raise FileNotFoundError(f"Source not found: {src_path}")
+
+        try:
+            # Determine final destination: if dest exists and is a directory,
+            # append the source name; otherwise treat dest as the target path.
+            try:
+                dest_stat = sftp.stat(dest_dir)
+                if stat.S_ISDIR(dest_stat.st_mode):
+                    dest_full = f"{dest_dir.rstrip('/')}/{Path(src_path).name}"
+                else:
+                    dest_full = dest_dir
+            except IOError:
+                dest_full = dest_dir
+
+            try:
+                sftp.rename(src_path, dest_full)
+            except IOError:
+                # rename may fail cross-directory: fallback to copy + delete
+                _copy_recursive(sftp, src_path, dest_full)
+                _remove_recursive(sftp, src_path)
+            return {"result": True, "message": "Moved"}
+        except (FileNotFoundError, SFTPError):
+            raise
+        except IOError as e:
+            raise SFTPError(
+                f"Failed to move '{src_path}' to '{dest_dir}': {e}"
+            )
+
+    def copy(self, src_path: str, dest_dir: str) -> Dict[str, Any]:
+        """Copy a remote file or directory via SFTP."""
+        sftp = self._get_manager().sftp
+
+        try:
+            dest_stat = sftp.stat(dest_dir)
+            if stat.S_ISDIR(dest_stat.st_mode):
+                dest_full = f"{dest_dir.rstrip('/')}/{Path(src_path).name}"
+            else:
+                dest_full = dest_dir
+        except IOError:
+            dest_full = dest_dir
+
+        try:
+            _copy_recursive(sftp, src_path, dest_full)
+        except (FileNotFoundError, SFTPError):
+            raise
+        except IOError as e:
+            raise SFTPError(f"Failed to copy '{src_path}' to '{dest_full}': {e}")
+        return {"result": True, "message": "Copied"}
+
+    def delete(self, path: str) -> Dict[str, Any]:
+        """Delete a remote file or directory."""
+        sftp = self._get_manager().sftp
+        try:
+            _remove_recursive(sftp, path)
+        except IOError as e:
+            raise SFTPError(f"Failed to delete '{path}': {e}")
+        return {"result": True, "message": "Deleted"}
+
+    def list_all(self, path: str = "/") -> List[Dict[str, Any]]:
+        """List all files in a directory via SFTP (no pagination)."""
+        result = self.list(path=path, page=1, page_size=999999)
+        return result.get("data", [])
+
     def cat(
         self,
         remote_path: str,
@@ -328,6 +495,7 @@ class SFTPAPI:
         end: Optional[int] = None,
         encoding: str = "utf-8",
         small_threshold: int = 1048576,
+        all_lines: bool = False,
     ) -> List[str]:
         """Read selected lines from a remote text file via SFTP.
 
@@ -339,6 +507,7 @@ class SFTPAPI:
             end: End line number (1-based, inclusive)
             encoding: Text encoding (default: utf-8)
             small_threshold: Byte threshold below which the file is read entirely
+            all_lines: Force output all lines even for large files
 
         Returns:
             List of lines (with newlines stripped)
@@ -346,16 +515,24 @@ class SFTPAPI:
         sftp = self._get_manager().sftp
 
         try:
-            file_size = sftp.stat(remote_path).st_size
+            attr = sftp.stat(remote_path)
         except IOError:
-            raise FileNotFoundError(f"Remote file not found: {remote_path}")
+            raise FileNotFoundError(f"Remote path not found: {remote_path}")
 
-        # Small file: read all into memory
-        if file_size < small_threshold:
+        if stat.S_ISDIR(attr.st_mode):
+            raise IsADirectoryError(f"Is a directory, not a file: {remote_path}")
+
+        file_size = attr.st_size
+
+        # --all or small file: read all into memory
+        if all_lines or file_size < small_threshold:
             import io
 
             buf = io.BytesIO()
-            sftp.getfo(remote_path, buf)
+            try:
+                sftp.getfo(remote_path, buf)
+            except IOError as e:
+                raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
             text = buf.getvalue().decode(encoding, errors="replace")
             lines = text.splitlines()
 
@@ -391,8 +568,8 @@ def _download_dir_recursive(sftp, remote_dir, local_base, on_progress, chunk_siz
     """Recursively download a remote directory via SFTP."""
     try:
         entries = sftp.listdir_attr(remote_dir)
-    except IOError:
-        return []
+    except IOError as e:
+        raise SFTPError(f"Failed to list remote directory '{remote_dir}': {e}")
 
     results = []
     file_items = []
@@ -450,6 +627,91 @@ def _download_dir_recursive(sftp, remote_dir, local_base, on_progress, chunk_siz
 
 
 # ---------------------------------------------------------------------------
+# Utility helpers
+# ---------------------------------------------------------------------------
+
+
+def _format_mtime(ts) -> str:
+    """Format timestamp as ISO-like date string."""
+    import datetime
+    try:
+        dt = datetime.datetime.fromtimestamp(ts)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except (OSError, ValueError):
+        return str(int(ts))
+
+
+def _copy_recursive(sftp, src: str, dest: str):
+    """Copy a file or directory recursively via SFTP."""
+    try:
+        attr = sftp.stat(src)
+    except IOError:
+        raise FileNotFoundError(f"Source not found: {src}")
+
+    if stat.S_ISDIR(attr.st_mode):
+        try:
+            sftp.mkdir(dest)
+        except IOError:
+            pass
+        try:
+            entries = sftp.listdir_attr(src)
+        except IOError as e:
+            raise SFTPError(f"Failed to list directory '{src}': {e}")
+        for entry in entries:
+            if entry.filename in (".", ".."):
+                continue
+            _copy_recursive(
+                sftp,
+                f"{src}/{entry.filename}",
+                f"{dest}/{entry.filename}",
+            )
+    else:
+        # Ensure parent directory of destination exists
+        dest_parent = str(Path(dest).parent)
+        if dest_parent:
+            _mkdir_recursive(sftp, dest_parent)
+
+        import io
+        buf = io.BytesIO()
+        try:
+            sftp.getfo(src, buf)
+        except IOError as e:
+            raise SFTPError(f"Failed to read '{src}' for copy: {e}")
+        buf.seek(0)
+        try:
+            sftp.putfo(buf, dest)
+        except IOError as e:
+            raise SFTPError(f"Failed to write '{dest}' during copy: {e}")
+
+
+def _remove_recursive(sftp, path: str):
+    """Remove a file or directory recursively via SFTP."""
+    try:
+        attr = sftp.stat(path)
+    except IOError:
+        return
+
+    if stat.S_ISDIR(attr.st_mode):
+        try:
+            entries = sftp.listdir_attr(path)
+        except IOError as e:
+            raise SFTPError(f"Failed to list directory for removal '{path}': {e}")
+        for entry in entries:
+            if entry.filename in (".", ".."):
+                continue
+            _remove_recursive(sftp, f"{path}/{entry.filename}")
+        try:
+            sftp.rmdir(path)
+        except IOError as e:
+            raise SFTPError(f"Failed to remove directory '{path}': {e}")
+    else:
+        try:
+            sftp.remove(path)
+        except IOError as e:
+            raise SFTPError(f"Failed to remove file '{path}': {e}")
+
+
+# ---------------------------------------------------------------------------
 # Partial read helpers for cat()
 # ---------------------------------------------------------------------------
 
@@ -459,7 +721,10 @@ def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
     import io
 
     buf = io.BytesIO()
-    sftp.getfo(remote_path, buf)
+    try:
+        sftp.getfo(remote_path, buf)
+    except IOError as e:
+        raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
     buf.seek(0)
     lines = []
     for line in buf:
@@ -481,7 +746,10 @@ def _read_tail(sftp, remote_path: str, n: int, encoding: str, file_size: int) ->
         read_start = max(0, pos - chunk_size)
         amount = pos - read_start
         buf = io.BytesIO()
-        sftp.getfo(remote_path, buf, read_start, amount)
+        try:
+            sftp.getfo(remote_path, buf, read_start, amount)
+        except IOError as e:
+            raise SFTPError(f"Failed to read remote file '{remote_path}' at offset {read_start}: {e}")
         chunk = buf.getvalue()
         lines = chunk.decode(encoding, errors="replace").splitlines()
         if read_start > 0:
@@ -500,7 +768,10 @@ def _read_range(sftp, remote_path: str, start: int, end: int, encoding: str) -> 
     import io
 
     buf = io.BytesIO()
-    sftp.getfo(remote_path, buf)
+    try:
+        sftp.getfo(remote_path, buf)
+    except IOError as e:
+        raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
     buf.seek(0)
     lines = []
     for i, line in enumerate(buf, 1):
@@ -516,7 +787,10 @@ def _read_from(sftp, remote_path: str, start: int, encoding: str) -> List[str]:
     import io
 
     buf = io.BytesIO()
-    sftp.getfo(remote_path, buf)
+    try:
+        sftp.getfo(remote_path, buf)
+    except IOError as e:
+        raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
     buf.seek(0)
     lines = []
     for i, line in enumerate(buf, 1):
