@@ -95,6 +95,9 @@ class AppProfile:
     def get_optional_params(self) -> List[ParameterDef]:
         return [p for p in self.parameters if not p.required]
 
+    def get_upload_params(self) -> List[ParameterDef]:
+        return [p for p in self.parameters if p.param_type == "upload"]
+
     def get_param(self, name: str) -> Optional[ParameterDef]:
         for p in self.parameters:
             if p.name == name:

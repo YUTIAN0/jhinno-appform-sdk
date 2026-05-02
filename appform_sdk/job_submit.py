@@ -6,11 +6,11 @@
 兼容原有 job_submit.py 命令行参数格式，使用 SDK 的认证和配置管理。
 
 用法:
-    job_submit -l                          # 列出支持的应用
-    job_submit -a starccm -h               # 查看应用参数帮助
-    job_submit -a starccm -i file.sim -n 8 # 提交作业
-    job_submit -a starccm -i file.sim -n 8 --wait          # 提交后等待完成
-    job_submit -a starccm -i file.sim -n 8 --wait 5        # 每5分钟查询一次
+    job_submit -l                                    # 列出支持的应用
+    job_submit -a starccm -h                         # 查看应用参数帮助
+    job_submit -a starccm -i file.sim -n 8           # 提交作业
+    job_submit -a starccm -i file.sim -n 8 --wait    # 提交后等待完成
+    job_submit -a starccm -i file.sim -n 8 --wait 5  # 每5分钟查询一次
 
 认证方式（优先级从高到低）:
     1. -u/-p 用户名密码认证（SDK auth.login）
@@ -27,7 +27,9 @@ import subprocess
 import sys
 import textwrap
 import time
-from typing import Dict, List, Optional
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # 终态状态集合（作业已完成或异常退出）
 TERMINAL_STATUSES = {"DONE", "EXIT", "ZOMBI"}
@@ -122,6 +124,107 @@ def convert_windows_path(file_path: str, disk_mapping: Dict[str, str]) -> str:
             return file_path
 
     return file_path.replace("\\", "/")
+
+
+# ---------------------------------------------------------------------------
+# Path mapping and file upload helpers
+# ---------------------------------------------------------------------------
+
+
+def _is_path_mapped(file_path: str, disk_mapping: Dict[str, str]) -> bool:
+    """Check if a file path is already on a remote (mapped) path.
+
+    Uses the values of disk_mapping (e.g. {'S:': '/apps'}) as the set of
+    remote prefixes.  If *file_path* starts with any of them it is already
+    on the server and does not need uploading.
+    """
+    if not disk_mapping or not file_path:
+        return False
+    remote_prefixes = [p.rstrip("/") for p in disk_mapping.values()]
+    for prefix in remote_prefixes:
+        if file_path.startswith(prefix + "/") or file_path == prefix:
+            return True
+    return False
+
+
+def _get_default_upload_path() -> str:
+    """Generate default upload path as $HOME/<YYYYMMDD_HHMMSS>/."""
+    home = os.path.expanduser("~")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{home}/{timestamp}"
+
+
+def _upload_files(
+    client,
+    local_paths: List[str],
+    remote_path: str,
+    transfer_method: str,
+) -> Dict[str, str]:
+    """Upload local files/dirs to a remote directory.
+
+    Returns a ``{local_path: remote_path}`` mapping.  Directories are
+    uploaded recursively; every contained file gets its own entry.
+    """
+    uploaded: Dict[str, str] = {}
+    seen_local: set = set()
+
+    for local_path in local_paths:
+        lp = os.path.abspath(local_path)
+        if lp in seen_local:
+            continue
+        seen_local.add(lp)
+        p = Path(lp)
+        if not p.exists():
+            print(f"  Warning: not found, skipping: {local_path}", file=sys.stderr)
+            continue
+
+        remote_dir = remote_path.rstrip("/")
+        if p.is_dir():
+            print(f"  Uploading directory: {local_path}")
+            if transfer_method == "sftp":
+                client.sftp.upload_directory(str(p), remote_dir)
+            else:
+                client.files.upload_directory(
+                    str(p), remote_dir, transfer_method="http"
+                )
+            for f in p.rglob("*"):
+                if f.is_file():
+                    rel = str(f.relative_to(p)).replace(os.sep, "/")
+                    uploaded[str(f)] = f"{remote_dir}/{rel}"
+        else:
+            print(f"  Uploading file: {local_path}")
+            if transfer_method == "sftp":
+                client.sftp.upload(str(p), remote_dir)
+            else:
+                client.files.upload(str(p), remote_dir, transfer_method="http")
+            uploaded[str(p)] = f"{remote_dir}/{p.name}"
+
+    return uploaded
+
+
+def _apply_uploaded_paths(
+    overrides: Dict[str, str],
+    upload_params: List[Any],
+    path_mapping: Dict[str, str],
+) -> Dict[str, str]:
+    """Replace local paths with remote ones for upload-type params.
+
+    Handles comma-separated multi-file values.
+    """
+    upload_param_names = {p.name for p in upload_params}
+    result = dict(overrides)
+    for key in upload_param_names:
+        value = result.get(key, "")
+        if not value:
+            continue
+        parts = [p.strip() for p in value.split(",")]
+        new_parts = []
+        for part in parts:
+            abs_part = os.path.abspath(part)
+            mapped = path_mapping.get(abs_part, part)
+            new_parts.append(mapped)
+        result[key] = ",".join(new_parts)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -367,6 +470,13 @@ def _build_parser(
         metavar="MINUTES",
         help="Wait for job to complete after submit (default: poll every 10 min)",
     )
+    parser.add_argument(
+        "--upload-path",
+        dest="upload_path",
+        default=None,
+        metavar="PATH",
+        help="Remote directory for uploading local files (default: ~/<timestamp>/)",
+    )
 
     # Add app-specific parameters
     if app_id:
@@ -418,7 +528,9 @@ def _add_params(group, params):
             kwargs["metavar"] = "{on,off}"
             kwargs["default"] = pd.default if pd.default else "off"
         elif pd.param_type == "upload":
-            kwargs["metavar"] = metavar
+            kwargs["nargs"] = "+"
+            kwargs["metavar"] = "FILE..."
+            kwargs["help"] = help_text + " (支持多个文件/目录)"
             if pd.required:
                 kwargs["required"] = True
         else:
@@ -444,6 +556,11 @@ def _collect_overrides(profile, parsed_args) -> Dict[str, str]:
         if value is not None:
             if pd.param_type == "switch":
                 overrides[pd.name] = str(value)
+            elif pd.param_type == "upload":
+                if isinstance(value, list):
+                    overrides[pd.name] = ",".join(str(v) for v in value if v)
+                elif value not in (None, ""):
+                    overrides[pd.name] = str(value)
             elif value not in (None, ""):
                 overrides[pd.name] = str(value)
 
@@ -591,7 +708,7 @@ def main(args=None):
     disk_mapping = _resolve_disk_mapping(pm)
     base_url = _resolve_base_url(pm)
 
-    # --- Pass 1: find -a / -l / -u / -p / --wait ---
+    # --- Pass 1: find -a / -l / -u / -p / --wait / --upload-path ---
     pre = argparse.ArgumentParser(add_help=False)
     pre.add_argument("-a", "--app", dest="_app", default=None)
     pre.add_argument("-l", "--list-apps", action="store_true", dest="_list_apps")
@@ -600,6 +717,7 @@ def main(args=None):
     pre.add_argument(
         "--wait", nargs="?", const=10, type=int, dest="_wait", default=None
     )
+    pre.add_argument("--upload-path", dest="_upload_path", default=None)
     pre_args, remaining = pre.parse_known_args(args)
 
     # List apps
@@ -687,24 +805,16 @@ def main(args=None):
     overrides = _collect_overrides(profile, parsed)
     overrides = _apply_path_conversion(overrides, disk_mapping)
 
-    try:
-        params = pm.build_submit_params(app_id, overrides)
-    except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    params_str = json.dumps(params, ensure_ascii=False)
-
     # --- Create SDK client and authenticate ---
+    from .client import AppformClient
+
+    client_kwargs = {"base_url": base_url, "verify_ssl": False, "config": sdk_config}
+
+    # Determine authentication method
+    username = pre_args._username
+    password = pre_args._password
+
     try:
-        from .client import AppformClient
-
-        client_kwargs = {"base_url": base_url, "verify_ssl": False}
-
-        # Determine authentication method
-        username = pre_args._username
-        password = pre_args._password
-
         if username and password:
             # 1. Password auth via CLI args
             client = AppformClient(**client_kwargs)
@@ -775,6 +885,44 @@ def main(args=None):
             )
             print("  3. Configure AccessKey (requires Appform 6.4+)", file=sys.stderr)
             sys.exit(1)
+
+        # --- Upload local files if needed ---
+        upload_path = getattr(parsed, "upload_path", None) or pre_args._upload_path
+        upload_params_list = profile.get_upload_params()
+        transfer_method = sdk_config.default_method
+
+        # Collect local files that need uploading
+        files_to_upload: List[str] = []
+        for param in upload_params_list:
+            val = overrides.get(param.name, "")
+            if val:
+                for f in val.split(","):
+                    f = f.strip()
+                    if f and not _is_path_mapped(f, disk_mapping):
+                        files_to_upload.append(f)
+
+        path_mapping: Dict[str, str] = {}
+        if files_to_upload:
+            if not upload_path:
+                upload_path = _get_default_upload_path()
+            print(f"Uploading {len(files_to_upload)} local file(s) to {upload_path}...")
+            path_mapping = _upload_files(
+                client, files_to_upload, upload_path, transfer_method
+            )
+            overrides = _apply_uploaded_paths(
+                overrides, upload_params_list, path_mapping
+            )
+            print("Upload complete.")
+
+        # --- Build final params ---
+        try:
+            params = pm.build_submit_params(app_id, overrides)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
+
+        params_str = json.dumps(params, ensure_ascii=False)
 
         # --- Submit job via SDK ---
         result = client.jobs.submit(app_id=app_id, params=params)
