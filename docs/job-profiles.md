@@ -233,7 +233,7 @@ SDK 提供三个命令行工具用于作业提交，参数格式一致：
 
 ### job_submit 命令
 
-独立的作业提交工具，完全兼容原有 `python job_submit.py` 的命令行参数格式。
+独立的作业提交工具，完全兼容原有 `python job_submit.py` 的命令行参数格式，并支持本地文件自动上传。
 
 ```bash
 # 列出支持的应用
@@ -243,10 +243,19 @@ job_submit -l
 job_submit -a starccm -h
 job_submit -a lsdyna2 -h
 
-# 提交作业
-job_submit -a starccm -i /path/to/file.sim -n 8
-job_submit -a starccm -i /path/to/file.sim -n 16 -r 20.02.007
-job_submit -a lsdyna2 -i /path/to/input.k -n 16
+# 提交作业（远程映射路径下的文件，无需上传）
+job_submit -a starccm -i /apps/project/file.sim -n 8
+job_submit -a starccm -i /apps/project/file.sim -n 16 -r 20.02.007
+job_submit -a lsdyna2 -i /data/project/input.k -n 16
+
+# 提交作业（本地文件自动上传）
+job_submit -a starccm -i /local/file.sim -n 8
+
+# 指定上传目录
+job_submit -a starccm -i /local/file.sim -n 8 --upload-path /projects/job_data
+
+# 上传多个文件和目录
+job_submit -a fluent -i /local/case.cas /local/data.dat /local/mesh_dir/ -n 32
 
 # 开关参数
 job_submit -a starccm -i /path/to/file.sim -post
@@ -259,6 +268,27 @@ job_submit -a starccm -i /path/to/file.sim -n 8 --wait 5
 
 # 使用用户名密码认证
 job_submit -a starccm -i /path/to/file.sim -n 8 -u username -p password
+```
+
+**文件上传功能：**
+
+当 `type: upload` 参数指定的文件不在远程映射路径下时，自动上传后提交。
+
+| 功能 | 说明 |
+|------|------|
+| 自动检测 | 通过 `windows_disk_mapping` 目标路径判断文件是否已在远程 |
+| 上传路径 | `--upload-path PATH` 指定，默认为 `$HOME/<YYYYMMDD_HHMMSS>/` |
+| 多文件 | 同一参数支持多个文件/目录：`-i file1.sim file2.dat` |
+| 传输方式 | 跟随 `APPFORM_DEFAULT_METHOD` 配置（http/sftp） |
+| $HOME 解析 | HTTP 由服务端解析；SFTP 通过 SSH `echo ~` 获取远端家目录 |
+
+```
+配置:  S: -> /apps,  D: -> /data
+
+/app/project/file.sim     -> 已在远程，不上传
+/data/cases/test.cas      -> 已在远程，不上传
+/home/user/local.sim      -> 本地文件，自动上传
+/tmp/scratch/file.dat     -> 本地文件，自动上传
 ```
 
 **认证方式**（按优先级）：

@@ -322,7 +322,7 @@ appform files get /home/user/remote_file.txt
 
 ### job_submit 工具
 
-完全兼容原 `job_submit.py` 参数格式：
+完全兼容原 `job_submit.py` 参数格式，支持本地文件自动上传：
 
 ```bash
 # 列出应用
@@ -331,9 +331,17 @@ job_submit -l
 # 查看应用参数帮助
 job_submit -a starccm -h
 
-# 提交作业
-job_submit -a starccm -i /path/to/file.sim -n 8
-job_submit -a lsdyna2 -i /path/to/input.k -n 8 -q debug --lsdyna-post-switch off
+# 提交作业（文件在远程映射路径，无需上传）
+job_submit -a starccm -i /apps/project/file.sim -n 8
+
+# 提交作业（本地文件自动上传到 $HOME/<timestamp>/）
+job_submit -a starccm -i /local/file.sim -n 8
+
+# 指定上传目录
+job_submit -a starccm -i /local/file.sim -n 8 --upload-path /projects/job_data
+
+# 上传多个文件和目录
+job_submit -a fluent -i /local/case.cas /local/data.dat /local/mesh_dir/ -n 32
 
 # 提交并等待完成（默认每 10 分钟查询一次）
 job_submit -a lsdyna2 -i /path/to/input.k -n 8 --wait
@@ -344,6 +352,12 @@ job_submit -a lsdyna2 -i /path/to/input.k -n 8 --wait 5
 # 使用用户名密码认证
 job_submit -a starccm -i file.sim -n 8 -u admin -p password
 ```
+
+**文件上传规则：**
+- `upload` 类型参数指定的文件，通过 `windows_disk_mapping` 目标路径判断是否已在远程
+- 不在映射路径下的文件自动上传，上传后替换为远程路径
+- 支持多个文件和目录
+- 传输方式跟随 `APPFORM_DEFAULT_METHOD` 配置（http/sftp）
 
 ### xml2table 工具
 
@@ -363,6 +377,7 @@ python -m appform_sdk.xml2table -a -r -d . -o yaml,excel,csv
 - [认证方式](authentication.md) - AccessKey、密码、AES Token 认证
 - [作业管理](jobs.md) - 作业提交、查询、操作
 - [作业配置文件](job-profiles.md) - YAML 配置文件、应用参数、submit 命令详解
+- [job_submit 快速开始](job-submit.md) - 作业提交工具快速参考，包含文件上传功能
 - [会话管理](sessions.md) - 会话启动、连接、共享
 - [文件管理](files.md) - 文件上传下载、压缩解压
 - [应用管理](apps.md) - 应用列表和信息

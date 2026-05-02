@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [0.0.4] - 2026-05-03
 
 ### Added
+- **`job_submit` file upload support** — automatic upload of local files before job submission
+  - `param_type: upload` parameters detect local files not in mapped remote paths
+  - `--upload-path PATH` flag to specify remote upload directory
+  - Default upload path: `$HOME/<YYYYMMDD_HHMMSS>/` (server-side $HOME resolution)
+  - Multiple files and directories supported via `nargs='+'`
+  - Upload method follows `APPFORM_DEFAULT_METHOD` (http/sftp)
+  - SFTP resolves `$HOME` via SSH exec `echo ~` through `SFTPAPI.get_home_dir()`
+  - Path mapping uses `windows_disk_mapping` values (e.g. `S: -> /apps`) to detect remote files
 - **`files tailf` command** — real-time remote file output tracking via SSH exec channel
   - `appform files tailf /path/to/file` — follows file output like `tail -f`
   - `appform jobs files <id> tailf /path/to/file` — track job output files

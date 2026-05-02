@@ -9,7 +9,7 @@ The
 .B job_submit
 command is a universal job submission tool for Appform. It reads application
 configurations from job_submit.yaml and provides application-specific parameter
-handling with automatic Windows path conversion.
+handling with automatic Windows path conversion and local file upload.
 .SH OPTIONS
 .TP
 .BI \-a , \-\-app APP
@@ -29,6 +29,18 @@ Override parameters as a JSON string.
 .B \-\-dry\-run
 Show final parameters without submitting.
 .TP
+.BI \-\-upload\-path PATH
+Remote directory for uploading local files. Default: $HOME/<YYYYMMDD_HHMMSS>/.
+.TP
+.BI \-u , \-\-username USER
+Authentication username.
+.TP
+.BI \-p , \-\-password PASS
+Authentication password.
+.TP
+.BI \-\-wait [MINUTES]
+Wait for job completion after submission (default: poll every 10 min).
+.TP
 .B \-\-base\-url URL
 API base URL (or set APPFORM_BASE_URL).
 .TP
@@ -45,10 +57,31 @@ Username (or set APPFORM_USERNAME).
 Path to job profile configuration file (overrides APPFORM_JOB_PROFILE_CONFIG).
 .SH EXAMPLES
 .PP
-Submit a Star-CCM+ job:
+Submit a Star-CCM+ job with remote file:
 .RS
 .nf
-job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16
+job_submit \\-a starccm \\-i /apps/project/file.sim \\-n 16
+.fi
+.RE
+.PP
+Submit with local file auto-upload:
+.RS
+.nf
+job_submit \\-a starccm \\-i /local/file.sim \\-n 8
+.fi
+.RE
+.PP
+Upload to custom remote directory:
+.RS
+.nf
+job_submit \\-a starccm \\-i /local/file.sim \\-n 8 \\-\\-upload\\-path /projects/job_data
+.fi
+.RE
+.PP
+Upload multiple files and directories:
+.RS
+.nf
+job_submit \\-a fluent \\-i /local/case.cas /local/data.dat /local/mesh_dir/ \\-n 32
 .fi
 .RE
 .PP
@@ -59,24 +92,11 @@ job_submit \\-a nastran \\-\\-cas /path/to/test.bdf \\-\\-ncpu 16
 .fi
 .RE
 .PP
-Override parameters with \-\-set:
+Submit and wait for completion:
 .RS
 .nf
-job_submit \\-a starccm \\-\\-set JH_CAS=/path/to/file.sim \\-\\-set JH_NCPU=8
-.fi
-.RE
-.PP
-Override parameters with \-\-params:
-.RS
-.nf
-job_submit \\-a fluent \\-\\-params '{"JH_CAS":"/path/file.cas","JH_NCPU":"8"}'
-.fi
-.RE
-.PP
-Preview without submitting:
-.RS
-.nf
-job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16 \\-\\-dry\\-run
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 8 \\-\\-wait
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 8 \\-\\-wait 5
 .fi
 .RE
 .PP
@@ -86,6 +106,41 @@ List available applications:
 job_submit \\-l
 .fi
 .RE
+.SH FILE UPLOAD
+.PP
+For
+.B param_type: upload
+parameters, files not in mapped remote paths are automatically uploaded
+before job submission.
+.PP
+The
+.B windows_disk_mapping
+values (e.g. \fBS: -> /apps\fP) are used as remote path prefixes. Files
+starting with these prefixes are treated as already on the server.
+.PP
+Upload rules:
+.RS
+.IP 1.
+Check each upload-type parameter value
+.IP 2.
+Files under mapped paths (e.g. \fB/apps\fP, \fB/data\fP) are skipped
+.IP 3.
+Other files are uploaded to the target directory
+.IP 4.
+Parameter values are replaced with remote paths after upload
+.RE
+.PP
+Upload target:
+.RS
+.IP \fB\fI\-\-upload\-path PATH\fP\fR :
+Specified remote directory
+.IP \fB(default)\fP :
+\fB$HOME/<YYYYMMDD_HHMMSS>/\fP
+.RE
+.PP
+The transfer method follows \fBAPPFORM_DEFAULT_METHOD\fP (http or sftp).
+For SFTP, \fB$HOME\fP is resolved via SSH \fBecho ~\fP.
+For HTTP, the server resolves \fB$HOME\fP.
 .SH WINDOWS PATH CONVERSION
 .PP
 On Windows, disk paths are automatically converted using the
@@ -105,6 +160,21 @@ to
 .B /apps/project/file.sim
 before submission.
 The conversion applies to all file-type parameters (\-i, \-\-cas, \-\-input, etc.).
+.SH AUTHENTICATION
+.PP
+Priority (highest to lowest):
+.RS
+.IP 1.
+\fB\-u/\-p\fP password auth (CLI arguments)
+.IP 2.
+Password from config file (~/.appform/config.json)
+.IP 3.
+AccessKey (config or environment)
+.IP 4.
+Token (config or environment)
+.IP 5.
+AES Token (cluster environment)
+.RE
 .SH CONFIGURATION FILE
 .PP
 The job profile configuration file (default: job_submit.yaml) defines
@@ -124,6 +194,7 @@ Example job_submit.yaml:
 default_app: starccm
 windows_disk_mapping:
   'S:': '/apps'
+  'D:': '/data'
 applications:
   \- app_id: starccm
     name: Star\-CCM+

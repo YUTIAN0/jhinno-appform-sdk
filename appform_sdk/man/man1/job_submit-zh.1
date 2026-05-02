@@ -7,7 +7,7 @@ job_submit \- Appform 通用作业提交工具
 .SH DESCRIPTION
 .B job_submit
 是 Appform 的通用作业提交工具。它从 job_submit.yaml 配置文件读取应用配置，
-并提供应用特定的参数处理，支持 Windows 路径自动转换。
+并提供应用特定的参数处理，支持 Windows 路径自动转换和本地文件上传。
 .SH 选项
 .TP
 .BI \-a , \-\-app 应用
@@ -27,6 +27,18 @@ job_submit \- Appform 通用作业提交工具
 .B \-\-dry\-run
 仅显示最终参数，不提交作业。
 .TP
+.BI \-\-upload\-path 路径
+本地文件上传到的远程目录。默认：$HOME/<YYYYMMDD_HHMMSS>/。
+.TP
+.BI \-u , \-\-username 用户
+认证用户名。
+.TP
+.BI \-p , \-\-password 密码
+认证密码。
+.TP
+.BI \-\-wait [分钟]
+提交后等待作业完成（默认每 10 分钟查询一次）。
+.TP
 .B \-\-base\-url URL
 API 基础 URL（或设置 APPFORM_BASE_URL）。
 .TP
@@ -43,10 +55,31 @@ API 基础 URL（或设置 APPFORM_BASE_URL）。
 作业配置文件路径（覆盖 APPFORM_JOB_PROFILE_CONFIG）。
 .SH 示例
 .PP
-提交 Star-CCM+ 作业：
+提交远程文件的 Star-CCM+ 作业：
 .RS
 .nf
-job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16
+job_submit \\-a starccm \\-i /apps/project/file.sim \\-n 16
+.fi
+.RE
+.PP
+提交本地文件（自动上传）：
+.RS
+.nf
+job_submit \\-a starccm \\-i /local/file.sim \\-n 8
+.fi
+.RE
+.PP
+指定上传目录：
+.RS
+.nf
+job_submit \\-a starccm \\-i /local/file.sim \\-n 8 \\-\\-upload\\-path /projects/job_data
+.fi
+.RE
+.PP
+上传多个文件和目录：
+.RS
+.nf
+job_submit \\-a fluent \\-i /local/case.cas /local/data.dat /local/mesh_dir/ \\-n 32
 .fi
 .RE
 .PP
@@ -57,24 +90,11 @@ job_submit \\-a nastran \\-\\-cas /path/to/test.bdf \\-\\-ncpu 16
 .fi
 .RE
 .PP
-使用 \-\-set 覆盖参数：
+提交并等待完成：
 .RS
 .nf
-job_submit \\-a starccm \\-\\-set JH_CAS=/path/to/file.sim \\-\\-set JH_NCPU=8
-.fi
-.RE
-.PP
-使用 \-\-params 覆盖参数：
-.RS
-.nf
-job_submit \\-a fluent \\-\\-params '{"JH_CAS":"/path/file.cas","JH_NCPU":"8"}'
-.fi
-.RE
-.PP
-预览而不提交：
-.RS
-.nf
-job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16 \\-\\-dry\\-run
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 8 \\-\\-wait
+job_submit \\-a starccm \\-i /path/to/file.sim \\-n 8 \\-\\-wait 5
 .fi
 .RE
 .PP
@@ -84,6 +104,40 @@ job_submit \\-a starccm \\-i /path/to/file.sim \\-n 16 \\-\\-dry\\-run
 job_submit \\-l
 .fi
 .RE
+.SH 文件上传
+.PP
+对于
+.B param_type: upload
+类型的参数，不在远程映射路径下的文件会在提交作业前自动上传。
+.PP
+通过
+.B windows_disk_mapping
+配置的目标路径（如 \fBS: -> /apps\fP）判断文件是否已在远程。
+文件路径以这些前缀开头的视为已在服务器上。
+.PP
+上传规则：
+.RS
+.IP 1.
+检查每个 upload 类型参数的值
+.IP 2.
+映射路径下的文件（如 \fB/apps\fP、\fB/data\fP）跳过
+.IP 3.
+其他文件上传到目标目录
+.IP 4.
+上传后参数值自动替换为远程路径
+.RE
+.PP
+上传目标：
+.RS
+.IP \fB\fI\-\-upload\-path 路径\fP\fR :
+指定的远程目录
+.IP \fB(默认)\fP :
+\fB$HOME/<YYYYMMDD_HHMMSS>/\fP
+.RE
+.PP
+传输方式跟随 \fBAPPFORM_DEFAULT_METHOD\fP 配置（http 或 sftp）。
+SFTP 方式通过 SSH \fBecho ~\fP 获取远端家目录；
+HTTP 方式由服务端解析 \fB$HOME\fP。
 .SH Windows 路径转换
 .PP
 在 Windows 系统下，可通过 job_submit.yaml 中的
@@ -102,6 +156,21 @@ windows_disk_mapping:
 转换为
 .B /apps/project/file.sim
 后再提交。转换适用于所有文件类型的参数（\-i, \-\-cas, \-\-input 等）。
+.SH 认证方式
+.PP
+优先级从高到低：
+.RS
+.IP 1.
+\fB\-u/\-p\fP 密码认证（命令行参数）
+.IP 2.
+配置文件密码（~/.appform/config.json）
+.IP 3.
+AccessKey（配置或环境变量）
+.IP 4.
+Token（配置或环境变量）
+.IP 5.
+AES Token（集群环境）
+.RE
 .SH 配置文件
 .PP
 作业配置文件（默认为 job_submit.yaml）定义了应用特定的参数。配置文件位置优先级：
@@ -120,9 +189,10 @@ APPFORM_JOB_PROFILE_CONFIG 环境变量
 default_app: starccm
 windows_disk_mapping:
   'S:': '/apps'
+  'D:': '/data'
 applications:
   \- app_id: starccm
-    name: STAR-CCM+
+    name: STAR\-CCM+
     parameters:
       \- name: JH_CAS
         cli_arg: input
