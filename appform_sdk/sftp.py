@@ -583,7 +583,7 @@ class SFTPAPI:
             raise SFTPError("SFTP transport not connected")
 
         channel = transport.open_session()
-        channel.set_timeout(0)  # non-blocking
+        channel.setblocking(False)
         channel.exec_command(f"tail -f {shlex.quote(remote_path)}")
 
         try:
