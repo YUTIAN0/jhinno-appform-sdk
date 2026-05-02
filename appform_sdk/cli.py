@@ -1484,28 +1484,39 @@ def handle_files_command(args: argparse.Namespace):
     config = Config(config_file=getattr(args, "config_file", None))
 
     try:
-        method = getattr(args, "default_method", None) or config.default_method or "http"
+        method = (
+            getattr(args, "default_method", None) or config.default_method or "http"
+        )
 
         try:
             if args.files_command == "ls":
                 cmd_method = getattr(args, "method", None) or method
                 if args.list_all:
-                    items = client.files.list_all(path=args.path, transfer_method=cmd_method)
+                    items = client.files.list_all(
+                        path=args.path, transfer_method=cmd_method
+                    )
                     result = {"data": items, "path": args.path, "count": len(items)}
                 else:
                     result = client.files.list(
-                        path=args.path, page=args.page, page_size=args.page_size, transfer_method=cmd_method
+                        path=args.path,
+                        page=args.page,
+                        page_size=args.page_size,
+                        transfer_method=cmd_method,
                     )
                 output_result(result, args.output, "files.list")
 
             elif args.files_command == "cp":
                 cmd_method = getattr(args, "method", None) or method
-                result = client.files.copy(src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method)
+                result = client.files.copy(
+                    src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method
+                )
                 output_result(result, args.output, "files.copy")
 
             elif args.files_command == "mv":
                 cmd_method = getattr(args, "method", None) or method
-                result = client.files.move(src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method)
+                result = client.files.move(
+                    src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method
+                )
                 output_result(result, args.output, "files.rename")
 
             elif args.files_command == "rm":
@@ -1516,7 +1527,9 @@ def handle_files_command(args: argparse.Namespace):
             elif args.files_command == "mkdir":
                 force = not args.no_force
                 cmd_method = getattr(args, "method", None) or method
-                result = client.files.mkdir(path=args.path, force=force, transfer_method=cmd_method)
+                result = client.files.mkdir(
+                    path=args.path, force=force, transfer_method=cmd_method
+                )
                 output_result(result, args.output, "files.mkdir")
 
             elif args.files_command == "put":
@@ -1577,7 +1590,11 @@ def handle_files_command(args: argparse.Namespace):
                 elif local_path.is_file():
                     fname = local_path.name
                     saved = f"{remote.rstrip('/')}/{fname}"
-                    if cmd_method == "http" and not force and _remote_file_exists(client, remote, fname):
+                    if (
+                        cmd_method == "http"
+                        and not force
+                        and _remote_file_exists(client, remote, fname)
+                    ):
                         if not _confirm_overwrite(fname):
                             print("Upload cancelled.")
                             client.close()
@@ -1685,7 +1702,9 @@ def handle_files_command(args: argparse.Namespace):
 
             elif args.files_command == "uncompress":
                 result = client.files.uncompress(
-                    archive_path=args.archive, dest_dir=args.dest, password=args.password
+                    archive_path=args.archive,
+                    dest_dir=args.dest,
+                    password=args.password,
                 )
                 output_result(result, args.output, "files.uncompress")
 

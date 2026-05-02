@@ -82,9 +82,7 @@ class SFTPClientManager:
         except paramiko.SSHException as e:
             self._transport.close()
             self._transport = None
-            raise SFTPError(
-                f"SFTP connection failed to {self._host}:{self._port}: {e}"
-            )
+            raise SFTPError(f"SFTP connection failed to {self._host}:{self._port}: {e}")
 
         self._sftp = paramiko.SFTPClient.from_transport(self._transport)
 
@@ -292,6 +290,7 @@ class SFTPAPI:
             local.parent.mkdir(parents=True, exist_ok=True)
 
             if on_progress:
+
                 def callback(transferred, total):
                     on_progress(fname, transferred, total)
 
@@ -316,6 +315,7 @@ class SFTPAPI:
 
             buf = io.BytesIO()
             if on_progress:
+
                 def callback(transferred, total):
                     on_progress(fname, transferred, total)
 
@@ -362,13 +362,15 @@ class SFTPAPI:
             if stat.S_ISREG(attr.st_mode):
                 # Path is a file — return single item
                 name = Path(path).name
-                items.append({
-                    "fileName": name,
-                    "path": path,
-                    "fileType": "file",
-                    "size": attr.st_size,
-                    "modifiedDate": _format_mtime(attr.st_mtime),
-                })
+                items.append(
+                    {
+                        "fileName": name,
+                        "path": path,
+                        "fileType": "file",
+                        "size": attr.st_size,
+                        "modifiedDate": _format_mtime(attr.st_mtime),
+                    }
+                )
         except IOError:
             pass
 
@@ -381,13 +383,17 @@ class SFTPAPI:
             for attr in entries:
                 if attr.filename in (".", ".."):
                     continue
-                items.append({
-                    "fileName": attr.filename,
-                    "path": f"{path.rstrip('/')}/{attr.filename}",
-                    "fileType": "directory" if stat.S_ISDIR(attr.st_mode) else "file",
-                    "size": attr.st_size if stat.S_ISREG(attr.st_mode) else 0,
-                    "modifiedDate": _format_mtime(attr.st_mtime),
-                })
+                items.append(
+                    {
+                        "fileName": attr.filename,
+                        "path": f"{path.rstrip('/')}/{attr.filename}",
+                        "fileType": (
+                            "directory" if stat.S_ISDIR(attr.st_mode) else "file"
+                        ),
+                        "size": attr.st_size if stat.S_ISREG(attr.st_mode) else 0,
+                        "modifiedDate": _format_mtime(attr.st_mtime),
+                    }
+                )
 
         start = (page - 1) * page_size
         end = start + page_size
@@ -447,9 +453,7 @@ class SFTPAPI:
         except (FileNotFoundError, SFTPError):
             raise
         except IOError as e:
-            raise SFTPError(
-                f"Failed to move '{src_path}' to '{dest_dir}': {e}"
-            )
+            raise SFTPError(f"Failed to move '{src_path}' to '{dest_dir}': {e}")
 
     def copy(self, src_path: str, dest_dir: str) -> Dict[str, Any]:
         """Copy a remote file or directory via SFTP."""
@@ -593,6 +597,7 @@ def _download_dir_recursive(sftp, remote_dir, local_base, on_progress, chunk_siz
         try:
             local_file.parent.mkdir(parents=True, exist_ok=True)
             if on_progress:
+
                 def callback(transferred, total_b):
                     on_progress(fname, transferred, total_b)
 
@@ -634,6 +639,7 @@ def _download_dir_recursive(sftp, remote_dir, local_base, on_progress, chunk_siz
 def _format_mtime(ts) -> str:
     """Format timestamp as ISO-like date string."""
     import datetime
+
     try:
         dt = datetime.datetime.fromtimestamp(ts)
         return dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -672,6 +678,7 @@ def _copy_recursive(sftp, src: str, dest: str):
             _mkdir_recursive(sftp, dest_parent)
 
         import io
+
         buf = io.BytesIO()
         try:
             sftp.getfo(src, buf)
@@ -734,7 +741,9 @@ def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
     return lines
 
 
-def _read_tail(sftp, remote_path: str, n: int, encoding: str, file_size: int) -> List[str]:
+def _read_tail(
+    sftp, remote_path: str, n: int, encoding: str, file_size: int
+) -> List[str]:
     """Read last n lines from a remote file by seeking near the end."""
     import io
 
@@ -749,7 +758,9 @@ def _read_tail(sftp, remote_path: str, n: int, encoding: str, file_size: int) ->
         try:
             sftp.getfo(remote_path, buf, read_start, amount)
         except IOError as e:
-            raise SFTPError(f"Failed to read remote file '{remote_path}' at offset {read_start}: {e}")
+            raise SFTPError(
+                f"Failed to read remote file '{remote_path}' at offset {read_start}: {e}"
+            )
         chunk = buf.getvalue()
         lines = chunk.decode(encoding, errors="replace").splitlines()
         if read_start > 0:
@@ -763,7 +774,9 @@ def _read_tail(sftp, remote_path: str, n: int, encoding: str, file_size: int) ->
     return collected[-n:] if len(collected) > n else collected
 
 
-def _read_range(sftp, remote_path: str, start: int, end: int, encoding: str) -> List[str]:
+def _read_range(
+    sftp, remote_path: str, start: int, end: int, encoding: str
+) -> List[str]:
     """Read lines start..end (1-based inclusive) from a remote file."""
     import io
 

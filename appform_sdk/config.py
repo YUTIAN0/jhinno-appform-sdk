@@ -152,12 +152,14 @@ class Config:
         self.sftp_port = self._get_int_value(
             sftp_port, self.ENV_SFTP_PORT, "sftp_port", default=22
         )
-        self.sftp_username = self._get_value(
-            sftp_username, self.ENV_USERNAME, "sftp_username"
-        ) or self.username
-        self.sftp_password = self._get_value(
-            sftp_password, self.ENV_PASSWORD, "sftp_password"
-        ) or self.password
+        self.sftp_username = (
+            self._get_value(sftp_username, self.ENV_USERNAME, "sftp_username")
+            or self.username
+        )
+        self.sftp_password = (
+            self._get_value(sftp_password, self.ENV_PASSWORD, "sftp_password")
+            or self.password
+        )
         self.sftp_key_file = self._get_value(
             sftp_key_file, self.ENV_SFTP_KEY_FILE, "sftp_key_file"
         )

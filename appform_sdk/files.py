@@ -235,15 +235,15 @@ class FilesAPI:
             transfer_method: Transfer protocol ("http" or "sftp", default "http")
         """
         if transfer_method == "sftp":
-            return self._client.sftp.list(
-                path=path, page=page, page_size=page_size
-            )
+            return self._client.sftp.list(path=path, page=page, page_size=page_size)
         return self._client.get(
             "/appform/ws/api/files",
             params={"dir": path, "page": page, "pageSize": page_size},
         )
 
-    def list_all(self, path: str = "/", transfer_method: str = "http") -> List[Dict[str, Any]]:
+    def list_all(
+        self, path: str = "/", transfer_method: str = "http"
+    ) -> List[Dict[str, Any]]:
         """
         List all files in a directory (auto-pagination).
 
@@ -278,7 +278,9 @@ class FilesAPI:
                 break
         return all_items
 
-    def mkdir(self, path: str, force: bool = True, transfer_method: str = "http") -> Dict[str, Any]:
+    def mkdir(
+        self, path: str, force: bool = True, transfer_method: str = "http"
+    ) -> Dict[str, Any]:
         """
         Create a directory.
 
@@ -310,7 +312,9 @@ class FilesAPI:
             json={"oldFileName": old_path, "newFileName": new_name},
         )
 
-    def copy(self, src_path: str, dest_dir: str, transfer_method: str = "http") -> Dict[str, Any]:
+    def copy(
+        self, src_path: str, dest_dir: str, transfer_method: str = "http"
+    ) -> Dict[str, Any]:
         """
         Copy a file or directory.
 
@@ -326,7 +330,9 @@ class FilesAPI:
             json={"sourceFileName": src_path, "targetDirectory": dest_dir},
         )
 
-    def move(self, src_path: str, dest_dir: str, transfer_method: str = "http") -> Dict[str, Any]:
+    def move(
+        self, src_path: str, dest_dir: str, transfer_method: str = "http"
+    ) -> Dict[str, Any]:
         """
         Move/rename a file or directory.
 
