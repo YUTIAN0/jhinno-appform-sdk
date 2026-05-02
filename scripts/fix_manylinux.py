@@ -6,8 +6,11 @@ import sys
 
 bundle = "bundle"
 
-bad = [f for f in glob.glob(os.path.join(bundle, "*-*.whl"))
-       if "manylinux_2_" in f and "manylinux2014" not in f]
+bad = [
+    f
+    for f in glob.glob(os.path.join(bundle, "*-*.whl"))
+    if "manylinux_2_" in f and "manylinux2014" not in f
+]
 if not bad:
     sys.exit(0)
 
@@ -22,19 +25,42 @@ for f in bad:
 print(f"=== Fixing {len(bad)} manylinux wheels for older glibc ===")
 for pkg, files in bad_by_pkg.items():
     r = subprocess.run(
-        [sys.executable, "-m", "pip", "download", "--no-deps",
-         "--only-binary", ":all:", "--no-build-isolation",
-         "--platform", "manylinux2014_x86_64",
-         "--dest", bundle, pkg],
-        capture_output=True, text=True
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "download",
+            "--no-deps",
+            "--only-binary",
+            ":all:",
+            "--no-build-isolation",
+            "--platform",
+            "manylinux2014_x86_64",
+            "--dest",
+            bundle,
+            pkg,
+        ],
+        capture_output=True,
+        text=True,
     )
     if r.returncode == 0:
         print(f"  + {pkg}: downloaded manylinux2014 wheel")
     else:
         r2 = subprocess.run(
-            [sys.executable, "-m", "pip", "download", "--no-deps",
-             "--no-binary", ":all:", "--dest", bundle, pkg],
-            capture_output=True, text=True
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "download",
+                "--no-deps",
+                "--no-binary",
+                ":all:",
+                "--dest",
+                bundle,
+                pkg,
+            ],
+            capture_output=True,
+            text=True,
         )
         if r2.returncode == 0:
             print(f"  + {pkg}: downloaded source tarball (fallback)")
