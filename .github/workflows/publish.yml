@@ -119,20 +119,19 @@ jobs:
           pip freeze | grep -v jhinno
 
           # Download everything needed for offline install
-          # Use manylinux2014 platform for glibc 2.17+ compatibility (most HPC clusters)
-          PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
           mkdir -p bundle
           pip download \
             --dest bundle/ \
-            --platform manylinux2014_x86_64 \
-            --python-version cp${PYVER} \
-            --abi cp${PYVER} \
             --only-binary=:all: \
             "$WHEEL[sftp]"
           pip download \
             --dest bundle/ \
             --no-binary :all: \
             "$WHEEL[sftp]" 2>/dev/null || true
+
+          # Fix manylinux wheels: replace manylinux_2_XX with manylinux2014 for
+          # older glibc compatibility (HPC clusters typically run glibc 2.17-2.28)
+          python3 scripts/fix_bundle.py bundle/
 
           # Remove SDK sdist (keep wheel)
           rm -f bundle/jhinno_appform_sdk-*.tar.gz
