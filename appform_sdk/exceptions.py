@@ -48,3 +48,9 @@ class SessionError(AppformError):
     """Raised when session operations fail."""
 
     pass
+
+
+class SFTPError(AppformError):
+    """Raised when SFTP operations fail."""
+
+    pass

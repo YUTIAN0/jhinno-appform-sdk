@@ -188,6 +188,37 @@ def create_parser() -> argparse.ArgumentParser:
         help="Read chunk size for upload/download (e.g. '100M', '1G', or bytes, default: 100M)",
     )
     config_set_parser.add_argument("--config-file", help="Config file path")
+    config_set_parser.add_argument(
+        "--sftp-host",
+        dest="sftp_host",
+        help="SFTP server hostname (defaults to host from base_url)",
+    )
+    config_set_parser.add_argument(
+        "--sftp-port",
+        dest="sftp_port",
+        type=int,
+        help="SFTP server port (default: 22)",
+    )
+    config_set_parser.add_argument(
+        "--sftp-username",
+        dest="sftp_username",
+        help="SFTP username (defaults to username)",
+    )
+    config_set_parser.add_argument(
+        "--sftp-password",
+        dest="sftp_password",
+        help="SFTP password (defaults to password)",
+    )
+    config_set_parser.add_argument(
+        "--sftp-key-file",
+        dest="sftp_key_file",
+        help="SSH private key file path for SFTP",
+    )
+    config_set_parser.add_argument(
+        "--sftp-key-password",
+        dest="sftp_key_password",
+        help="SSH key passphrase for SFTP",
+    )
     config_show_parser = config_subparsers.add_parser(
         "show", help="Show current configuration"
     )
@@ -474,6 +505,12 @@ def create_parser() -> argparse.ArgumentParser:
         dest="chunk_size",
         help="Read chunk size (e.g. '100M', '1G', default: from config or 100M)",
     )
+    files_put_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default via API) or sftp",
+    )
 
     # get <remote> [local]  — download
     files_get_parser = files_subparsers.add_parser(
@@ -490,6 +527,12 @@ def create_parser() -> argparse.ArgumentParser:
         "--chunk-size",
         dest="chunk_size",
         help="Read chunk size (e.g. '100M', '1G', default: from config or 100M)",
+    )
+    files_get_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default via API) or sftp",
     )
 
     # compress (kept as utility)
@@ -1110,6 +1153,12 @@ def handle_config_command(args: argparse.Namespace):
             default_remote_path=getattr(args, "default_remote_path", None),
             chunk_size=cs,
             config_file=config_file,
+            sftp_host=getattr(args, "sftp_host", None),
+            sftp_port=getattr(args, "sftp_port", None),
+            sftp_username=getattr(args, "sftp_username", None),
+            sftp_password=getattr(args, "sftp_password", None),
+            sftp_key_file=getattr(args, "sftp_key_file", None),
+            sftp_key_password=getattr(args, "sftp_key_password", None),
         )
         config_path = config_file or Config.get_default_config_path()
         print(f"Configuration saved to {config_path}")
@@ -1373,6 +1422,7 @@ def handle_files_command(args: argparse.Namespace):
             local = args.local
             remote = args.remote
             force = getattr(args, "force", False)
+            method = getattr(args, "method", None) or "http"
             if remote is None:
                 remote = config.default_remote_path or "/"
             remote = _resolve_remote_path(remote, config)
@@ -1389,17 +1439,28 @@ def handle_files_command(args: argparse.Namespace):
                 from .files import _ProgressTracker
 
                 progress = _ProgressTracker(label="Uploading")
-                results = client.files.upload_directory(
-                    local_dir=local,
-                    remote_dir=remote,
-                    on_progress=progress.update,
-                    check_exists=lambda fname: _remote_file_exists(
-                        client, remote, fname
+                if method == "sftp":
+                    # SFTP: no HTTP-based exists check, skip confirm
+                    results = client.files.upload_directory(
+                        local_dir=local,
+                        remote_dir=remote,
+                        on_progress=progress.update,
+                        chunk_size=chunk_size,
+                        transfer_method=method,
                     )
-                    and not force,
-                    confirm=_confirm_overwrite,
-                    chunk_size=chunk_size,
-                )
+                else:
+                    results = client.files.upload_directory(
+                        local_dir=local,
+                        remote_dir=remote,
+                        on_progress=progress.update,
+                        check_exists=lambda fname: _remote_file_exists(
+                            client, remote, fname
+                        )
+                        and not force,
+                        confirm=_confirm_overwrite,
+                        chunk_size=chunk_size,
+                        transfer_method=method,
+                    )
                 progress.finish()
                 uploaded = [r for r in results if r.get("result")]
                 print(f"Uploaded {len(uploaded)} file(s) to {remote}")
@@ -1416,7 +1477,7 @@ def handle_files_command(args: argparse.Namespace):
             elif local_path.is_file():
                 fname = local_path.name
                 saved = f"{remote.rstrip('/')}/{fname}"
-                if not force and _remote_file_exists(client, remote, fname):
+                if method == "http" and not force and _remote_file_exists(client, remote, fname):
                     if not _confirm_overwrite(fname):
                         print("Upload cancelled.")
                         return
@@ -1428,6 +1489,7 @@ def handle_files_command(args: argparse.Namespace):
                     remote_path=remote,
                     on_progress=progress.update,
                     chunk_size=chunk_size,
+                    transfer_method=method,
                 )
                 progress.finish()
                 print(f"Uploaded to {saved}")
@@ -1440,6 +1502,7 @@ def handle_files_command(args: argparse.Namespace):
         elif args.files_command == "get":
             remote = args.remote
             local = args.local
+            method = getattr(args, "method", None) or "http"
             cs_arg = getattr(args, "chunk_size", None)
             if cs_arg:
                 from .files import parse_size
@@ -1449,19 +1512,25 @@ def handle_files_command(args: argparse.Namespace):
                 chunk_size = config.chunk_size or 104857600
 
             # Check if remote path is a directory by listing it
-            try:
-                items = client.files.list(path=remote, page=1, page_size=1)
-                data = items.get("data", [])
-                if isinstance(data, dict):
-                    file_list = data.get("files", data.get("records", []))
-                elif isinstance(data, list):
-                    file_list = data
-                else:
-                    file_list = []
+            is_dir = False
+            if method == "http":
+                try:
+                    items = client.files.list(path=remote, page=1, page_size=1)
+                    data = items.get("data", [])
+                    if isinstance(data, dict):
+                        file_list = data.get("files", data.get("records", []))
+                    elif isinstance(data, list):
+                        file_list = data
+                    else:
+                        file_list = []
 
-                is_dir = len(file_list) > 0
-            except Exception:
-                is_dir = False
+                    is_dir = len(file_list) > 0
+                except Exception:
+                    is_dir = False
+            else:
+                # For SFTP, infer from path ending or user knows
+                # Default to file unless --method sftp with trailing /
+                is_dir = remote.endswith("/")
 
             if is_dir:
                 from .files import _ProgressTracker
@@ -1474,6 +1543,7 @@ def handle_files_command(args: argparse.Namespace):
                     local_dir=str(save_dir),
                     on_progress=progress.update,
                     chunk_size=chunk_size,
+                    transfer_method=method,
                 )
                 progress.finish()
                 downloaded = [r for r in results if r.get("status") == "ok"]
@@ -1502,6 +1572,7 @@ def handle_files_command(args: argparse.Namespace):
                     local_path=save_path,
                     on_progress=progress.update,
                     chunk_size=chunk_size,
+                    transfer_method=method,
                 )
                 progress.finish()
                 print(f"Downloaded to {save_path}")

@@ -22,6 +22,7 @@ from .jobs import JobsAPI
 from .organization import OrganizationAPI
 from .registry import APIRegistry, get_registry
 from .sessions import SessionsAPI
+from .sftp import SFTPAPI
 from .utils import SignatureGenerator
 
 
@@ -134,6 +135,28 @@ class AppformClient:
         self._api_version = api_version or "6.5"
         self._extensions_dir = extensions_dir
 
+        # SFTP configuration
+        self._sftp_host = None
+        self._sftp_port = 22
+        self._sftp_username = None
+        self._sftp_password = None
+        self._sftp_key_file = None
+        self._sftp_key_password = None
+        if config:
+            self._sftp_host = config.sftp_host
+            self._sftp_port = config.sftp_port
+            self._sftp_username = config.sftp_username or config.username
+            self._sftp_password = config.sftp_password or config.password
+            self._sftp_key_file = config.sftp_key_file
+            self._sftp_key_password = config.sftp_key_password
+            # Auto-extract host from base_url if sftp_host not set
+            if not self._sftp_host and self.base_url:
+                from urllib.parse import urlparse
+
+                parsed = urlparse(self.base_url)
+                if parsed.hostname:
+                    self._sftp_host = parsed.hostname
+
         # Suppress urllib3 InsecureRequestWarning when SSL verification is disabled
         if not self.verify_ssl:
             urllib3.disable_warnings(InsecureRequestWarning)
@@ -164,6 +187,7 @@ class AppformClient:
         self._apps = AppsAPI(self)
         self._files = FilesAPI(self)
         self._organization = OrganizationAPI(self)
+        self._sftp_api = None
 
         # Initialize dynamic API
         self._dynamic_api = DynamicAPI(self, self._registry)
@@ -264,6 +288,13 @@ class AppformClient:
     def organization(self) -> OrganizationAPI:
         """Access organization APIs."""
         return self._organization
+
+    @property
+    def sftp(self) -> SFTPAPI:
+        """Access SFTP APIs."""
+        if self._sftp_api is None:
+            self._sftp_api = SFTPAPI(self)
+        return self._sftp_api
 
     @property
     def api(self) -> DynamicAPI:
@@ -466,6 +497,8 @@ class AppformClient:
     def close(self):
         """Close the client session."""
         self.session.close()
+        if self._sftp_api:
+            self._sftp_api.close()
 
     def __enter__(self):
         return self

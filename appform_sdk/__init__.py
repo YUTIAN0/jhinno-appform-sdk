@@ -13,6 +13,7 @@ from .exceptions import (
     FileError,
     JobError,
     SessionError,
+    SFTPError,
     ValidationError,
 )
 from .extensions import (
@@ -44,6 +45,7 @@ from .models import (
 from .organization import OrganizationAPI
 from .registry import APIRegistry, EndpointDefinition, get_registry
 from .sessions import SessionsAPI
+from .sftp import SFTPAPI, SFTPClientManager
 from .utils import AESEncryptor, SignatureGenerator, check_cluster_environment
 
 # Lazy-import xml2table to avoid pulling in pandas/openpyxl at package load time
@@ -63,6 +65,7 @@ __all__ = [
     "AppsAPI",
     "FilesAPI",
     "OrganizationAPI",
+    "SFTPAPI",
     # Utilities
     "AESEncryptor",
     "SignatureGenerator",
@@ -88,6 +91,7 @@ __all__ = [
     "FileError",
     "JobError",
     "SessionError",
+    "SFTPError",
     # Registry and Extensions
     "APIRegistry",
     "get_registry",

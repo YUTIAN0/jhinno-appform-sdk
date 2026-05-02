@@ -41,6 +41,9 @@ dev = [
     "isort>=5.12.0",
     "mypy>=1.0.0",
 ]
+sftp = [
+    "paramiko>=3.0.0",
+]
 
 [project.scripts]
 appform = "appform_sdk.cli:main"

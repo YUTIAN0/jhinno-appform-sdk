@@ -374,6 +374,7 @@ class FilesAPI:
         remote_path: str,
         on_progress: Optional[Callable] = None,
         chunk_size: int = 104857600,
+        transfer_method: str = "http",
     ) -> Dict[str, Any]:
         """
         Upload a file with optional progress tracking.
@@ -383,10 +384,18 @@ class FilesAPI:
             remote_path: Remote directory path to save the file
             on_progress: Optional callback(filename, bytes_read, total_bytes)
             chunk_size: Unused, kept for API compatibility
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
 
         Returns:
             Upload result
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.upload(
+                file_path=file_path,
+                remote_path=remote_path,
+                on_progress=on_progress,
+                chunk_size=chunk_size,
+            )
         file_path = Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -426,6 +435,7 @@ class FilesAPI:
         check_exists: Optional[Callable] = None,
         confirm: Optional[Callable] = None,
         chunk_size: int = 104857600,
+        transfer_method: str = "http",
     ) -> List[Dict[str, Any]]:
         """
         Upload an entire directory recursively.
@@ -436,10 +446,20 @@ class FilesAPI:
             on_progress: Optional callback(filename, current_index, total)
             check_exists: Optional callback(filename) -> bool, returns True if remote file exists
             confirm: Optional callback(filename) -> bool, returns True if user confirms overwrite
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
 
         Returns:
             List of upload results
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.upload_directory(
+                local_dir=local_dir,
+                remote_dir=remote_dir,
+                on_progress=on_progress,
+                check_exists=check_exists,
+                confirm=confirm,
+                chunk_size=chunk_size,
+            )
         local_dir = Path(local_dir)
         if not local_dir.is_dir():
             raise NotADirectoryError(f"Not a directory: {local_dir}")
@@ -496,6 +516,7 @@ class FilesAPI:
         local_path: Optional[str] = None,
         on_progress: Optional[Callable] = None,
         chunk_size: int = 104857600,
+        transfer_method: str = "http",
     ) -> bytes:
         """
         Download a file.
@@ -507,10 +528,18 @@ class FilesAPI:
             local_path: Local file/dir path (optional, returns bytes if not provided)
             on_progress: Optional callback(filename, bytes_downloaded, total_bytes)
             chunk_size: Read chunk size in bytes (default: 30MB)
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
 
         Returns:
             File content as bytes if local_path not provided
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.download(
+                remote_path=remote_path,
+                local_path=local_path,
+                on_progress=on_progress,
+                chunk_size=chunk_size,
+            )
         result = self._client.get(
             "/appform/ws/api/files/download",
             params={"filePath": remote_path},
@@ -567,6 +596,7 @@ class FilesAPI:
         local_dir: str,
         on_progress: Optional[Callable] = None,
         chunk_size: int = 104857600,
+        transfer_method: str = "http",
     ) -> List[Dict[str, Any]]:
         """
         Download an entire remote directory.
@@ -576,10 +606,18 @@ class FilesAPI:
             local_dir: Local directory path to save to
             on_progress: Optional callback(filename, current_index, total)
             chunk_size: Read chunk size in bytes (default: 30MB)
+            transfer_method: Transfer protocol ("http" or "sftp", default "http")
 
         Returns:
             List of download results
         """
+        if transfer_method == "sftp":
+            return self._client.sftp.download_directory(
+                remote_dir=remote_dir,
+                local_dir=local_dir,
+                on_progress=on_progress,
+                chunk_size=chunk_size,
+            )
         local_base = Path(local_dir)
         local_base.mkdir(parents=True, exist_ok=True)
 

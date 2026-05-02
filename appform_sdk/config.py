@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 
 class Config:
@@ -35,6 +36,10 @@ class Config:
     ENV_DEFAULT_REMOTE_PATH = "APPFORM_DEFAULT_REMOTE_PATH"
     ENV_OUTPUT_TEMPLATE = "APPFORM_OUTPUT_TEMPLATE"
     ENV_CHUNK_SIZE = "APPFORM_CHUNK_SIZE"
+    ENV_SFTP_HOST = "APPFORM_SFTP_HOST"
+    ENV_SFTP_PORT = "APPFORM_SFTP_PORT"
+    ENV_SFTP_KEY_FILE = "APPFORM_SFTP_KEY_FILE"
+    ENV_SFTP_KEY_PASSWORD = "APPFORM_SFTP_KEY_PASSWORD"
 
     # Default config file paths
     DEFAULT_CONFIG_DIR = ".appform"
@@ -58,6 +63,12 @@ class Config:
         output_template: Optional[str] = None,
         chunk_size: Optional[int] = None,
         config_file: Optional[str] = None,
+        sftp_host: Optional[str] = None,
+        sftp_port: Optional[int] = None,
+        sftp_username: Optional[str] = None,
+        sftp_password: Optional[str] = None,
+        sftp_key_file: Optional[str] = None,
+        sftp_key_password: Optional[str] = None,
     ):
         """
         Initialize configuration.
@@ -78,6 +89,12 @@ class Config:
             output_format: Output format (json/table/text)
             output_template: Path to output template file (.yaml/.yml/.json)
             config_file: Path to configuration file (defaults to ~/.appform/config.json)
+            sftp_host: SFTP server hostname (defaults to host from base_url)
+            sftp_port: SFTP server port (default: 22)
+            sftp_username: SFTP username (defaults to username)
+            sftp_password: SFTP password (defaults to password)
+            sftp_key_file: SSH private key file path
+            sftp_key_password: SSH key passphrase
         """
         # Determine config file path - use default if not specified
         if config_file:
@@ -124,6 +141,24 @@ class Config:
         )
         self.chunk_size = self._get_int_value(
             chunk_size, self.ENV_CHUNK_SIZE, "chunk_size", default=104857600
+        )
+
+        # SFTP configuration
+        self.sftp_host = self._get_value(sftp_host, self.ENV_SFTP_HOST, "sftp_host")
+        self.sftp_port = self._get_int_value(
+            sftp_port, self.ENV_SFTP_PORT, "sftp_port", default=22
+        )
+        self.sftp_username = self._get_value(
+            sftp_username, self.ENV_USERNAME, "sftp_username"
+        ) or self.username
+        self.sftp_password = self._get_value(
+            sftp_password, self.ENV_PASSWORD, "sftp_password"
+        ) or self.password
+        self.sftp_key_file = self._get_value(
+            sftp_key_file, self.ENV_SFTP_KEY_FILE, "sftp_key_file"
+        )
+        self.sftp_key_password = self._get_value(
+            sftp_key_password, self.ENV_SFTP_KEY_PASSWORD, "sftp_key_password"
         )
 
     def _get_value(
@@ -268,6 +303,12 @@ class Config:
         default_remote_path: Optional[str] = None,
         chunk_size: Optional[int] = None,
         config_file: Optional[str] = None,
+        sftp_host: Optional[str] = None,
+        sftp_port: Optional[int] = None,
+        sftp_username: Optional[str] = None,
+        sftp_password: Optional[str] = None,
+        sftp_key_file: Optional[str] = None,
+        sftp_key_password: Optional[str] = None,
     ) -> None:
         """
         Save configuration to file.
@@ -341,6 +382,18 @@ class Config:
             existing["default_remote_path"] = default_remote_path
         if chunk_size is not None:
             existing["chunk_size"] = chunk_size
+        if sftp_host:
+            existing["sftp_host"] = sftp_host
+        if sftp_port is not None:
+            existing["sftp_port"] = sftp_port
+        if sftp_username:
+            existing["sftp_username"] = sftp_username
+        if sftp_password:
+            existing["sftp_password"] = sftp_password
+        if sftp_key_file:
+            existing["sftp_key_file"] = sftp_key_file
+        if sftp_key_password:
+            existing["sftp_key_password"] = sftp_key_password
 
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
@@ -364,6 +417,12 @@ class Config:
             "output_template": self.output_template,
             "default_remote_path": self.default_remote_path,
             "chunk_size": self.chunk_size,
+            "sftp_host": self.sftp_host,
+            "sftp_port": self.sftp_port,
+            "sftp_username": self.sftp_username,
+            "sftp_password": "***" if self.sftp_password else None,
+            "sftp_key_file": self.sftp_key_file,
+            "sftp_key_password": "***" if self.sftp_key_password else None,
         }
 
     def __repr__(self) -> str:
