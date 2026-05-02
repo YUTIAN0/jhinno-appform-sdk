@@ -273,6 +273,20 @@ appform files cat /home/user/large_log.log
 
 > **注意**：`cat` 命令仅支持 SFTP 方式。对于小文件（<1MB），默认输出全部内容；对于大文件，默认输出最后 20 行，使用 `--all` 可强制输出全部。
 
+### tailf — 实时跟踪远程文件输出
+
+```bash
+# 实时跟踪文件输出（类似 tail -f）
+appform files tailf /home/user/output.log
+
+# 指定编码
+appform files tailf /home/user/output.log --encoding gbk
+
+# Ctrl+C 停止跟踪
+```
+
+> **注意**：`tailf` 命令仅支持 SFTP 方式，通过 SSH exec channel 执行远程 `tail -f`。需要安装 `jhinno-appform-sdk[sftp]`。
+
 ### compress / uncompress — 压缩解压
 
 ```bash

@@ -259,6 +259,10 @@ appform files cat /home/user/file.txt --head 10         # 前 10 行
 appform files cat /home/user/file.txt --lines 10-20     # 第 10-20 行
 appform files cat /home/user/file.txt --all             # 输出所有行
 
+# 实时跟踪文件输出（SFTP  only）
+appform files tailf /home/user/output.log               # 类似 tail -f
+appform files tailf /home/user/output.log --encoding gbk # 指定编码
+
 # 压缩解压
 appform files compress /home/user/folder /home/user/archive.tar.gz
 appform files uncompress /home/user/archive.tar.gz /home/user/extracted/

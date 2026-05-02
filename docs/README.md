@@ -314,6 +314,10 @@ appform sessions start --app-id gedit --start-new --cwd ${HOME}
 # 文件管理
 appform files list --path /home/user
 appform files mkdir --path /home/user --name new_dir
+appform files cat /home/user/file.txt --head 10
+appform files tailf /home/user/output.log  # 实时跟踪文件输出 (SFTP)
+appform files put ./local_file.txt /home/user/
+appform files get /home/user/remote_file.txt
 ```
 
 ### job_submit 工具

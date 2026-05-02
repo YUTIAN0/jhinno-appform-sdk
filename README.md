@@ -221,6 +221,7 @@ appform sessions share <session_id> --usernames "user1,user2"
 appform files list --path "/home/user"
 appform files mkdir --path "/home/user" --name "new_folder"
 appform files delete /path/to/file1 /path/to/file2
+appform files tailf /path/to/logfile                # follow file output (SFTP only)
 
 # Applications
 appform apps list

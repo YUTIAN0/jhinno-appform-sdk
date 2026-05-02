@@ -175,6 +175,9 @@ API 版本（默认 6.5）
 .B files cat 路径 [\-\-head N] [\-\-tail N] [\-\-lines 范围] [\-\-start N] [\-\-end N] [\-\-all] [\-\-encoding 编码]
 查看远程文本文件内容（仅 SFTP）；\-\-lines 例：10\-20 或 10\-；\-\-all 强制输出所有行
 .TP
+.B files tailf 路径 [\-\-encoding 编码]
+通过 SSH 实时跟踪远程文件输出（仅 SFTP），Ctrl+C 停止
+.TP
 .B files compress 源 目标
 压缩远程目录
 .TP

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **`files tailf` command** — real-time remote file output tracking via SSH exec channel
+  - `appform files tailf /path/to/file` — follows file output like `tail -f`
+  - `appform jobs files <id> tailf /path/to/file` — track job output files
+  - `--encoding` option to specify text encoding (default: utf-8)
+  - `client.sftp.tailf()` returns (tail_pid, channel) for programmatic control
+  - `client.sftp.kill_tail(tail_pid)` to stop a remote tail process via SSH
+  - Requires `pip install jhinno-appform-sdk[sftp]`
+
+### Added
 ## [0.0.3] - 2026-05-02
 
 ### Added
