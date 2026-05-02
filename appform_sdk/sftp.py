@@ -580,7 +580,10 @@ class SFTPAPI:
         return _read_tail(sftp, remote_path, 20, encoding, file_size)
 
     def tailf(self, remote_path: str, encoding: str = "utf-8"):
-        """Run `tail -f` on a remote file via SSH exec channel.
+        """Run ``tail -f`` on one or more remote files via SSH exec channel.
+
+        Supports glob patterns (e.g. ``*.k``, ``*.log``) — the shell
+        expands them before tail -f reads them.
 
         Returns the channel + tail PID so the caller can clean up.
 
@@ -588,14 +591,13 @@ class SFTPAPI:
         Requires an SFTP connection with password or key auth (Transport available).
 
         Args:
-            remote_path: Remote file path to tail
+            remote_path: Remote file path or glob pattern to tail
             encoding: Text encoding (default: utf-8)
 
         Returns:
             Tuple of (tail_pid, channel) for caller to clean up.
             tail_pid may be None if command failed.
         """
-        import shlex
         import time
 
         manager = self._get_manager()
@@ -606,8 +608,9 @@ class SFTPAPI:
 
         channel = transport.open_session()
         channel.setblocking(False)
-        # Start tail in background, get PID on stdout
-        cmd = f"tail -f {shlex.quote(remote_path)} 2>&1 & echo $!"
+        # Start tail in background, get PID on stdout.
+        # Do NOT quote remote_path so shell glob patterns are expanded.
+        cmd = f"tail -f {remote_path} 2>&1 & echo $!"
         channel.exec_command(cmd)
 
         tail_pid = None
