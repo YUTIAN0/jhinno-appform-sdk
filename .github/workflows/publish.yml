@@ -119,9 +119,14 @@ jobs:
           pip freeze | grep -v jhinno
 
           # Download everything needed for offline install
+          # Use manylinux2014 platform for glibc 2.17+ compatibility (most HPC clusters)
+          PYVER=$(echo ${{ matrix.python-version }} | tr -d '.')
           mkdir -p bundle
           pip download \
             --dest bundle/ \
+            --platform manylinux2014_x86_64 \
+            --python-version cp${PYVER} \
+            --abi cp${PYVER} \
             --only-binary=:all: \
             "$WHEEL[sftp]"
           pip download \
