@@ -37,7 +37,7 @@ setup(
     python_requires=">=3.8",
     entry_points={
         "console_scripts": [
-            "appform=appform_sdk.cli:main",
+            "appform=appform_sdk.cli.main:main",
         ],
     },
     classifiers=[
