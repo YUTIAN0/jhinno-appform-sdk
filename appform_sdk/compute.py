@@ -4,6 +4,8 @@ Provides ls, get, cat, tailf operations on compute node local storage.
 Supports direct SSH and gateway (ssh -J style) tunnel via direct-tcpip.
 """
 
+from __future__ import annotations
+
 import os
 import re
 import shlex
