@@ -201,8 +201,13 @@ class AppformClient:
             for ext_file in ext_dir.glob("*.json"):
                 try:
                     self._extension_manager.load_from_file(str(ext_file))
-                except Exception:
-                    pass  # Silently ignore failed extensions
+                except Exception as e:
+                    import warnings
+
+                    warnings.warn(
+                        f"Failed to load extension '{ext_file.name}': {e}",
+                        UserWarning,
+                    )
 
     @property
     def token(self) -> Optional[str]:
@@ -401,7 +406,7 @@ class AppformClient:
             return result
 
         except requests.exceptions.RequestException as e:
-            raise AppformError(f"Request failed: {str(e)}")
+            raise AppformError(f"Request failed: {e}") from e
 
     def get(self, path: str, **kwargs) -> Dict[str, Any]:
         """Make a GET request."""
