@@ -23,9 +23,7 @@ compute_config:
     source_script: "/opt/profile"
     env_cmd: jjobs
 """
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yaml", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(config_content)
             path = f.name
 
@@ -43,17 +41,13 @@ compute_config:
         from appform_sdk.compute import load_compute_config
 
         config_content = "compute_config:\n  default:\n    mode: via_gateway\n"
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yaml", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(config_content)
             path = f.name
 
         try:
             monkeypatch.setenv("APPFORM_COMPUTE_CONFIG", path)
-            monkeypatch.delenv(
-                "APPFORM_DEFAULT_COMPUTE", raising=False
-            )
+            monkeypatch.delenv("APPFORM_DEFAULT_COMPUTE", raising=False)
             result = load_compute_config()
             assert result["compute_config"]["default"]["mode"] == "via_gateway"
         finally:
@@ -661,8 +655,7 @@ class TestQueryWorkPath:
         client = MagicMock()
         stdout = MagicMock()
         stdout.read.return_value = (
-            b"work_path=/share/old\n"
-            b"fluent_work_dir=/share/fluent/456\n"
+            b"work_path=/share/old\n" b"fluent_work_dir=/share/fluent/456\n"
         )
         stdout.channel.recv_exit_status.return_value = 0
         stderr = MagicMock()

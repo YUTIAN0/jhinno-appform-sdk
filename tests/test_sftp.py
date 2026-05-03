@@ -66,9 +66,7 @@ class TestSFTPClientManager:
             )
             _ = mgr.sftp  # trigger lazy connect
 
-        mock_transport.connect.assert_called_once_with(
-            username="user", password="pass"
-        )
+        mock_transport.connect.assert_called_once_with(username="user", password="pass")
         assert mgr._sftp is mock_sftp
 
     def test_connect_with_key(self):
@@ -124,9 +122,7 @@ class TestSFTPClientManager:
 
         from appform_sdk.sftp import SFTPClientManager
 
-        mgr = SFTPClientManager(
-            host="test.host", username="user", password="pass"
-        )
+        mgr = SFTPClientManager(host="test.host", username="user", password="pass")
         with pytest.raises(SFTPError, match="connection failed"):
             _ = mgr.sftp
         mock_transport.close.assert_called_once()
@@ -154,9 +150,7 @@ class TestSFTPClientManager:
         with patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko):
             from appform_sdk.sftp import SFTPClientManager
 
-            mgr = SFTPClientManager(
-                host="test.host", username="user", password="pass"
-            )
+            mgr = SFTPClientManager(host="test.host", username="user", password="pass")
             s1 = mgr.sftp
             s2 = mgr.sftp
             assert s1 is s2
@@ -236,7 +230,9 @@ class TestSFTPAPI:
 
         try:
             api.upload(
-                tmp, "/remote/", on_progress=lambda fname, x, y: progress_calls.append(x)
+                tmp,
+                "/remote/",
+                on_progress=lambda fname, x, y: progress_calls.append(x),
             )
         finally:
             os.unlink(tmp)
@@ -396,9 +392,7 @@ class TestSFTPAPI:
 
         result = api.move("/src/file.txt", "/dest/")
         assert result["result"] is True
-        sftp_mock.rename.assert_called_once_with(
-            "/src/file.txt", "/dest/file.txt"
-        )
+        sftp_mock.rename.assert_called_once_with("/src/file.txt", "/dest/file.txt")
 
     def test_move_source_not_found(self):
         """Test move raises when source doesn't exist."""
@@ -695,4 +689,3 @@ class TestCopyRemoveRecursive:
         _remove_recursive(sftp, "/missing/")
         sftp.remove.assert_not_called()
         sftp.rmdir.assert_not_called()
-

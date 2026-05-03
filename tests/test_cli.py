@@ -125,9 +125,7 @@ class TestCreateParser:
 
     def test_sessions_start(self):
         """Test 'sessions start' with --app-id."""
-        args = self.parser.parse_args(
-            ["sessions", "start", "--app-id", "gedit"]
-        )
+        args = self.parser.parse_args(["sessions", "start", "--app-id", "gedit"])
         assert args.sessions_command == "start"
         assert args.app_id == "gedit"
 
@@ -304,7 +302,15 @@ class TestSessionsCommand:
     def test_sessions_start_with_options(self):
         """Test sessions start with --start-new and --cwd."""
         args = self.parser.parse_args(
-            ["sessions", "start", "--app-id", "app1", "--start-new", "--cwd", "/home/user"]
+            [
+                "sessions",
+                "start",
+                "--app-id",
+                "app1",
+                "--start-new",
+                "--cwd",
+                "/home/user",
+            ]
         )
         assert args.app_id == "app1"
         assert args.start_new is True
@@ -318,9 +324,7 @@ class TestSessionsCommand:
 
     def test_sessions_connect_launch(self):
         """Test sessions connect-launch subcommand."""
-        args = self.parser.parse_args(
-            ["sessions", "connect-launch", "sess-abc"]
-        )
+        args = self.parser.parse_args(["sessions", "connect-launch", "sess-abc"])
         assert args.sessions_command == "connect-launch"
 
     def test_sessions_share(self):
@@ -333,9 +337,7 @@ class TestSessionsCommand:
 
     def test_sessions_disconnect(self):
         """Test sessions disconnect subcommand."""
-        args = self.parser.parse_args(
-            ["sessions", "disconnect", "sess-abc"]
-        )
+        args = self.parser.parse_args(["sessions", "disconnect", "sess-abc"])
         assert args.sessions_command == "disconnect"
 
     def test_sessions_list_all(self):
@@ -360,17 +362,13 @@ class TestFilesCommand:
 
     def test_files_mkdir(self):
         """Test files mkdir with --no-force."""
-        args = self.parser.parse_args(
-            ["files", "mkdir", "/new/dir", "--no-force"]
-        )
+        args = self.parser.parse_args(["files", "mkdir", "/new/dir", "--no-force"])
         assert args.files_command == "mkdir"
         assert args.no_force is True
 
     def test_files_compress(self):
         """Test files compress subcommand."""
-        args = self.parser.parse_args(
-            ["files", "compress", "/src", "/dst/archive.zip"]
-        )
+        args = self.parser.parse_args(["files", "compress", "/src", "/dst/archive.zip"])
         assert args.files_command == "compress"
         assert args.source == "/src"
         assert args.target == "/dst/archive.zip"
@@ -385,9 +383,7 @@ class TestFilesCommand:
 
     def test_files_cat(self):
         """Test files cat with --lines."""
-        args = self.parser.parse_args(
-            ["files", "cat", "/file.txt", "--lines", "10-20"]
-        )
+        args = self.parser.parse_args(["files", "cat", "/file.txt", "--lines", "10-20"])
         assert args.files_command == "cat"
         assert args.lines == "10-20"
 
@@ -410,9 +406,7 @@ class TestFilesCommand:
 
     def test_files_method_option(self):
         """Test files command with --method sftp."""
-        args = self.parser.parse_args(
-            ["files", "ls", "/path", "--method", "sftp"]
-        )
+        args = self.parser.parse_args(["files", "ls", "/path", "--method", "sftp"])
         assert args.method == "sftp"
 
     def test_files_mv(self):
@@ -488,7 +482,5 @@ class TestJobsFilesCommand:
 
     def test_jobs_files_tailf(self):
         """Test jobs files tailf subcommand."""
-        args = self.parser.parse_args(
-            ["jobs", "files", "123", "tailf", "/output.log"]
-        )
+        args = self.parser.parse_args(["jobs", "files", "123", "tailf", "/output.log"])
         assert args.jobs_files_command == "tailf"

@@ -341,9 +341,7 @@ class TestCompressUncompress:
         api._client.post.assert_called_once()
         call_kwargs = api._client.post.call_args
         assert call_kwargs[1]["params"]["sourceDirName"] == "/src/dir"
-        assert (
-            call_kwargs[1]["params"]["targetFilePath"] == "/dst/archive.zip"
-        )
+        assert call_kwargs[1]["params"]["targetFilePath"] == "/dst/archive.zip"
 
     def test_uncompress(self):
         """Test uncompress API call."""

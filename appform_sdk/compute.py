@@ -459,9 +459,7 @@ def _validate_path(path: str) -> str:
     Returns the unchanged path if safe. Raises ComputeError if dangerous.
     """
     if ".." in path:
-        raise ComputeError(
-            f"Directory traversal not allowed in path: {path!r}"
-        )
+        raise ComputeError(f"Directory traversal not allowed in path: {path!r}")
     if _DANGEROUS_PATH_CHARS.search(path):
         raise ComputeError(
             f"Invalid characters in path: {path!r}. "
