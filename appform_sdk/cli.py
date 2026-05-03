@@ -2245,9 +2245,9 @@ def handle_jobs_files_custom(args, job_info, client):
     """Compute node file operations via SSH (ls/get/cat/tailf)."""
     from .compute import (
         execute_on_compute_node,
+        get_head_node,
         load_compute_config,
         resolve_app_config,
-        get_head_node,
     )
 
     # 1. Get subcommand
