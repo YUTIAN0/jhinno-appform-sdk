@@ -192,7 +192,7 @@ def connect_via_gateway(
             except (paramiko.SSHException, ValueError):
                 continue
         if not pkey:
-            raise RuntimeError(f"Unable to load key file: {key_filename}")
+            raise ComputeError(f"Unable to load key file: {key_filename}")
 
     ssh_transport = paramiko.Transport(tunnel_channel)
     try:
