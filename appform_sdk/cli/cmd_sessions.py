@@ -1,6 +1,25 @@
 """Sessions command handler."""
 
 from appform_sdk.cli.common import create_client, output_result
+from appform_sdk.sessions import try_launch_jhapp_client
+
+
+def _try_auto_launch(result: dict):
+    """Extract jhappUrl from start result and try to launch JHApp client."""
+    data = result.get("data", [])
+    if not data:
+        return
+
+    item = data[0] if isinstance(data, list) else data
+    jhapp_url = item.get("jhappUrl", "")
+    desktop_id = item.get("desktopId") or item.get("session_id") or item.get("id", "")
+
+    if jhapp_url:
+        launched = try_launch_jhapp_client(jhapp_url, desktop_id)
+        if launched:
+            print("JHApp client launched successfully!")
+        else:
+            print("Local JHApp client not available, skipping auto-launch.")
 
 
 def handle_sessions_command(args):
@@ -14,6 +33,7 @@ def handle_sessions_command(args):
             param=getattr(args, "param", None),
         )
         output_result(result, args.output, "sessions.start")
+        _try_auto_launch(result)
     elif args.sessions_command == "list":
         session_ids = getattr(args, "session_ids", None)
         session_name = getattr(args, "session_name", None)

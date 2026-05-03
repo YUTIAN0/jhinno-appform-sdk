@@ -27,6 +27,45 @@ def _check_port(host: str, port: int, timeout: float = 1.0) -> bool:
         return False
 
 
+JHAPP_CLIENT_PORT = 60540
+
+
+def check_jhapp_client(port: int = JHAPP_CLIENT_PORT, timeout: float = 1.0) -> bool:
+    """Check if the local JHApp client is running."""
+    return _check_port("127.0.0.1", port, timeout)
+
+
+def try_launch_jhapp_client(
+    jhapp_url: str,
+    desktop_id: str,
+    timeout: int = 30,
+) -> bool:
+    """Try to launch JHApp client via its local HTTP API.
+
+    Checks if the local JHApp client is running on port 60540.
+    If available, sends the start request to the client's local API.
+    Returns True if launched, False otherwise (silent failure).
+    """
+    if not _HAS_REQUESTS:
+        return False
+
+    if not check_jhapp_client():
+        return False
+
+    jh_start_param = jhapp_url.replace("jhclient://", "").rstrip("/")
+    msg_id = f"{desktop_id}_{int(time.time() * 1000)}"
+    start_url = (
+        f"http://127.0.0.1:{JHAPP_CLIENT_PORT}/jhclientstarter"
+        f"?startclient={jh_start_param}&msgId={msg_id}"
+    )
+
+    try:
+        _requests.get(start_url, timeout=timeout)
+        return True
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 
 
@@ -269,13 +308,11 @@ class SessionsAPI:
         Returns:
             Connection information including jhappUrl and launch result
         """
-        # Get connection info
         result = self._client.get(f"/appform/ws/api/apps/sessions/{session_id}/connect")
         data = result.get("data", [])
         if not data:
             return result
 
-        # Extract jhappUrl from first item
         item = data[0] if isinstance(data, list) else data
         jhapp_url = item.get("jhappUrl", "")
         desktop_id = self._resolve_desktop_id(item)
@@ -284,10 +321,10 @@ class SessionsAPI:
             print("Error: No jhappUrl in connection response.")
             return result
 
-        # Try to launch JHApp client via local API
-        print("Checking local JHApp client on port 60540...")
-        launched = self._try_launch_client(jhapp_url, desktop_id, timeout)
-        if not launched:
+        launched = try_launch_jhapp_client(jhapp_url, desktop_id, timeout)
+        if launched:
+            print("JHApp client launched successfully!")
+        else:
             print("Local JHApp client not available, falling back to protocol URL.")
 
         return result
@@ -296,47 +333,6 @@ class SessionsAPI:
     def _resolve_desktop_id(item: dict) -> str:
         """Resolve desktop ID from connection info."""
         return item.get("desktopId") or item.get("session_id") or item.get("id", "")
-
-    @staticmethod
-    def _try_launch_client(
-        jhapp_url: str,
-        desktop_id: str,
-        timeout: int,
-    ) -> bool:
-        """
-        Try to launch JHApp client via its local HTTP API on port 60540.
-
-        The JHApp client exposes a local API at http://127.0.0.1:60540/jhclientstarter
-        which can start the client session connection.
-
-        Returns True if the client was successfully launched, False otherwise.
-        """
-        if not _HAS_REQUESTS:
-            print("  requests library not available, skipping local client launch.")
-            return False
-
-        # Check if client is running by testing the port
-        print("  Checking port 60540...")
-        if not _check_port("127.0.0.1", 60540):
-            print("  Port 60540 is not reachable.")
-            return False
-
-        print("  JHApp client detected on port 60540, sending launch request...")
-        # Build start URL for the JHApp client API
-        jh_start_param = jhapp_url.replace("jhclient://", "").rstrip("/")
-        msg_id = f"{desktop_id}_{int(time.time() * 1000)}"
-        start_url = (
-            f"http://127.0.0.1:60540/jhclientstarter"
-            f"?startclient={jh_start_param}&msgId={msg_id}"
-        )
-
-        try:
-            _requests.get(start_url, timeout=timeout)
-            print("  Launch request sent successfully!")
-            return True
-        except Exception as e:
-            print(f"  Launch request failed: {e}")
-            return False
 
     def disconnect(self, session_id: str) -> Dict[str, Any]:
         """
