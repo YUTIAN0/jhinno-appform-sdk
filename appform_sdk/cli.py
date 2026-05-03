@@ -460,6 +460,45 @@ def create_parser() -> argparse.ArgumentParser:
     jf_tailf.add_argument("path", help="File path")
     jf_tailf.add_argument("--encoding", default="utf-8", help="Text encoding")
 
+    # jobs files custom <ls|get|cat|tailf> [args]
+    jf_custom = jobs_files_subparsers.add_parser(
+        "custom", help="File operations on compute node (SSH)"
+    )
+    jf_custom_subparsers = jf_custom.add_subparsers(
+        dest="custom_command", help="Custom subcommands"
+    )
+
+    jf_custom_ls = jf_custom_subparsers.add_parser("ls", help="List directory contents")
+    jf_custom_ls.add_argument(
+        "path",
+        nargs="?",
+        default=None,
+        help="Directory path (relative to work_path)",
+    )
+
+    jf_custom_get = jf_custom_subparsers.add_parser(
+        "get", help="Download file or directory to local"
+    )
+    jf_custom_get.add_argument("remote", help="Remote file or directory path")
+    jf_custom_get.add_argument(
+        "local",
+        nargs="?",
+        default=".",
+        help="Local destination (default: current directory)",
+    )
+
+    jf_custom_cat = jf_custom_subparsers.add_parser("cat", help="View file content")
+    jf_custom_cat.add_argument("path", help="File path")
+    jf_custom_cat.add_argument("--head", type=int, default=None, help="First N lines")
+    jf_custom_cat.add_argument("--tail", type=int, default=None, help="Last N lines")
+    jf_custom_cat.add_argument("--encoding", default="utf-8", help="Text encoding")
+
+    jf_custom_tailf = jf_custom_subparsers.add_parser(
+        "tailf", help="Follow file output in real-time"
+    )
+    jf_custom_tailf.add_argument("path", help="File path")
+    jf_custom_tailf.add_argument("--encoding", default="utf-8", help="Text encoding")
+
     jobs_history_page_parser = jobs_subparsers.add_parser(
         "history-page", help="List history jobs with pagination"
     )
@@ -2181,6 +2220,9 @@ def handle_jobs_files_command(args: argparse.Namespace):
                     client.sftp.kill_tail(tail_pid)
                 except Exception:
                     pass
+
+            elif cmd == "custom":
+                handle_jobs_files_custom(args, job_info, client)
             else:
                 print(f"Error: Unknown files command: {cmd}", file=sys.stderr)
                 client.close()
@@ -2197,6 +2239,136 @@ def handle_jobs_files_command(args: argparse.Namespace):
             sys.exit(1)
     finally:
         client.close()
+
+
+def handle_jobs_files_custom(args, job_info, client):
+    """Compute node file operations via SSH (ls/get/cat/tailf)."""
+    from .compute import (
+        execute_on_compute_node,
+        load_compute_config,
+        resolve_app_config,
+        get_head_node,
+    )
+
+    # 1. Get subcommand
+    subcommand = getattr(args, "custom_command", None)
+    if not subcommand:
+        print(
+            "Error: Missing subcommand. Use: ls, get, cat, or tailf.",
+            file=sys.stderr,
+        )
+        print(
+            "Usage: appform jobs files <job_id> custom <ls|get|cat|tailf> [args]",
+            file=sys.stderr,
+        )
+        client.close()
+        sys.exit(1)
+
+    # 2. Load compute config
+    try:
+        compute_data = load_compute_config()
+    except Exception as e:
+        print(f"Error: Failed to load compute config: {e}", file=sys.stderr)
+        print(
+            "Create ~/.appform/compute.yaml or set APPFORM_COMPUTE_CONFIG.",
+            file=sys.stderr,
+        )
+        client.close()
+        sys.exit(1)
+
+    # 3. Get job info from API
+    data = job_info.get("data", {})
+    app_name = data.get("appName", "")
+    job_status = data.get("status", "")
+
+    # 4. Check app is configured
+    apps = compute_data.get("compute_config", {}).get("applications", {})
+    if app_name and app_name not in apps:
+        configured = ", ".join(apps.keys()) if apps else "(none)"
+        print(
+            f"Error: Application '{app_name}' is not configured in compute.yaml.",
+            file=sys.stderr,
+        )
+        print(
+            f"Configured applications: {configured}",
+            file=sys.stderr,
+        )
+        print(
+            f"Add '{app_name}' to ~/.appform/compute.yaml applications section.",
+            file=sys.stderr,
+        )
+        client.close()
+        sys.exit(1)
+
+    app_cfg = resolve_app_config(compute_data, app_name)
+
+    # 5. Check job status - only running jobs have compute nodes
+    if job_status != "RUN":
+        print(
+            f"Error: Job is '{job_status}'. Only running jobs are supported.",
+            file=sys.stderr,
+        )
+        client.close()
+        sys.exit(1)
+
+    exec_host_raw = data.get("executionHost", []) or data.get("host", "")
+    if not exec_host_raw:
+        print(
+            "Error: No execution host found for this job.", file=sys.stderr
+        )
+        client.close()
+        sys.exit(1)
+    head_node = get_head_node(exec_host_raw)
+
+    # 4. Build subcommand args
+    subcommand_args = []
+    if subcommand == "ls":
+        subcommand_args = [args.path] if args.path else []
+    elif subcommand == "get":
+        subcommand_args = [args.remote]
+        if args.local and args.local != ".":
+            subcommand_args.append(args.local)
+    elif subcommand in ("cat", "tailf"):
+        subcommand_args = [args.path]
+
+    # 5. Get SSH credentials
+    config = Config(config_file=getattr(args, "config_file", None))
+    ssh_user = config.sftp_username or config.username
+    ssh_pass = config.sftp_password or config.password
+    ssh_key = config.sftp_key_file
+    ssh_key_pass = config.sftp_key_password
+
+    connect_kwargs = {
+        "username": ssh_user,
+        "password": ssh_pass,
+        "key_filename": ssh_key,
+        "key_password": ssh_key_pass,
+    }
+
+    ssh_kwargs = {"connect_kwargs": connect_kwargs}
+    if app_cfg["mode"] == "via_gateway":
+        ssh_kwargs["gateway_host"] = config.sftp_host
+        ssh_kwargs["gateway_port"] = config.sftp_port
+
+    # Pass cat --head/--tail
+    if subcommand == "cat":
+        ssh_kwargs["head"] = getattr(args, "head", None)
+        ssh_kwargs["tail"] = getattr(args, "tail", None)
+
+    # 6. Execute
+    encoding = getattr(args, "encoding", "utf-8")
+    exit_code = execute_on_compute_node(
+        app_cfg=app_cfg,
+        head_node=head_node,
+        job_id=args.job_id,
+        subcommand=subcommand,
+        subcommand_args=subcommand_args,
+        ssh_kwargs=ssh_kwargs,
+        encoding=encoding,
+    )
+    client.close()
+    if exit_code:
+        sys.exit(exit_code)
 
 
 def handle_apps_command(args: argparse.Namespace):

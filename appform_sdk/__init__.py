@@ -12,6 +12,7 @@ from .exceptions import (
     APIError,
     AppformError,
     AuthenticationError,
+    ComputeError,
     FileError,
     JobError,
     SessionError,
@@ -94,6 +95,7 @@ __all__ = [
     "JobError",
     "SessionError",
     "SFTPError",
+    "ComputeError",
     # Registry and Extensions
     "APIRegistry",
     "get_registry",

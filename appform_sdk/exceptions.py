@@ -54,3 +54,9 @@ class SFTPError(AppformError):
     """Raised when SFTP operations fail."""
 
     pass
+
+
+class ComputeError(AppformError):
+    """Raised when compute node SSH operations fail."""
+
+    pass
