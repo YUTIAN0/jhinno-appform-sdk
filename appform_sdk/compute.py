@@ -442,6 +442,34 @@ def compute_cat(
 
 
 # ---------------------------------------------------------------------------
+# Path validation
+# ---------------------------------------------------------------------------
+
+# Characters/patterns that would allow command injection in shell commands
+_DANGEROUS_PATH_CHARS = re.compile(r"[;&|`(){}$\\><]")
+
+
+def _validate_path(path: str) -> str:
+    """Validate a file/directory path for use in shell commands.
+
+    Allows glob patterns (* ? [...]) but rejects characters that could
+    be used for command injection (semicolons, pipes, redirects,
+    subshells, variable expansion, backslashes).
+
+    Returns the unchanged path if safe. Raises ComputeError if dangerous.
+    """
+    if _DANGEROUS_PATH_CHARS.search(path):
+        raise ComputeError(
+            f"Invalid characters in path: {path!r}. "
+            "Paths must not contain shell metacharacters (; & | ( ) `{ } $ \\) "
+            "or directory traversal (..)."
+        )
+    if path.startswith("\n") or "\n" in path:
+        raise ComputeError(f"Newline not allowed in path: {path!r}")
+    return path
+
+
+# ---------------------------------------------------------------------------
 # tailf — follow file via SSH exec
 # ---------------------------------------------------------------------------
 
@@ -461,8 +489,11 @@ def compute_tailf(
     non-custom tailf.
 
     First line of output is the PID; all subsequent lines are tail output.
-    Does NOT quote remote_path so glob patterns are shell-expanded.
+    Allows shell glob patterns (e.g. *.log) but rejects dangerous shell
+    metacharacters to prevent command injection.
     """
+    _validate_path(remote_path)
+
     transport = ssh_client.get_transport()
     if transport is None:
         raise ComputeError(
