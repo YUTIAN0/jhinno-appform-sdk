@@ -22,7 +22,12 @@ class AuthenticationError(AppformError):
 class APIError(AppformError):
     """Raised when API returns an error."""
 
-    def __init__(self, message: str, status_code: Optional[int] = None, response: Optional[dict] = None):
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        response: Optional[dict] = None,
+    ):
         self.status_code = status_code
         self.response = response
         super().__init__(message)

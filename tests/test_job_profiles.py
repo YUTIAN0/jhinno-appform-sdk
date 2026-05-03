@@ -78,10 +78,18 @@ class TestAppProfile:
     def _make_profile(self):
         p = AppProfile(app_id="test_app", name="Test App")
         p.parameters.append(
-            ParameterDef(name="JH_CORES", param_type="text", required=True, default="1", cli_arg="cores")
+            ParameterDef(
+                name="JH_CORES",
+                param_type="text",
+                required=True,
+                default="1",
+                cli_arg="cores",
+            )
         )
         p.parameters.append(
-            ParameterDef(name="JH_INPUT", param_type="text", required=False, cli_arg="input")
+            ParameterDef(
+                name="JH_INPUT", param_type="text", required=False, cli_arg="input"
+            )
         )
         p.parameters.append(
             ParameterDef(name="JH_SCRIPT", param_type="upload", cli_arg="script")
@@ -117,9 +125,7 @@ class TestAppProfile:
 
     def test_get_param_by_short_arg(self):
         p = AppProfile(app_id="x")
-        p.parameters.append(
-            ParameterDef(name="JH_A", short_arg="a")
-        )
+        p.parameters.append(ParameterDef(name="JH_A", short_arg="a"))
         assert p.get_param_by_cli("a") is not None
 
     def test_resolve_cli_args(self):
@@ -140,9 +146,7 @@ class TestAppProfile:
 
     def test_validate_params_missing_required(self):
         p = AppProfile(app_id="x")
-        p.parameters.append(
-            ParameterDef(name="NO_DEFAULT", required=True)
-        )
+        p.parameters.append(ParameterDef(name="NO_DEFAULT", required=True))
         errors = p.validate_params({})
         assert len(errors) == 1
         assert "NO_DEFAULT" in errors[0]
@@ -164,36 +168,26 @@ class TestAppProfile:
 
     def test_build_params_defaults(self):
         p = AppProfile(app_id="x")
-        p.parameters.append(
-            ParameterDef(name="A", required=True, default="1")
-        )
-        p.parameters.append(
-            ParameterDef(name="B", required=False, default="hello")
-        )
+        p.parameters.append(ParameterDef(name="A", required=True, default="1"))
+        p.parameters.append(ParameterDef(name="B", required=False, default="hello"))
         result = p.build_params()
         assert result == {"A": "1", "B": "hello"}
 
     def test_build_params_override(self):
         p = AppProfile(app_id="x")
-        p.parameters.append(
-            ParameterDef(name="A", required=True, default="1")
-        )
+        p.parameters.append(ParameterDef(name="A", required=True, default="1"))
         result = p.build_params(overrides={"A": "10"})
         assert result["A"] == "10"
 
     def test_build_params_missing_required_raises(self):
         p = AppProfile(app_id="x")
-        p.parameters.append(
-            ParameterDef(name="REQ", required=True)
-        )
+        p.parameters.append(ParameterDef(name="REQ", required=True))
         with pytest.raises(ValueError, match="Required parameter missing"):
             p.build_params()
 
     def test_build_params_switch_off_skipped(self):
         p = AppProfile(app_id="x")
-        p.parameters.append(
-            ParameterDef(name="SW", param_type="switch", default="off")
-        )
+        p.parameters.append(ParameterDef(name="SW", param_type="switch", default="off"))
         result = p.build_params()
         assert "SW" not in result
 

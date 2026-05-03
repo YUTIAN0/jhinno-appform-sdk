@@ -306,7 +306,9 @@ class TestDynamicAPI:
         assert call_kwargs.kwargs["params"]["override"] == "2"
 
     def test_header_merging(self):
-        endpoints = {"x.get": {"path": "/x", "method": "GET", "headers": {"X-Custom": "a"}}}
+        endpoints = {
+            "x.get": {"path": "/x", "method": "GET", "headers": {"X-Custom": "a"}}
+        }
         api, client = self._make_api(endpoints)
         api.call("x.get", headers={"X-Extra": "b"})
         call_kwargs = client.request.call_args
