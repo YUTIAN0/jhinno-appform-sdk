@@ -450,5 +450,9 @@ class Config:
             f"timeout={self.timeout}, "
             f"verify_ssl={self.verify_ssl}, "
             f"api_version={self.api_version!r}, "
-            f"extensions_dir={self.extensions_dir!r})"
+            f"extensions_dir={self.extensions_dir!r}, "
+            f"sftp_host={self.sftp_host!r}, "
+            f"sftp_port={self.sftp_port}, "
+            f"sftp_username={self.sftp_username!r}, "
+            f"sftp_key_file={self.sftp_key_file!r})"
         )
