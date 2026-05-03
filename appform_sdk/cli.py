@@ -2313,9 +2313,7 @@ def handle_jobs_files_custom(args, job_info, client):
 
     exec_host_raw = data.get("executionHost", []) or data.get("host", "")
     if not exec_host_raw:
-        print(
-            "Error: No execution host found for this job.", file=sys.stderr
-        )
+        print("Error: No execution host found for this job.", file=sys.stderr)
         client.close()
         sys.exit(1)
     head_node = get_head_node(exec_host_raw)
