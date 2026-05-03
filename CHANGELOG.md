@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.6] - 2026-05-03
+
+### Added
+- **`try_launch_jhapp_client()` public function** — check and launch local JHApp client via HTTP API
+- **`check_jhapp_client()` public function** — detect if local JHApp client is running on port 60540
+- **Auto-launch JHApp client after `sessions start`** — CLI automatically tries to launch the client when a jhappUrl is returned; silent fallback if client unavailable
+
+### Changed
+- `SessionsAPI.connect_and_launch()` refactored to use shared `try_launch_jhapp_client()`
+- Removed `SessionsAPI._try_launch_client()` static method, replaced with module-level public functions
+
+### Fixed
+- `DOCUMENTATION.md` package name: `appform-sdk` → `jhinno-appform-sdk`
+- `DOCUMENTATION.md` missing `PyYAML>=6.0` dependency
+- `sessions.list()` docstring — added warning that no-argument call paginates through all sessions (heavy operation)
+- `jobs.list_jobs()` docstring — clarified `condition` parameter is mutually exclusive with other filters
+
 ## [0.0.5] - 2026-05-03
 
 ### Added
