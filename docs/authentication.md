@@ -101,7 +101,7 @@ appform --username other_user --access-key KEY --access-key-secret SECRET jobs l
 
 ```python
 client = AppformClient(base_url="https://server")
-result = client.auth.login(username="admin", password="your_password")
+result = client.auth.login(username="your_username", password="your_password")
 # Token 自动保存，后续请求自动携带
 ```
 
@@ -112,7 +112,7 @@ result = client.auth.login(username="admin", password="your_password")
 ```bash
 # 保存到配置文件
 appform config set --base-url https://server
-appform config set --username admin --password your_password
+appform config set --username your_username --password your_password
 
 # 之后直接使用，自动完成登录
 appform jobs list
@@ -124,7 +124,7 @@ job_submit -a starccm -i /path/to/file.sim -n 8
 ```json
 {
   "base_url": "https://server",
-  "username": "admin",
+  "username": "your_username",
   "password": "your_password"
 }
 ```
@@ -141,10 +141,10 @@ export APPFORM_PASSWORD=your_password
 
 ```bash
 # appform CLI
-appform --username admin --password your_password jobs list
+appform --username your_username --password your_password jobs list
 
 # job_submit 工具
-job_submit -a starccm -i /path/to/file.sim -n 8 -u admin -p password
+job_submit -a starccm -i /path/to/file.sim -n 8 -u your_username -p your_password
 ```
 
 ## 方式三：AES Token 登录（仅限集群环境）

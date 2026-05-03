@@ -73,7 +73,7 @@ class AppformClient:
         # With version and extensions
         client = AppformClient(
             base_url="https://your-appform-server.com",
-            api_version="7.0",
+            api_version="6.6",
             extensions_dir="/path/to/extensions"
         )
     """

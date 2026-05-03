@@ -42,12 +42,12 @@ pip install -e ".[dev]"
 from appform_sdk import AppformClient
 
 # 创建客户端（使用密码登录）
-client = AppformClient(base_url="https://10.55.191.4", verify_ssl=False)
-client.auth.login(username="user", password="pass")
+client = AppformClient(base_url="https://your-server", verify_ssl=False)
+client.auth.login(username="your_username", password="your_password")
 
 # 或使用配置文件自动认证（推荐）
 # ~/.appform/config.json 中配置 base_url、username、password
-client = AppformClient(base_url="https://10.55.191.4", verify_ssl=False)
+client = AppformClient(base_url="https://your-server", verify_ssl=False)
 # 如果 config.json 有 password，CLI 会自动登录
 ```
 
@@ -176,11 +176,11 @@ users = client.organization.get_users(page=1, page_size=20)
 client.organization.create_user(
     username="new_user",
     chusername="新用户",
-    password="password123",
+    password="your_password",
 )
 
 # 修改密码
-client.organization.reset_password("username", "new_password")
+client.organization.reset_password("new_user", "new_password")
 ```
 
 ### 作业配置文件提交
@@ -213,7 +213,7 @@ params = pm.build_submit_params("starccm", {
 
 # 提交
 client = AppformClient(base_url="https://server", verify_ssl=False)
-client.auth.login("user", "pass")
+client.auth.login("your_username", "your_password")
 result = pm.submit_job(client, "starccm", {
     "JH_CAS": "/home/user/simulation.sim",
     "JH_NCPU": "16",
@@ -266,7 +266,7 @@ from appform_sdk import AppformClient, AuthenticationError, APIError, AppformErr
 
 try:
     client = AppformClient(base_url="https://server")
-    client.auth.login(username="user", password="wrong")
+    client.auth.login(username="your_username", password="wrong_password")
 except AuthenticationError as e:
     print(f"认证失败: {e}")
 except APIError as e:
@@ -282,7 +282,7 @@ except AppformError as e:
 ```bash
 # 配置认证
 appform config set --base-url https://server
-appform config set --username admin --password your_password
+appform config set --username your_username --password your_password
 appform config set --job-profile-config /path/to/job_submit.yaml
 
 # 测试连接
@@ -350,7 +350,7 @@ job_submit -a lsdyna2 -i /path/to/input.k -n 8 --wait
 job_submit -a lsdyna2 -i /path/to/input.k -n 8 --wait 5
 
 # 使用用户名密码认证
-job_submit -a starccm -i file.sim -n 8 -u admin -p password
+job_submit -a starccm -i file.sim -n 8 -u your_username -p your_password
 ```
 
 **文件上传规则：**

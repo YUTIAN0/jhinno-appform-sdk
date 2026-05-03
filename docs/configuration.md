@@ -11,7 +11,7 @@ Appform SDK 支持多种配置方式，按优先级从高到低：
 | 环境变量 | 说明 | 示例 |
 |----------|------|------|
 | `APPFORM_BASE_URL` | API 基础 URL | `https://server` |
-| `APPFORM_USERNAME` | 用户名（可省略，自动使用当前系统用户） | `admin` |
+| `APPFORM_USERNAME` | 用户名（可省略，自动使用当前系统用户） | `your_username` |
 | `APPFORM_PASSWORD` | 密码 | `your_password` |
 | `APPFORM_ACCESS_KEY` | AccessKey（需 6.4+） | `your_key` |
 | `APPFORM_ACCESS_KEY_SECRET` | AccessKey 密钥（需 6.4+） | `your_secret` |
@@ -35,7 +35,7 @@ Appform SDK 支持多种配置方式，按优先级从高到低：
 ```bash
 # 密码认证（适用于所有版本）
 export APPFORM_BASE_URL=https://server
-export APPFORM_USERNAME=admin
+export APPFORM_USERNAME=your_username
 export APPFORM_PASSWORD=your_password
 
 # AccessKey 认证（需 6.4+）
@@ -53,8 +53,8 @@ export APPFORM_OUTPUT_FORMAT=json
 
 ```json
 {
-  "base_url": "https://10.55.191.4",
-  "username": "admin",
+  "base_url": "https://your-server.com",
+  "username": "your_username",
   "password": "your_password",
   "verify_ssl": false,
   "api_version": "6.3",
@@ -69,7 +69,7 @@ export APPFORM_OUTPUT_FORMAT=json
 ```bash
 # 基础配置
 appform config set --base-url https://server
-appform config set --username admin --password your_password
+appform config set --username your_username --password your_password
 
 # AccessKey（需 6.4+）
 appform config set --access-key KEY --access-key-secret SECRET
@@ -111,7 +111,7 @@ config = Config(config_file="/path/to/config.json")
 # 直接参数（优先级最高）
 config = Config(
     base_url="https://server",
-    username="admin",
+    username="your_username",
     password="your_password",
 )
 
@@ -121,7 +121,7 @@ print(config.to_dict())
 # 保存配置（保留已有字段）
 Config.save_config_file(
     base_url="https://server",
-    username="admin",
+    username="your_username",
     password="your_password",
     job_profile_config="/path/to/job_submit.yaml",
     output_format="table",
@@ -136,7 +136,7 @@ from appform_sdk import AppformClient, Config
 # 方式1：直接传参
 client = AppformClient(
     base_url="https://server",
-    username="admin",
+    username="your_username",
     password="your_password",
     verify_ssl=False,
 )
@@ -154,7 +154,7 @@ client = AppformClient(base_url="https://other-server", config=config)
 ```json
 {
   "base_url": "https://server",
-  "username": "admin",
+  "username": "your_username",
   "password": "your_password",
   "access_key": "your_key",
   "access_key_secret": "your_secret",

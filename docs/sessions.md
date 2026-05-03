@@ -54,14 +54,11 @@ result = client.sessions.list(session_ids=["494039"])
 # 按名称查询
 result = client.sessions.list(session_name="my_session")
 
-# 按用户名查询（客户端过滤）
-result = client.sessions.list(owner="jhadmin")
-
 # 多个 ID 查询
 result = client.sessions.list(session_ids=["494039", "494040"])
 ```
 
-> **注意**: API 不支持按用户过滤，因此 `owner` 参数会先获取所有会话，然后在客户端按 `owner` 字段过滤。
+> **注意**: `list()` 无参调用时返回全部会话，然后在客户端按当前登录用户的 `owner` 字段过滤。
 
 ### 列出所有会话（分页）
 

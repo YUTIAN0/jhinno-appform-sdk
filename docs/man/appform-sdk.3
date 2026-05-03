@@ -17,7 +17,7 @@ client = AppformClient(
     base_url="https://your-server.com",
     verify_ssl=False
 )
-client.auth.login(username="user", password="pass")
+client.auth.login(username="your_username", password="your_password")
 jobs = client.jobs.list_jobs()
 .fi
 .RE
@@ -609,7 +609,7 @@ client.jobs.stop("494825")
 .RS
 .nf
 client = AppformClient(base_url="https://your-server.com")
-client.auth.login("user", "pass")
+client.auth.login("your_username", "your_password")
 
 # Start a session
 result = client.sessions.start(
@@ -629,7 +629,7 @@ client.sessions.connect_and_launch(sessions["data"][0]["sessionId"])
 .RS
 .nf
 client = AppformClient(base_url="https://your-server.com")
-client.auth.login("user", "pass")
+client.auth.login("your_username", "your_password")
 
 # List directory
 files = client.files.list(path="/home/user")

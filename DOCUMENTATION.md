@@ -26,7 +26,7 @@
 
 Appform SDK 是 Appform 6.0-6.6 API 的 Python 客户端库，提供：
 
-- 支持 Appform 6.0、6.2、6.3、6.4、6.5、6.6 版本
+- 支持 Appform 6.0、6.3、6.5、6.6 版本
 - 多种认证方式（密码、Token、AccessKey）
 - 完整的 API 覆盖（作业、会话、文件、组织等）
 - 命令行工具支持
@@ -38,9 +38,7 @@ Appform SDK 是 Appform 6.0-6.6 API 的 Python 客户端库，提供：
 | 版本 | 说明 | 新增功能 |
 |------|------|---------|
 | 6.0 | 基础版本 | 核心作业、会话、文件、组织 API |
-| 6.2 | - | 与 6.0 相同 |
 | 6.3 | - | 与 6.0 相同 |
-| 6.4 | - | 与 6.0 相同 |
 | 6.5 | 功能增强 | 文件密级管理 |
 | 6.6 | 重大更新 | V2 API、存储配额、CPU 统计 |
 
@@ -115,7 +113,7 @@ client.close()
 from appform_sdk import AppformClient
 
 with AppformClient(base_url="https://your-server.com") as client:
-    client.auth.login(username="user", password="pass")
+    client.auth.login(username="your_username", password="your_password")
     jobs = client.jobs.list_jobs()
     # 自动关闭连接
 ```
@@ -230,7 +228,7 @@ from appform_sdk import AppformClient
 client = AppformClient(base_url="https://your-server.com")
 
 # 登录
-result = client.auth.login(username="jhadmin", password="Letmein123")
+result = client.auth.login(username="your_username", password="your_password")
 
 if result["result"] == "success":
     print("登录成功")
@@ -252,7 +250,7 @@ from appform_sdk import AppformClient
 client = AppformClient(base_url="https://your-server.com")
 
 # Token 登录（SDK 自动加密）
-result = client.auth.login_with_token(username="jhadmin", timeout=60)
+result = client.auth.login_with_token(timeout=60)
 ```
 
 ### 方式三：AccessKey 认证（推荐）
@@ -364,7 +362,7 @@ client = AppformClient(base_url="...", api_version=VERSION_6_6)
 
 ### 版本差异
 
-| 功能 | 6.0-6.4 | 6.5 | 6.6 |
+| 功能 | 6.0-6.3 | 6.5 | 6.6 |
 |------|---------|-----|-----|
 | 基础作业 API | ✓ | ✓ | ✓ |
 | 基础会话 API | ✓ | ✓ | ✓ |
@@ -833,7 +831,7 @@ for user in users["data"]["content"]:
 client.organization.create_user(
     username="newuser",
     chusername="新用户",
-    password="SecurePass123",
+    password="your_password",
     dep="engineering",
     phone="1234567890",
     mail="user@example.com"
@@ -849,7 +847,7 @@ client.organization.update_user(
 # 重置密码
 client.organization.reset_password(
     username="newuser",
-    new_password="NewSecurePass456"
+    new_password="your_new_password"
 )
 
 # 删除用户
@@ -1027,7 +1025,7 @@ appform config show
 
 ```bash
 # 登录
-appform auth login --username "user" --password "pass"
+appform auth login --username "your_username" --password "your_password"
 
 # 测试连接
 appform auth ping
@@ -1180,7 +1178,7 @@ from appform_sdk.exceptions import AuthenticationError, APIError, AppformError
 client = AppformClient(base_url="https://your-server.com")
 
 try:
-    result = client.auth.login(username="user", password="wrong_password")
+    result = client.auth.login(username="your_username", password="your_password")
 except AuthenticationError as e:
     print(f"认证失败: {e.message}")
 except APIError as e:

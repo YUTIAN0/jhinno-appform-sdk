@@ -57,12 +57,12 @@ def main():
     print("=" * 50)
 
     # Method 1: Login with username and password
-    result = client.auth.login(username="jhadmin", password="Letmein123")
+    result = client.auth.login(username="your_username", password="your_password")
     print(f"Login result: {result['result']}")
     print(f"Token: {client.token}")
 
-    # Method 2: Login with encrypted token
-    # result = client.auth.login_with_token(username="jhadmin", timeout=60)
+    # Method 2: Login with encrypted token (cluster environment only)
+    # result = client.auth.login_with_token(timeout=60)
 
     # Method 3: AccessKey authentication
     # client.auth.login_with_access_key(
@@ -88,14 +88,12 @@ def main():
 
     # Submit a job
     job_result = client.jobs.submit(
-        app_name="fluent",
-        job_name="my_simulation",
-        queue="normal",
-        cores=4,
-        memory=8000,
-        walltime="2:00:00",
-        input_files=["/data/input.cas"],
-        output_files=["/data/output.dat"],
+        app_id="fluent",
+        params={
+            "JH_JOB_NAME": "my_simulation",
+            "JH_CAS": "/data/input.cas",
+            "JH_NCPU": "4",
+        },
     )
     print(f"Job submitted: {job_result}")
 
@@ -137,9 +135,8 @@ def main():
     # Start a session
     session_result = client.sessions.start(
         app_id="ansys",
-        session_name="my_session",
-        cores=2,
-        memory=4000,
+        start_new=True,
+        cwd="${HOME}",
     )
     print(f"Session started: {session_result}")
 
@@ -164,33 +161,33 @@ def main():
     print("=" * 50)
 
     # List files
-    files_result = client.files.list(path="/home/jhadmin")
+    files_result = client.files.list(path="/home/user")
     print(f"Files: {files_result}")
 
     # Create directory
-    # mkdir_result = client.files.mkdir(path="/home/jhadmin", name="new_folder")
+    # mkdir_result = client.files.mkdir(path="/home/user", name="new_folder")
     # print(f"Create directory: {mkdir_result}")
 
     # Upload file
     # upload_result = client.files.upload(
     #     file_path="/local/path/file.txt",
-    #     remote_path="/home/jhadmin/data/",
+    #     remote_path="/home/user/data/",
     # )
     # print(f"Upload result: {upload_result}")
 
     # Download file
-    # content = client.files.download(remote_path="/home/jhadmin/data/file.txt")
+    # content = client.files.download(remote_path="/home/user/data/file.txt")
     # print(f"Downloaded {len(content)} bytes")
 
     # Copy files
     # copy_result = client.files.copy(
-    #     src_paths=["/home/jhadmin/file1.txt"],
-    #     dest_path="/home/jhadmin/backup/",
+    #     src_paths=["/home/user/file1.txt"],
+    #     dest_path="/home/user/backup/",
     # )
 
     # Compress files
     # compress_result = client.files.compress(
-    #     paths=["/home/jhadmin/data/"],
+    #     paths=["/home/user/data/"],
     #     output_name="backup.zip",
     # )
 
@@ -211,7 +208,7 @@ def main():
     # create_user_result = client.organization.create_user(
     #     username="newuser",
     #     chusername="新用户",
-    #     password="SecurePass123",
+    #     password="your_password",
     #     dep="engineering",
     # )
 
@@ -247,7 +244,7 @@ def context_manager_example():
     print("=" * 50)
 
     with AppformClient(base_url="https://your-appform-server.com") as client:
-        client.auth.login(username="jhadmin", password="Letmein123")
+        client.auth.login(username="your_username", password="your_password")
 
         jobs = client.jobs.list_jobs(page=1, page_size=5)
         print(f"Found {jobs['data'].get('total', 0)} jobs")
@@ -344,7 +341,7 @@ def error_handling_example():
     client = AppformClient(base_url="https://your-appform-server.com")
 
     try:
-        client.auth.login(username="wrong_user", password="wrong_password")
+        client.auth.login(username="your_username", password="wrong_password")
     except AuthenticationError as e:
         print(f"Authentication failed: {e.message}")
     except APIError as e:

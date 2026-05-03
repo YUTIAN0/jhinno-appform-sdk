@@ -36,13 +36,13 @@ users = client.organization.get_users(page=1, page_size=20)
 users = client.organization.get_users(dep="engineering")
 
 # 按用户名过滤
-users = client.organization.get_users(username="admin")
+users = client.organization.get_users(username="your_username")
 
 # 创建用户
 client.organization.create_user(
     username="newuser",
     chusername="新用户",
-    password="password123",
+    password="your_password",
     dep="engineering",
     phone="13800138000",
     mail="newuser@example.com",
@@ -58,7 +58,7 @@ client.organization.update_user(
 # 重置密码
 client.organization.reset_password(
     username="newuser",
-    new_password="newpassword456",
+    new_password="your_new_password",
 )
 
 # 删除用户
@@ -101,8 +101,8 @@ appform users list --dep engineering
 appform users list --filter-username admin
 
 # 创建用户
-appform users create --user newuser --display-name 新用户 --new-password password123 --dep engineering
-appform users create --user newuser --display-name 新用户 --new-password password123 --dep engineering --mail newuser@example.com --phone 13800138000
+appform users create --user newuser --display-name 新用户 --new-password your_password --dep engineering
+appform users create --user newuser --display-name 新用户 --new-password your_password --dep engineering --mail newuser@example.com --phone 13800138000
 
 # 修改用户（--user 必选，其余可选）
 appform users update --user newuser --display-name 新用户名
@@ -112,5 +112,5 @@ appform users update --user newuser --display-name 新用户名 --dep company --
 appform users delete --user newuser
 
 # 重置密码
-appform users reset-password --user newuser --new-password newpassword456
+appform users reset-password --user newuser --new-password your_new_password
 ```

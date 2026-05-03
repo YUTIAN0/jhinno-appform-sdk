@@ -1,6 +1,6 @@
 # Appform SDK
 
-Python SDK for Appform 6.0-6.6 API.
+Python SDK for Appform 6.0, 6.3, 6.5, and 6.6 APIs.
 
 ## Features
 
@@ -35,14 +35,14 @@ Download the appropriate release package from [GitHub Releases](https://github.c
 **Linux:**
 
 ```bash
-tar xzf jhinno-appform-sdk-0.0.1-linux-x86_64-cp312.tar.gz
+tar xzf jhinno-appform-sdk-X.Y.Z-linux-x86_64-cp312.tar.gz
 pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
 ```
 
 **Windows:**
 
 ```powershell
-Expand-Archive jhinno-appform-sdk-0.0.1-windows-x86_64-cp312.zip
+Expand-Archive jhinno-appform-sdk-X.Y.Z-windows-x86_64-cp312.zip
 pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
 ```
 
@@ -52,7 +52,7 @@ Or install from source:
 
 ```bash
 git clone https://github.com/YUTIAN0/jhinno-appform-sdk.git
-cd appform-sdk
+cd jhinno-appform-sdk
 pip install -e .
 ```
 
@@ -61,18 +61,25 @@ pip install -e .
 - Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, or 3.14
 - requests >= 2.28.0
 - pycryptodome >= 3.15.0
+- PyYAML >= 6.0
 
 ## Quick Start
 
 ```python
 from appform_sdk import AppformClient
+from appform_sdk.exceptions import AuthenticationError
 
 # Method 1: Token authentication (login with password)
 client = AppformClient(
     base_url="https://your-appform-server.com",
     verify_ssl=False,  # Set False if server uses a self-signed or weak certificate
 )
-result = client.auth.login(username="your_username", password="your_password")
+try:
+    client.auth.login(username="your_username", password="your_password")
+except AuthenticationError as e:
+    print(f"Login failed: {e}")
+    raise
+
 print(f"Token: {client.token}")
 
 # Method 2: AccessKey authentication
@@ -87,7 +94,6 @@ client = AppformClient(
 # Method 3: Load from environment variables or config file
 from appform_sdk import Config
 config = Config(config_file="~/.appform/config.json")  # Specify config file path
-print(f"Config file: {config.config_file}")
 client = AppformClient(config=config)
 # Automatically reads APPFORM_BASE_URL, APPFORM_ACCESS_KEY, APPFORM_ACCESS_KEY_SECRET,
 # APPFORM_USERNAME, APPFORM_VERIFY_SSL, etc. from environment or config file
@@ -145,7 +151,7 @@ config = Config()
 # Load from specific config file
 config = Config(config_file="/path/to/config.json")
 
-# Save configuration to file
+# Save configuration to file (classmethod, doesn't need a Config instance)
 Config.save_config_file(
     base_url="https://your-server.com",
     access_key="your_access_key",
@@ -190,7 +196,7 @@ appform config set \
 appform config show
 
 # Authentication
-appform auth login --username "user" --password "pass"
+appform auth login --username "your_username" --password "your_password"
 appform auth ping
 appform auth logout
 
@@ -206,10 +212,10 @@ appform jobs resume <job_id>
 appform jobs output <job_id>
 appform jobs files <job_id>
 appform jobs history <job_id>
-appform jobs submit --app-name fluent --job-name my_job --cores 4 --memory 8000
+appform jobs submit -a fluent --set JH_JOB_NAME=my_job --set JH_NCPU=4
 
 # Sessions
-appform sessions start --app-id ansys --cores 2
+appform sessions start --app-id ansys --start-new
 appform sessions list
 appform sessions list-all
 appform sessions connect <session_id>
@@ -464,9 +470,9 @@ from appform_sdk import AppformClient
 client = AppformClient(base_url="https://your-server.com")
 
 # Login
-result = client.auth.login(username="jhadmin", password="Letmein123")
+result = client.auth.login(username="your_username", password="your_password")
 
-if result["result"] == "success":
+if result.get("result") == "success":
     print("Login successful!")
     print(f"Token: {client.token}")
 ```
@@ -478,8 +484,9 @@ from appform_sdk import AppformClient
 
 client = AppformClient(base_url="https://your-server.com")
 
-# Login with token-based authentication
-result = client.auth.login_with_token(username="jhadmin", timeout=60)
+# Login with token-based authentication (cluster environment only)
+# Username is auto-detected from the current system user
+result = client.auth.login_with_token(timeout=60)
 ```
 
 ### AccessKey Authentication
@@ -555,14 +562,13 @@ headers = SignatureGenerator.generate_auth_headers(
 
 ```python
 result = client.jobs.submit(
-    app_name="fluent",
-    job_name="my_simulation",
-    queue="normal",
-    cores=4,
-    memory=8000,
-    walltime="2:00:00",
-    input_files=["/data/input.cas"],
-    output_files=["/data/output.dat"],
+    app_id="fluent",
+    params={
+        "JH_JOB_NAME": "my_simulation",
+        "JH_CAS": "/data/input.cas",
+        "JH_NCPU": "4",
+        "JH_MEMORY": "8000",
+    },
 )
 print(f"Job ID: {result['data']['jobId']}")
 ```
@@ -645,11 +651,10 @@ history = client.jobs.get_batch_history(["job1", "job2"])
 ```python
 result = client.sessions.start(
     app_id="ansys",
-    session_name="my_session",
-    cores=2,
-    memory=4000,
+    start_new=True,
+    cwd="${HOME}",
 )
-print(f"Session ID: {result['data']['sessionId']}")
+print(f"Session ID: {result['data'][0]['session_id']}")
 ```
 
 ### Start a Session v2 (6.6)
@@ -790,7 +795,7 @@ users = client.organization.get_users(page=1, page_size=20)
 client.organization.create_user(
     username="newuser",
     chusername="新用户",
-    password="SecurePass123",
+    password="your_password",
     dep="engineering",
     mail="user@example.com",
 )
@@ -804,7 +809,7 @@ client.organization.update_user(
 # Reset password
 client.organization.reset_password(
     username="newuser",
-    new_password="NewSecurePass456",
+    new_password="your_new_password",
 )
 
 # Delete user
@@ -820,7 +825,7 @@ from appform_sdk.exceptions import AuthenticationError, APIError, AppformError
 client = AppformClient(base_url="https://your-server.com")
 
 try:
-    client.auth.login(username="user", password="wrong_password")
+    client.auth.login(username="your_username", password="your_password")
 except AuthenticationError as e:
     print(f"Authentication failed: {e.message}")
 except APIError as e:
@@ -835,7 +840,7 @@ except AppformError as e:
 from appform_sdk import AppformClient
 
 with AppformClient(base_url="https://your-server.com") as client:
-    client.auth.login(username="user", password="pass")
+    client.auth.login(username="your_username", password="your_password")
     jobs = client.jobs.list_jobs()
     # Session automatically closed on exit
 ```
@@ -861,7 +866,7 @@ with AppformClient(base_url="https://your-server.com") as client:
 | Method | Description |
 |--------|-------------|
 | `login(username, password)` | Login with credentials |
-| `login_with_token(username, timeout)` | Login with encrypted token |
+| `login_with_token(timeout)` | Login with encrypted token (cluster only, auto-detects user) |
 | `login_with_access_key(access_key, access_key_secret, username)` | Configure AccessKey auth |
 | `logout()` | Logout current session |
 | `ping()` | Test service connection |
@@ -895,6 +900,8 @@ with AppformClient(base_url="https://your-server.com") as client:
 | `disconnect(session_id)` | Disconnect from session |
 | `close(session_id)` | Close session |
 | `share(session_id, usernames)` | Share session |
+| `cancel_share(session_id)` | Cancel session sharing |
+| `transfer_operation(session_id, username)` | Transfer operation to another user |
 
 ### FilesAPI
 

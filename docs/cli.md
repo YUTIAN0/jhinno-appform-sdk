@@ -303,12 +303,12 @@ appform users list --page 1 --page-size 50           # 分页列出
 appform users list --dep IT                          # 按部门过滤
 appform users list --filter-username admin            # 按用户名过滤
 
-appform users create --user john --display-name John --new-password 123456
-appform users create --user john --display-name John --new-password 123456 --dep IT --mail john@example.com
+appform users create --user john --display-name John --new-password your_password
+appform users create --user john --display-name John --new-password your_password --dep IT --mail john@example.com
 
 appform users update --user john --display-name "John Doe" --mail john@example.com
 appform users delete --user john
-appform users reset-password --user john --new-password newpass
+appform users reset-password --user john --new-password your_new_password
 ```
 
 ## extension - 扩展管理
