@@ -458,11 +458,14 @@ def _validate_path(path: str) -> str:
 
     Returns the unchanged path if safe. Raises ComputeError if dangerous.
     """
+    if ".." in path:
+        raise ComputeError(
+            f"Directory traversal not allowed in path: {path!r}"
+        )
     if _DANGEROUS_PATH_CHARS.search(path):
         raise ComputeError(
             f"Invalid characters in path: {path!r}. "
-            "Paths must not contain shell metacharacters (; & | ( ) `{ } $ \\) "
-            "or directory traversal (..)."
+            "Paths must not contain shell metacharacters (; & | ( ) `{ } $ \\)."
         )
     if path.startswith("\n") or "\n" in path:
         raise ComputeError(f"Newline not allowed in path: {path!r}")

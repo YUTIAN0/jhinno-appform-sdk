@@ -25,6 +25,7 @@ setup(
     install_requires=[
         "requests>=2.28.0",
         "pycryptodome>=3.15.0",
+        "PyYAML>=6.0",
     ],
     extras_require={
         "dev": [

@@ -3,24 +3,24 @@
 import sys
 
 from appform_sdk.cli.common import (
+    confirm_overwrite,
     create_client,
     output_result,
     remote_file_exists,
-    confirm_overwrite,
 )
 from appform_sdk.cli.job_submit import (
     handle_jobs_submit,
     load_pm,
-    print_apps_table,
     print_app_params,
+    print_apps_table,
 )
-from appform_sdk.config import Config
 from appform_sdk.compute import (
     execute_on_compute_node,
     get_head_node,
     load_compute_config,
     resolve_app_config,
 )
+from appform_sdk.config import Config
 from appform_sdk.files import parse_size
 
 
@@ -72,71 +72,72 @@ def handle_jobs_command(args, submit_extra_args=None):
     # --- Commands that need API client ---
     client = create_client(args)
 
-    if args.jobs_command == "submit-raw":
-        import json
+    try:
+        if args.jobs_command == "submit-raw":
+            import json
 
-        params = json.loads(args.params)
-        result = client.jobs.submit(app_id=args.app_id, params=params)
-        output_result(result, args.output, "jobs.submit")
-    elif args.jobs_command == "list":
-        status_filter = [args.status] if args.status else None
-        result = client.jobs.list_jobs(
-            page=args.page,
-            page_size=args.page_size,
-            name_filter=args.name,
-            status_filter=status_filter,
-        )
-        output_result(result, args.output, "jobs.list")
-    elif args.jobs_command == "status":
-        if args.status and args.status.lower() != "all":
-            status_filter = [args.status.upper()]
-        else:
-            status_filter = None
-        result = client.jobs.list_jobs(
-            page=args.page,
-            page_size=args.page_size,
-            status_filter=status_filter,
-        )
-        output_result(result, args.output, "jobs.list")
-    elif args.jobs_command == "get":
-        result = client.jobs.get_job(args.job_id)
-        output_result(result, args.output, "jobs.get")
-    elif args.jobs_command == "stop":
-        result = client.jobs.stop(args.job_id)
-        output_result(result, args.output, "jobs.action")
-    elif args.jobs_command == "suspend":
-        result = client.jobs.suspend(args.job_id)
-        output_result(result, args.output, "jobs.action")
-    elif args.jobs_command == "resume":
-        result = client.jobs.resume(args.job_id)
-        output_result(result, args.output, "jobs.action")
-    elif args.jobs_command == "output":
-        result = client.jobs.get_output(args.job_id)
-        output_result(result, args.output, "jobs.output")
-    elif args.jobs_command == "files":
-        jobs_files_cmd = getattr(args, "jobs_files_command", None)
-        if jobs_files_cmd:
-            handle_jobs_files_command(args)
-        else:
-            result = client.jobs.get_files(args.job_id)
-            output_result(result, args.output, "jobs.files")
-    elif args.jobs_command == "history":
-        result = client.jobs.get_history(args.job_id)
-        output_result(result, args.output, "jobs.history")
-    elif args.jobs_command == "history-page":
-        result = client.jobs.list_history(page=args.page, page_size=args.page_size)
-        output_result(result, args.output, "jobs.list")
-    elif args.jobs_command == "delete":
-        result = client.jobs.delete_job(args.job_id)
-        output_result(result, args.output, "jobs.delete")
-    elif args.jobs_command == "form":
-        result = client.jobs.get_form(args.app_id)
-        output_result(result, args.output, "jobs.form")
-    elif args.jobs_command == "tooltip":
-        result = client.jobs.get_tooltip()
-        output_result(result, args.output, "jobs.tooltip")
-
-    client.close()
+            params = json.loads(args.params)
+            result = client.jobs.submit(app_id=args.app_id, params=params)
+            output_result(result, args.output, "jobs.submit")
+        elif args.jobs_command == "list":
+            status_filter = [args.status] if args.status else None
+            result = client.jobs.list_jobs(
+                page=args.page,
+                page_size=args.page_size,
+                name_filter=args.name,
+                status_filter=status_filter,
+            )
+            output_result(result, args.output, "jobs.list")
+        elif args.jobs_command == "status":
+            if args.status and args.status.lower() != "all":
+                status_filter = [args.status.upper()]
+            else:
+                status_filter = None
+            result = client.jobs.list_jobs(
+                page=args.page,
+                page_size=args.page_size,
+                status_filter=status_filter,
+            )
+            output_result(result, args.output, "jobs.list")
+        elif args.jobs_command == "get":
+            result = client.jobs.get_job(args.job_id)
+            output_result(result, args.output, "jobs.get")
+        elif args.jobs_command == "stop":
+            result = client.jobs.stop(args.job_id)
+            output_result(result, args.output, "jobs.action")
+        elif args.jobs_command == "suspend":
+            result = client.jobs.suspend(args.job_id)
+            output_result(result, args.output, "jobs.action")
+        elif args.jobs_command == "resume":
+            result = client.jobs.resume(args.job_id)
+            output_result(result, args.output, "jobs.action")
+        elif args.jobs_command == "output":
+            result = client.jobs.get_output(args.job_id)
+            output_result(result, args.output, "jobs.output")
+        elif args.jobs_command == "files":
+            jobs_files_cmd = getattr(args, "jobs_files_command", None)
+            if jobs_files_cmd:
+                handle_jobs_files_command(args)
+            else:
+                result = client.jobs.get_files(args.job_id)
+                output_result(result, args.output, "jobs.files")
+        elif args.jobs_command == "history":
+            result = client.jobs.get_history(args.job_id)
+            output_result(result, args.output, "jobs.history")
+        elif args.jobs_command == "history-page":
+            result = client.jobs.list_history(page=args.page, page_size=args.page_size)
+            output_result(result, args.output, "jobs.list")
+        elif args.jobs_command == "delete":
+            result = client.jobs.delete_job(args.job_id)
+            output_result(result, args.output, "jobs.delete")
+        elif args.jobs_command == "form":
+            result = client.jobs.get_form(args.app_id)
+            output_result(result, args.output, "jobs.form")
+        elif args.jobs_command == "tooltip":
+            result = client.jobs.get_tooltip()
+            output_result(result, args.output, "jobs.tooltip")
+    finally:
+        client.close()
 
 
 # ---------------------------------------------------------------------------
@@ -235,8 +236,9 @@ def handle_jobs_files_command(args):
                 is_dir = _check_is_directory(client, cmd_method, remote)
 
                 if is_dir:
-                    from appform_sdk.files import _ProgressTracker
                     from pathlib import Path
+
+                    from appform_sdk.files import _ProgressTracker
 
                     local_path = Path(local)
                     save_dir = local_path if local_path.is_dir() else Path(local)
@@ -262,8 +264,9 @@ def handle_jobs_files_command(args):
                             "files.download",
                         )
                 else:
-                    from appform_sdk.files import _ProgressTracker
                     from pathlib import Path
+
+                    from appform_sdk.files import _ProgressTracker
 
                     local_path = Path(local)
                     if local_path.is_dir() or local == ".":
@@ -448,7 +451,6 @@ def handle_jobs_files_custom(args, job_info, client):
         ssh_kwargs=ssh_kwargs,
         encoding=encoding,
     )
-    client.close()
     if exit_code:
         sys.exit(exit_code)
 
@@ -484,7 +486,11 @@ def _check_is_directory(client, cmd_method, remote):
 
 
 def _handle_jobs_files_put(client, config, args, resolve_jobs_path):
-    """Handle the 'jobs files put' subcommand. Handles its own client.close()."""
+    """Handle the 'jobs files put' subcommand.
+
+    Does NOT close client — caller is responsible for cleanup.
+    Returns True if the caller should skip its finally-block close (e.g. early exit).
+    """
     from pathlib import Path
 
     from appform_sdk.files import _ProgressTracker
@@ -547,7 +553,6 @@ def _handle_jobs_files_put(client, config, args, resolve_jobs_path):
         ):
             if not confirm_overwrite(fname):
                 print("Upload cancelled.")
-                client.close()
                 return
         progress = _ProgressTracker(label="Uploading")
         result = client.files.upload(
@@ -563,10 +568,7 @@ def _handle_jobs_files_put(client, config, args, resolve_jobs_path):
             output_result(result, args.output, "files.upload")
     else:
         print(f"Error: Local path not found: {local}", file=sys.stderr)
-        client.close()
         sys.exit(1)
-
-    client.close()
 
 
 def _parse_lines_range(lines_str, client):

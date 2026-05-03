@@ -8,19 +8,8 @@ continue to work.
 """
 
 from appform_sdk.cli.builders import create_parser
-from appform_sdk.cli.common import (
-    SubmitHelpFormatter,
-    confirm_overwrite,
-    create_client,
-    get_completion_script,
-    is_remote_path,
-    output_result,
-    remote_file_exists,
-    resolve_output_format,
-    resolve_remote_path,
-)
-from appform_sdk.cli.cmd_auth import handle_auth_command
 from appform_sdk.cli.cmd_apps import handle_apps_command
+from appform_sdk.cli.cmd_auth import handle_auth_command
 from appform_sdk.cli.cmd_config import handle_config_command
 from appform_sdk.cli.cmd_departments import handle_departments_command
 from appform_sdk.cli.cmd_endpoint import handle_endpoint_command
@@ -33,6 +22,17 @@ from appform_sdk.cli.cmd_jobs import (
 )
 from appform_sdk.cli.cmd_sessions import handle_sessions_command
 from appform_sdk.cli.cmd_users import handle_users_command
+from appform_sdk.cli.common import (
+    SubmitHelpFormatter,
+    confirm_overwrite,
+    create_client,
+    get_completion_script,
+    is_remote_path,
+    output_result,
+    remote_file_exists,
+    resolve_output_format,
+    resolve_remote_path,
+)
 from appform_sdk.cli.job_submit import (
     build_submit_parser,
     handle_jobs_submit,

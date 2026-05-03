@@ -150,8 +150,13 @@ class SessionsAPI:
         """Paginate through sessions/all until all records are retrieved."""
         page_size = 100
         all_records = []
+        seen_ids = set()
+        max_pages = 200  # Safety limit to prevent infinite loops
 
         for page in itertools.count(1):
+            if page > max_pages:
+                break
+
             resp = self._client.get(
                 "/appform/ws/api/apps/sessions/all",
                 params={"page": page, "pageSize": page_size},
@@ -167,10 +172,22 @@ class SessionsAPI:
             if not records:
                 break
 
-            all_records.extend(records)
+            new_count = 0
+            for record in records:
+                sid = record.get("session_id") or record.get("SESSION_ID")
+                if sid and sid in seen_ids:
+                    continue
+                if sid:
+                    seen_ids.add(sid)
+                new_count += 1
+                all_records.append(record)
 
             # If we got fewer records than page_size, this was the last page
             if len(records) < page_size:
+                break
+
+            # If no new unique records were found, we've reached the end
+            if new_count == 0:
                 break
 
         return all_records

@@ -4,12 +4,8 @@ import sys
 from typing import Optional
 
 from appform_sdk.cli.builders import create_parser
-from appform_sdk.cli.common import (
-    get_completion_script,
-    resolve_output_format,
-)
-from appform_sdk.cli.cmd_auth import handle_auth_command
 from appform_sdk.cli.cmd_apps import handle_apps_command
+from appform_sdk.cli.cmd_auth import handle_auth_command
 from appform_sdk.cli.cmd_config import handle_config_command
 from appform_sdk.cli.cmd_departments import handle_departments_command
 from appform_sdk.cli.cmd_endpoint import handle_endpoint_command
@@ -18,6 +14,10 @@ from appform_sdk.cli.cmd_files import handle_files_command
 from appform_sdk.cli.cmd_jobs import handle_jobs_command
 from appform_sdk.cli.cmd_sessions import handle_sessions_command
 from appform_sdk.cli.cmd_users import handle_users_command
+from appform_sdk.cli.common import (
+    get_completion_script,
+    resolve_output_format,
+)
 from appform_sdk.config import Config
 
 

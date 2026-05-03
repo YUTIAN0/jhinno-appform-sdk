@@ -2,8 +2,8 @@
 
 import sys
 
-from appform_sdk.config import Config
 from appform_sdk.cli.common import output_result
+from appform_sdk.config import Config
 
 
 def handle_config_command(args):

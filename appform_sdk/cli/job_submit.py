@@ -5,8 +5,8 @@ import json
 import sys
 
 from appform_sdk.cli.common import SubmitHelpFormatter
-from appform_sdk.job_submit import _apply_path_conversion, _resolve_disk_mapping
 from appform_sdk.job_profiles import JobProfileManager
+from appform_sdk.job_submit import _apply_path_conversion, _resolve_disk_mapping
 
 # ---------------------------------------------------------------------------
 # Profile loading
