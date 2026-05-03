@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jhinno-appform-sdk"
 dynamic = ["version"]
-description = "Python SDK for Appform 6.0-6.6 API"
+description = "Python SDK for JHINNO Appform"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
 authors = [
-    {name = "Appform SDK Developer"}
+    {name = "YUTIAN0", email = "ydwang@jhinno.com"}
 ]
 keywords = ["appform", "api", "sdk", "hpc", "cluster"]
 classifiers = [
