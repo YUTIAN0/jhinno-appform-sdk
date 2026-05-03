@@ -86,8 +86,8 @@ API 版本（默认 6.5）
 .B jobs submit\-raw \-\-app\-id APP \-\-params JSON
 使用原始 JSON 参数提交作业
 .TP
-.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N]
-列出作业（可按状态/名称/作业号过滤）
+.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N] [\-\-all]
+列出作业（可按状态/名称/作业号过滤）；\-\-all 显示所有用户作业（默认：仅当前用户）
 .TP
 .B jobs status [RUN|PEND|DONE|EXIT|all]
 按状态查看作业
@@ -112,6 +112,24 @@ API 版本（默认 6.5）
 .TP
 .B jobs files JOB_ID
 获取作业文件列表
+.TP
+.B jobs files JOB_ID ls [路径]
+列出文件服务器上的作业文件
+.TP
+.B jobs files JOB_ID tailf 路径 [--encoding 编码]
+通过 SFTP 实时跟踪作业输出文件（Ctrl+C 停止）
+.TP
+.B jobs files JOB_ID custom ls [路径]
+通过 SSH 列出计算节点目录（需要 ~/.appform/compute.yaml）
+.TP
+.B jobs files JOB_ID custom get 远程路径 [本地路径]
+从计算节点下载文件或目录
+.TP
+.B jobs files JOB_ID custom cat 路径 [--head N] [--tail N] [--encoding 编码]
+查看计算节点文件内容
+.TP
+.B jobs files JOB_ID custom tailf 路径 [--encoding 编码]
+实时跟踪计算节点文件输出（Ctrl+C 停止）
 .TP
 .B jobs history JOB_ID
 获取作业历史
@@ -342,10 +360,16 @@ SFTP SSH 私钥文件路径
 .TP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH 私钥密码
+.TP
+.B APPFORM_COMPUTE_CONFIG
+计算节点配置文件路径（默认 ~/.appform/compute.yaml）
 .SH 相关文件
 .TP
 .I ~/.appform/config.json
 默认配置文件
+.TP
+.I ~/.appform/compute.yaml
+\fBjobs files custom\fR 计算节点 SSH 配置文件
 .TP
 .I ~/.appform/extensions/
 默认扩展目录

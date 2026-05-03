@@ -243,6 +243,11 @@ appform jobs resume <job_id>
 # 获取输出
 appform jobs output <job_id>
 appform jobs files <job_id>
+appform jobs files <job_id> tailf /path/to/file      # 跟踪作业输出文件
+appform jobs files <job_id> custom ls [path]         # 计算节点目录
+appform jobs files <job_id> custom get <remote> [local] # 下载计算节点文件
+appform jobs files <job_id> custom cat <path>        # 查看计算节点文件
+appform jobs files <job_id> custom tailf <path>      # 跟踪计算节点文件
 appform jobs history <job_id>
 appform jobs history-page --page 1 --page-size 20
 

@@ -318,3 +318,105 @@ export APPFORM_DEFAULT_REMOTE_PATH=/home/user/
 # 配置文件 (~/.appform/config.json)
 appform config set --default-remote-path /home/user/
 ```
+
+---
+
+## jobs files — 作业文件操作
+
+作业文件命令用于操作与作业相关的文件。需要先通过 API 获取作业信息。
+
+### jobs files — 列出作业文件列表
+
+```bash
+appform jobs files <job_id>
+```
+
+### jobs files tailf — 跟踪作业输出文件
+
+通过 SFTP 连接到文件服务器，实时跟踪作业输出文件：
+
+```bash
+appform jobs files <job_id> tailf /path/to/output.log
+appform jobs files <job_id> tailf /path/to/output.log --encoding gbk
+```
+
+### jobs files custom — 计算节点本地文件操作
+
+通过 SSH 直接连接计算节点，访问计算节点本地临时存储上的文件。需要配置 `~/.appform/compute.yaml`。
+
+#### 配置文件
+
+`~/.appform/compute.yaml` 示例：
+
+```yaml
+compute_config:
+  default:
+    mode: direct
+    source_script: "/opt/jhinno65/unischeduler/conf/profile.unischeduler"
+    env_cmd: "jjobs"
+    work_path_var: "work_path"
+
+  applications:
+    starccm:
+      work_path_var: "work_path"
+    fluent:
+      work_path_var: "work_path"
+```
+
+- `mode`: `direct`（直连计算节点）或 `via_gateway`（通过登录节点跳转）
+- `source_script`: 环境变量脚本路径
+- `env_cmd`: 查询作业环境信息的命令
+- `work_path_var`: 工作路径变量名
+
+支持 `APPFORM_COMPUTE_CONFIG` 环境变量指定配置文件路径。
+
+#### ls — 列出计算节点目录
+
+```bash
+# 列出作业工作目录
+appform jobs files <job_id> custom ls
+
+# 列出指定子目录
+appform jobs files <job_id> custom ls subdir/
+```
+
+#### get — 从计算节点下载文件
+
+```bash
+# 下载文件到当前目录
+appform jobs files <job_id> custom get output.log
+
+# 下载到指定目录
+appform jobs files <job_id> custom get output.log /tmp/
+
+# 下载整个目录
+appform jobs files <job_id> custom get results/ ./job_results/
+```
+
+#### cat — 查看计算节点文件内容
+
+```bash
+# 查看文件内容
+appform jobs files <job_id> custom cat result.txt
+
+# 查看前 20 行
+appform jobs files <job_id> custom cat result.txt --head 20
+
+# 查看最后 30 行
+appform jobs files <job_id> custom cat result.txt --tail 30
+
+# 指定编码
+appform jobs files <job_id> custom cat result.txt --encoding gbk
+```
+
+#### tailf — 跟踪计算节点文件输出
+
+```bash
+# 实时跟踪日志文件
+appform jobs files <job_id> custom tailf output.log
+
+# 指定编码
+appform jobs files <job_id> custom tailf output.log --encoding gbk
+```
+
+> **注意**：`custom` 命令仅支持运行中（RUN）状态的作业，需要安装 `jhinno-appform-sdk[sftp]`。

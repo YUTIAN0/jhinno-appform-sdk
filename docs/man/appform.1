@@ -90,8 +90,8 @@ List all configured applications
 .B jobs submit\-raw \-\-app\-id APP \-\-params JSON
 Submit a job with raw JSON parameters
 .TP
-.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N]
-List jobs with optional filters
+.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N] [\-\-all]
+List jobs with optional filters; \-\-all shows jobs for all users (default: current user only)
 .TP
 .B jobs status [RUN|PEND|DONE|EXIT|all]
 List jobs by status
@@ -116,6 +116,24 @@ Get job dynamic output
 .TP
 .B jobs files JOB_ID
 Get job file list
+.TP
+.B jobs files JOB_ID ls [PATH]
+List job files on file server
+.TP
+.B jobs files JOB_ID tailf PATH [--encoding ENC]
+Follow job output file in real-time via SFTP (Ctrl+C to stop)
+.TP
+.B jobs files JOB_ID custom ls [PATH]
+List directory on compute node via SSH (requires ~/.appform/compute.yaml)
+.TP
+.B jobs files JOB_ID custom get REMOTE [LOCAL]
+Download file or directory from compute node
+.TP
+.B jobs files JOB_ID custom cat PATH [--head N] [--tail N] [--encoding ENC]
+View file content on compute node
+.TP
+.B jobs files JOB_ID custom tailf PATH [--encoding ENC]
+Follow file on compute node in real-time (Ctrl+C to stop)
 .TP
 .B jobs history JOB_ID
 Get job history
@@ -346,10 +364,16 @@ SSH private key file path for SFTP
 .TP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH key passphrase for SFTP
+.TP
+.B APPFORM_COMPUTE_CONFIG
+Path to compute node configuration file (default: ~/.appform/compute.yaml)
 .SH FILES
 .TP
 .I ~/.appform/config.json
 Default configuration file
+.TP
+.I ~/.appform/compute.yaml
+Compute node SSH configuration for \fBjobs files custom\fR
 .TP
 .I ~/.appform/extensions/
 Default extensions directory

@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.5] - 2026-05-03
+
+### Added
+- **`jobs files custom` command** — compute node file operations via SSH
+  - `appform jobs files <id> custom ls [path]` — list directory on compute node
+  - `appform jobs files <id> custom get <remote> [local]` — download from compute node
+  - `appform jobs files <id> custom cat <path>` — view file on compute node
+  - `appform jobs files <id> custom tailf <path>` — follow file on compute node
+  - `cat` supports `--head N` / `--tail N` / `--encoding ENC`
+  - Configuration via `~/.appform/compute.yaml` (YAML format)
+  - Supports direct SSH and gateway (jump host) connection modes
+  - Uses `jjobs -env` to resolve work_path on compute node
+  - `APPFORM_COMPUTE_CONFIG` environment variable to override config path
+  - Reuses SFTP credentials from `~/.appform/config.json`
+  - `ComputeError` exception for compute node errors
+
 ## [0.0.4] - 2026-05-03
 
 ### Added
@@ -13,9 +29,8 @@ All notable changes to this project will be documented in this file.
   - Upload method follows `APPFORM_DEFAULT_METHOD` (http/sftp)
   - SFTP resolves `$HOME` via SSH exec `echo ~` through `SFTPAPI.get_home_dir()`
   - Path mapping uses `windows_disk_mapping` values (e.g. `S: -> /apps`) to detect remote files
-- **`files tailf` command** — real-time remote file output tracking via SSH exec channel
-  - `appform files tailf /path/to/file` — follows file output like `tail -f`
-  - `appform jobs files <id> tailf /path/to/file` — track job output files
+- **`jobs tailf` command** — track real-time job output files on compute node via SSH
+  - `appform jobs files <id> tailf /path/to/file` — track job output files via SFTP
   - `--encoding` option to specify text encoding (default: utf-8)
   - `client.sftp.tailf()` returns (tail_pid, channel) for programmatic control
   - `client.sftp.kill_tail(tail_pid)` to stop a remote tail process via SSH

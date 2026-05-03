@@ -180,7 +180,8 @@ appform jobs submit-raw --app-id fluent --params '{"JH_CAS":"/path/to/file.cas",
 ### 查询作业
 
 ```bash
-appform jobs list                                    # 列出作业（表格）
+appform jobs list                                    # 列出当前用户作业（表格）
+appform jobs list --all                              # 列出所有用户作业
 appform jobs list --status RUN --name test           # 带过滤
 appform jobs list --job-id 494825                    # 按作业号查询
 appform jobs list --job-id 494825,494824             # 多个作业号
@@ -202,6 +203,12 @@ appform jobs resume <job_id>                         # 恢复作业
 appform jobs delete <job_id>                         # 删除作业（6.6+）
 appform jobs output <job_id>                         # 获取作业输出
 appform jobs files <job_id>                          # 获取作业文件列表
+appform jobs files <job_id> ls /path/to/dir          # 列出作业文件目录
+appform jobs files <job_id> tailf /path/to/file      # 跟踪作业输出文件
+appform jobs files <job_id> custom ls [path]         # 列出计算节点目录
+appform jobs files <job_id> custom get <remote> [local] # 下载计算节点文件
+appform jobs files <job_id> custom cat <path>        # 查看计算节点文件
+appform jobs files <job_id> custom tailf <path>      # 跟踪计算节点文件
 appform jobs form <app_id>                           # 获取作业表单（6.6+）
 appform jobs tooltip                                 # 获取作业监控信息（6.6+）
 ```
