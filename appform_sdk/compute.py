@@ -502,7 +502,10 @@ def compute_tailf(
         )
 
     channel = transport.open_session()
-    channel.setblocking(False)
+    # Use blocking mode with a timeout instead of setblocking(False) + sleep
+    # polling, which adds up to 100ms latency per data chunk.
+    channel.setblocking(True)
+    channel.settimeout(1.0)
 
     # Do NOT quote remote_path — allow shell glob expansion (e.g. *.log)
     cmd = f"tail -f {remote_path} 2>&1 & echo $!"
@@ -513,24 +516,25 @@ def compute_tailf(
 
     try:
         while not channel.closed:
-            if channel.recv_ready():
+            try:
                 data = channel.recv(65536)
-                if not data:
-                    break
-                text = data.decode(encoding, errors="replace")
+            except (TimeoutError, OSError):
+                # socket.timeout / channel timeout — loop back to check .closed
+                continue
+            if not data:
+                break
+            text = data.decode(encoding, errors="replace")
 
-                if first_chunk:
-                    first_chunk = False
-                    parts = text.split("\n", 1)
-                    tail_pid = parts[0].strip()
-                    if len(parts) > 1:
-                        sys.stdout.write(parts[1])
-                        sys.stdout.flush()
-                else:
-                    sys.stdout.write(text)
+            if first_chunk:
+                first_chunk = False
+                parts = text.split("\n", 1)
+                tail_pid = parts[0].strip()
+                if len(parts) > 1:
+                    sys.stdout.write(parts[1])
                     sys.stdout.flush()
             else:
-                time.sleep(0.1)
+                sys.stdout.write(text)
+                sys.stdout.flush()
     except KeyboardInterrupt:
         pass
     finally:
