@@ -177,13 +177,29 @@ def connect_via_gateway(
     )
 
     # Step 3: New SSH session on the tunnel
+    # Load key if specified (Transport.connect uses pkey, not key_filename)
+    pkey = None
+    if key_filename:
+        for klass in (
+            paramiko.Ed25519Key,
+            paramiko.RSAKey,
+            paramiko.ECDSAKey,
+            paramiko.DSSKey,
+        ):
+            try:
+                pkey = klass.from_private_key_file(key_filename, password=key_password)
+                break
+            except (paramiko.SSHException, ValueError):
+                continue
+        if not pkey:
+            raise RuntimeError(f"Unable to load key file: {key_filename}")
+
     ssh_transport = paramiko.Transport(tunnel_channel)
     try:
         ssh_transport.connect(
             username=username,
             password=password,
-            key_filename=key_filename,
-            passphrase=key_password,
+            pkey=pkey,
         )
     except Exception:
         ssh_transport.close()
