@@ -2,6 +2,7 @@
 Sessions API module for Appform SDK
 """
 
+import itertools
 import socket
 import time
 from typing import Any, Dict, List, Optional
@@ -135,16 +136,44 @@ class SessionsAPI:
         if params:
             resp = self._client.get("/appform/ws/api/apps/sessions", params=params)
         else:
-            # No filter: get all sessions and filter by current user
-            resp = self._client.get("/appform/ws/api/apps/sessions/all")
-            data = resp.get("data", [])
-            if isinstance(data, dict):
-                data = data.get("records", data.get("files", []))
+            # No filter: paginate through all sessions to find current user's.
+            # Avoids the old bug of fetching only page 1 (20 items) and missing
+            # sessions owned by the current user on later pages.
             username = self._client._username
-            data = [s for s in data if s.get("owner") == username]
-            resp["data"] = data
+            all_sessions = self._fetch_all_sessions()
+            data = [s for s in all_sessions if s.get("owner") == username]
+            resp = {"data": data}
 
         return resp
+
+    def _fetch_all_sessions(self) -> List[Dict[str, Any]]:
+        """Paginate through sessions/all until all records are retrieved."""
+        page_size = 100
+        all_records = []
+
+        for page in itertools.count(1):
+            resp = self._client.get(
+                "/appform/ws/api/apps/sessions/all",
+                params={"page": page, "pageSize": page_size},
+            )
+            raw = resp.get("data", {})
+            if isinstance(raw, dict):
+                records = raw.get("records", [])
+            elif isinstance(raw, list):
+                records = raw
+            else:
+                records = []
+
+            if not records:
+                break
+
+            all_records.extend(records)
+
+            # If we got fewer records than page_size, this was the last page
+            if len(records) < page_size:
+                break
+
+        return all_records
 
     def share(self, session_id: str, usernames: List[str]) -> Dict[str, Any]:
         """
