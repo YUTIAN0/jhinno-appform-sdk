@@ -17,6 +17,15 @@ All notable changes to this project will be documented in this file.
   - `APPFORM_COMPUTE_CONFIG` environment variable to override config path
   - Reuses SFTP credentials from `~/.appform/config.json`
   - `ComputeError` exception for compute node errors
+- **`__main__` entry point** for `job_submit` module — supports `python -m appform_sdk.job_submit`
+
+### Fixed
+- `via_gateway` SSH tunnel uses `pkey` instead of `key_filename` for `Transport.connect()`
+- `tailf` supports glob patterns in file paths
+- SFTP `get_home_dir()` properly triggers lazy transport connection
+- Paramiko `Channel.settimeout()` method name (was `set_blocking`)
+- Windows backslashes normalized to forward slashes in config paths
+- Centralized version in `appform_sdk/VERSION` file, setup.py reads from it
 
 ## [0.0.4] - 2026-05-03
 
