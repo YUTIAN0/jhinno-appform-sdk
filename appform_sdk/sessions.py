@@ -155,8 +155,10 @@ class SessionsAPI:
         """
         Query sessions.
 
-        When called without arguments, returns the current user's sessions
-        (filters all sessions by the logged-in user).
+        When called with session_ids or session_name, performs a targeted query.
+        When called without arguments, paginates through ALL sessions to find
+        the current user's sessions — this is a heavier operation as it fetches
+        every session record across all pages.
 
         Args:
             session_ids: List of session IDs to query

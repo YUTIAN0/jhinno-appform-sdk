@@ -49,7 +49,7 @@ Appform SDK 是 Appform 6.0-6.6 API 的 Python 客户端库，提供：
 ### 使用 pip 安装
 
 ```bash
-pip install appform-sdk
+pip install jhinno-appform-sdk
 ```
 
 ### 从源码安装
@@ -65,6 +65,7 @@ pip install -e .
 ```
 requests>=2.28.0
 pycryptodome>=3.15.0
+PyYAML>=6.0
 ```
 
 ### Python 版本支持

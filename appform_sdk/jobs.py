@@ -120,7 +120,9 @@ class JobsAPI:
                 Valid values: RUN, PEND, UNKNOWN, PSUSP, USUSP, SSUSP, ZOMBI, DONE, EXIT
             app_name_filter: Filter by application name (contains)
             queue_filter: Filter by queue name (contains)
-            condition: Custom filter condition
+            condition: Custom filter condition (JSON structure). Mutually exclusive
+                with name_filter, status_filter, app_name_filter, queue_filter —
+                if condition is provided, all other filters are ignored.
 
         Returns:
             Paginated job list
