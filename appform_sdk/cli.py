@@ -1157,8 +1157,10 @@ def _handle_jobs_submit(pm, raw_args, output_format):
     full_parser = _build_submit_parser(pm, app_id, profile, supported)
     try:
         parsed = full_parser.parse_args(raw_args)
-    except SystemExit:
-        return  # --help triggered exit, or parse error
+    except SystemExit as e:
+        if e.code == 0:
+            return  # --help triggered exit
+        raise  # re-raise argparse errors so user sees them
 
     if parsed.list_apps:
         apps = pm.list_apps()
@@ -1201,7 +1203,11 @@ def _handle_jobs_submit(pm, raw_args, output_format):
             overrides[k] = v
 
     if parsed.json_params:
-        overrides.update(json.loads(parsed.json_params))
+        try:
+            overrides.update(json.loads(parsed.json_params))
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON in --json-params: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # --- Windows path conversion ---
     overrides = _apply_path_conversion(overrides, disk_mapping)
@@ -1457,9 +1463,14 @@ def handle_endpoint_command(args: argparse.Namespace):
             args.output,
         )
     elif args.endpoint_command == "call":
-        params = json.loads(args.params) if args.params else None
-        data = json.loads(args.data) if args.data else None
-        path_params = json.loads(args.path_params) if args.path_params else None
+        try:
+            params = json.loads(args.params) if args.params else None
+            data = json.loads(args.data) if args.data else None
+            path_params = json.loads(args.path_params) if args.path_params else None
+        except json.JSONDecodeError as e:
+            print(f"Error: Invalid JSON input: {e}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
         result = client.call_endpoint(
             args.name, path_params=path_params, params=params, json_data=data
         )
@@ -1519,9 +1530,11 @@ def handle_jobs_command(args: argparse.Namespace, submit_extra_args=None):
                 return  # dry-run, list-apps, or help was shown
             app_id, params = result
             client = create_client(args)
-            resp = client.jobs.submit(app_id=app_id, params=params)
-            output_result(resp, args.output)
-            client.close()
+            try:
+                resp = client.jobs.submit(app_id=app_id, params=params)
+                output_result(resp, args.output)
+            finally:
+                client.close()
             return
 
     # --- Commands that need API client ---
@@ -1730,6 +1743,11 @@ def handle_files_command(args: argparse.Namespace):
                             local_dir=local,
                             remote_dir=remote,
                             on_progress=progress.update,
+                            check_exists=lambda fname: _remote_file_exists(
+                                client, remote, fname
+                            )
+                            and not force,
+                            confirm=_confirm_overwrite if not force else None,
                             chunk_size=chunk_size,
                             transfer_method=cmd_method,
                         )
@@ -1815,7 +1833,10 @@ def handle_files_command(args: argparse.Namespace):
                         else:
                             file_list = []
 
-                        is_dir = len(file_list) > 0
+                        is_dir = (
+                            len(file_list) > 0
+                            and file_list[0].get("fileType") == "directory"
+                        )
                     except Exception:
                         is_dir = False
                 else:
@@ -1902,13 +1923,37 @@ def handle_files_command(args: argparse.Namespace):
                     parts = args.lines.split("-", 1)
                     if len(parts) == 2:
                         if parts[0]:
-                            start = int(parts[0])
+                            try:
+                                start = int(parts[0])
+                            except ValueError:
+                                print(
+                                    f"Error: --lines start must be a number, got: {parts[0]!r}",
+                                    file=sys.stderr,
+                                )
+                                client.close()
+                                sys.exit(1)
                         if parts[1]:
-                            end = int(parts[1])
+                            try:
+                                end = int(parts[1])
+                            except ValueError:
+                                print(
+                                    f"Error: --lines end must be a number, got: {parts[1]!r}",
+                                    file=sys.stderr,
+                                )
+                                client.close()
+                                sys.exit(1)
                         else:
                             end = None  # to EOF
                     elif len(parts) == 1:
-                        start = int(parts[0])
+                        try:
+                            start = int(parts[0])
+                        except ValueError:
+                            print(
+                                f"Error: --lines value must be a number, got: {parts[0]!r}",
+                                file=sys.stderr,
+                            )
+                            client.close()
+                            sys.exit(1)
 
                 lines = client.files.cat(
                     remote_path=args.path,
@@ -1933,12 +1978,10 @@ def handle_files_command(args: argparse.Namespace):
 
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)
-            client.close()
             sys.exit(1)
         except Exception as e:
             msg = str(e)
             print(f"Error: {msg}", file=sys.stderr)
-            client.close()
             sys.exit(1)
     finally:
         client.close()
@@ -2043,6 +2086,11 @@ def handle_jobs_files_command(args: argparse.Namespace):
                             local_dir=local,
                             remote_dir=remote,
                             on_progress=progress.update,
+                            check_exists=lambda fname: _remote_file_exists(
+                                client, remote, fname
+                            )
+                            and not force,
+                            confirm=_confirm_overwrite if not force else None,
                             chunk_size=chunk_size,
                             transfer_method=cmd_method,
                         )
@@ -2128,7 +2176,10 @@ def handle_jobs_files_command(args: argparse.Namespace):
                         else:
                             file_list = []
 
-                        is_dir = len(file_list) > 0
+                        is_dir = (
+                            len(file_list) > 0
+                            and file_list[0].get("fileType") == "directory"
+                        )
                     except Exception:
                         is_dir = False
                 else:
@@ -2230,12 +2281,10 @@ def handle_jobs_files_command(args: argparse.Namespace):
 
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)
-            client.close()
             sys.exit(1)
         except Exception as e:
             msg = str(e)
             print(f"Error: {msg}", file=sys.stderr)
-            client.close()
             sys.exit(1)
     finally:
         client.close()

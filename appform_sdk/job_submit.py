@@ -171,6 +171,9 @@ def _upload_files(
     if transfer_method == "sftp" and "$HOME" in remote_path:
         remote_home = client.sftp.get_home_dir()
         remote_path = remote_path.replace("$HOME", remote_home)
+        # Normalize // prefix that results from $HOME="" or $HOME="/"
+        while remote_path.startswith("//"):
+            remote_path = remote_path[1:]
 
     uploaded: Dict[str, str] = {}
     seen_local: set = set()
