@@ -104,17 +104,25 @@ class SFTPClientManager:
 
 def _mkdir_recursive(sftp_client, path: str):
     """Create remote directories recursively (manual, no recursive=True dependency)."""
+    # SSH_FX_NO_SUCH_FILE = 2, SSH_FX_PERMISSION_DENIED = 4
+    NO_SUCH_FILE = 2
     parts = path.strip("/").split("/")
     current = ""
     for part in parts:
         current += "/" + part
         try:
             sftp_client.stat(current)
-        except IOError:
+        except IOError as e:
+            # Only skip if "no such file" (status 2). Other errors (permission denied, etc.) propagate.
+            status = getattr(e, "errno", None) or (
+                e.args[0] if getattr(e, "args", None) else None
+            )
+            if status != NO_SUCH_FILE:
+                raise
             try:
                 sftp_client.mkdir(current)
-            except IOError as e:
-                raise SFTPError(f"Failed to create directory '{current}': {e}")
+            except IOError as e2:
+                raise SFTPError(f"Failed to create directory '{current}': {e2}")
 
 
 class SFTPAPI:
@@ -188,8 +196,8 @@ class SFTPAPI:
             if on_progress:
                 file_size = file_path.stat().st_size
 
-                def callback(transferred, total):
-                    on_progress(fname, transferred, total)
+                def callback(transferred, total, _fname=fname):
+                    on_progress(_fname, transferred, total)
 
                 sftp.put(str(file_path), remote_full, callback=callback)
             else:
@@ -255,8 +263,8 @@ class SFTPAPI:
                     if on_progress:
                         file_size = file_path.stat().st_size
 
-                        def cb(transferred, total_b):
-                            on_progress(fname, transferred, total_b)
+                        def cb(transferred, total_b, _fname=fname):
+                            on_progress(_fname, transferred, total_b)
 
                         sftp.put(str(file_path), remote_full, callback=cb)
                     else:

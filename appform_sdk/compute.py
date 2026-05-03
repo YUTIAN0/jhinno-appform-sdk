@@ -423,9 +423,9 @@ def compute_cat(
     tail: int = None,
 ) -> str:
     """View file content via SSH exec. Supports --head / --tail."""
-    if head:
+    if head is not None:
         cmd = f"head -n {head} {shlex.quote(remote_path)}"
-    elif tail:
+    elif tail is not None:
         cmd = f"tail -n {tail} {shlex.quote(remote_path)}"
     else:
         cmd = f"cat {shlex.quote(remote_path)}"
@@ -535,7 +535,7 @@ def compute_tailf(
         pass
     finally:
         # Kill the tail process on the remote node
-        if tail_pid:
+        if tail_pid and tail_pid.isdigit():
             kill_ch = transport.open_session()
             kill_ch.setblocking(False)
             kill_ch.exec_command(f"kill {tail_pid} 2>/dev/null")

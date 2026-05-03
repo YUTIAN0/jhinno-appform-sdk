@@ -352,18 +352,26 @@ class FilesAPI:
         if "/" not in dest_dir.rstrip("/"):
             # Simple rename in same directory
             return self.rename(src_path, dest_dir)
-        else:
-            # Cross-directory move: copy, rename, delete source
-            dest_parts = dest_dir.rstrip("/").split("/")
-            dest_name = dest_parts[-1]
-            dest_parent = "/".join(dest_parts[:-1]) or "/"
-            src_name = src_path.rstrip("/").split("/")[-1]
+        # Cross-directory move: copy, optional rename, then delete source.
+        # Delete only runs if all steps succeed to avoid data loss.
+        dest_parts = dest_dir.rstrip("/").split("/")
+        dest_name = dest_parts[-1]
+        dest_parent = "/".join(dest_parts[:-1]) or "/"
+        src_name = src_path.rstrip("/").split("/")[-1]
 
-            result = self.copy(src_path, dest_parent)
-            if dest_name != src_name:
-                self.rename(f"{dest_parent.rstrip('/')}/{src_name}", dest_name)
-            self.delete(src_path)
-            return result
+        result = self.copy(src_path, dest_parent)
+        final_path = f"{dest_parent.rstrip('/')}/{src_name}"
+
+        if dest_name != src_name:
+            try:
+                self.rename(final_path, dest_name)
+            except Exception:
+                # Rename failed — clean up the copy, keep source intact
+                self.delete(final_path)
+                raise
+
+        self.delete(src_path)
+        return result
 
     def delete(self, path: str, transfer_method: str = "http") -> Dict[str, Any]:
         """
