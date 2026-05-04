@@ -552,7 +552,7 @@ class FilesAPI:
             remote_path: Remote file full path
             local_path: Local file/dir path (optional, returns bytes if not provided)
             on_progress: Optional callback(filename, bytes_downloaded, total_bytes)
-            chunk_size: Read chunk size in bytes (default: 30MB)
+            chunk_size: Read chunk size in bytes (default: 100MB)
             transfer_method: Transfer protocol ("http" or "sftp", default "http")
 
         Returns:
@@ -630,7 +630,7 @@ class FilesAPI:
             remote_dir: Remote directory full path
             local_dir: Local directory path to save to
             on_progress: Optional callback(filename, current_index, total)
-            chunk_size: Read chunk size in bytes (default: 30MB)
+            chunk_size: Read chunk size in bytes (default: 100MB)
             transfer_method: Transfer protocol ("http" or "sftp", default "http")
 
         Returns:

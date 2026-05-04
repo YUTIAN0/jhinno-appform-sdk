@@ -127,6 +127,11 @@ def handle_files_command(args):
                     client.sftp.kill_tail(tail_pid)
                 except Exception:
                     pass
+                finally:
+                    try:
+                        channel.close()
+                    except Exception:
+                        pass
 
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)

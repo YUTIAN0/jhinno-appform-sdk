@@ -10,8 +10,20 @@ class TestFormatFilesList:
         """HTTP listing has no mode field, uses NAME/OWNER/SIZE/MODIFIED."""
         response = {
             "data": [
-                {"fileName": "a.txt", "fileType": "file", "owner": "root", "size": 1024, "ts": "2024-01-01"},
-                {"fileName": "subdir", "fileType": "directory", "owner": "root", "size": 0, "ts": "2024-01-01"},
+                {
+                    "fileName": "a.txt",
+                    "fileType": "file",
+                    "owner": "root",
+                    "size": 1024,
+                    "ts": "2024-01-01",
+                },
+                {
+                    "fileName": "subdir",
+                    "fileType": "directory",
+                    "owner": "root",
+                    "size": 0,
+                    "ts": "2024-01-01",
+                },
             ]
         }
         result = format_files_list(response)
@@ -25,8 +37,24 @@ class TestFormatFilesList:
         """SFTP listing has mode field, uses MODE/NAME/UID/GID/SIZE/MODIFIED."""
         response = {
             "data": [
-                {"fileName": "a.txt", "fileType": "file", "mode": "- rw-r--r--", "uid": 1000, "gid": 1000, "size": 1024, "modifiedDate": "2024-01-01"},
-                {"fileName": "subdir", "fileType": "directory", "mode": "drwxr-xr-x", "uid": 1000, "gid": 1000, "size": 0, "modifiedDate": "2024-01-01"},
+                {
+                    "fileName": "a.txt",
+                    "fileType": "file",
+                    "mode": "- rw-r--r--",
+                    "uid": 1000,
+                    "gid": 1000,
+                    "size": 1024,
+                    "modifiedDate": "2024-01-01",
+                },
+                {
+                    "fileName": "subdir",
+                    "fileType": "directory",
+                    "mode": "drwxr-xr-x",
+                    "uid": 1000,
+                    "gid": 1000,
+                    "size": 0,
+                    "modifiedDate": "2024-01-01",
+                },
             ]
         }
         result = format_files_list(response)
@@ -34,6 +62,7 @@ class TestFormatFilesList:
         assert "- rw-r--r--" in result
         assert "drwxr-xr-x" in result
         assert "OWNER" not in result
+        assert "UID" in result
 
     def test_empty_list(self):
         """Empty file list returns (empty)."""
@@ -45,7 +74,15 @@ class TestFormatFilesList:
         """Symlink files show [L] icon."""
         response = {
             "data": [
-                {"fileName": "link", "fileType": "symlink", "mode": "lrwxrwxrwx", "uid": 0, "gid": 0, "size": 10, "modifiedDate": "2024-01-01"},
+                {
+                    "fileName": "link",
+                    "fileType": "symlink",
+                    "mode": "lrwxrwxrwx",
+                    "uid": 0,
+                    "gid": 0,
+                    "size": 10,
+                    "modifiedDate": "2024-01-01",
+                },
             ]
         }
         result = format_files_list(response)
@@ -55,8 +92,23 @@ class TestFormatFilesList:
         """If any item has mode, all items use the mode column layout."""
         response = {
             "data": [
-                {"fileName": "a.txt", "fileType": "file", "mode": "- rw-r--r--", "uid": 0, "gid": 0, "size": 10, "modifiedDate": "2024-01-01"},
-                {"fileName": "b.txt", "fileType": "file", "uid": 0, "gid": 0, "size": 20, "modifiedDate": "2024-01-01"},
+                {
+                    "fileName": "a.txt",
+                    "fileType": "file",
+                    "mode": "- rw-r--r--",
+                    "uid": 0,
+                    "gid": 0,
+                    "size": 10,
+                    "modifiedDate": "2024-01-01",
+                },
+                {
+                    "fileName": "b.txt",
+                    "fileType": "file",
+                    "uid": 0,
+                    "gid": 0,
+                    "size": 20,
+                    "modifiedDate": "2024-01-01",
+                },
             ]
         }
         result = format_files_list(response)

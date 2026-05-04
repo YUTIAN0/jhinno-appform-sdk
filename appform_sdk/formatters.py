@@ -189,7 +189,7 @@ def _load_file(file_path: str) -> None:
     if isinstance(templates, dict):
         # Strip meta keys (version, description, etc.) — only keep command entries
         for key, value in templates.items():
-            if isinstance(value, dict) and "fields" in value or "type" in value:
+            if isinstance(value, dict) and ("fields" in value or "type" in value):
                 _custom_templates[key] = value
         _template_file = path
 
@@ -777,7 +777,7 @@ def format_files_list(response: dict) -> str:
                 ]
             )
     if has_mode:
-        header = ["MODE", "NAME", "UID/GID", "GID", "SIZE", "MODIFIED"]
+        header = ["MODE", "NAME", "UID", "GID", "SIZE", "MODIFIED"]
         return _table(header, rows)
     header = ["NAME", "OWNER", "SIZE", "MODIFIED"]
     return _table(header, rows)

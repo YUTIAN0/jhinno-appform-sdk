@@ -301,7 +301,7 @@ files.list.sftp:
   fields:
     - key: mode
       label: MODE
-      width: 10
+      width: 11
     - key: fileName
       label: NAME
       width: 30
