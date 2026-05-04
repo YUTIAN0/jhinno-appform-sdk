@@ -28,6 +28,9 @@ def handle_files_command(args):
                 cmd_method = getattr(args, "method", None) or method
                 path = resolve_home_in_path(client, args.path, cmd_method)
                 hidden = getattr(args, "hidden", False)
+                list_template = (
+                    "files.list.sftp" if cmd_method == "sftp" else "files.list"
+                )
                 if args.list_all:
                     items = client.files.list_all(
                         path=path, transfer_method=cmd_method, hidden=hidden
@@ -41,7 +44,7 @@ def handle_files_command(args):
                         transfer_method=cmd_method,
                         hidden=hidden,
                     )
-                output_result(result, args.output, "files.list")
+                output_result(result, args.output, list_template)
 
             elif args.files_command == "cp":
                 cmd_method = getattr(args, "method", None) or method

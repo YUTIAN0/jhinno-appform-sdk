@@ -284,10 +284,6 @@ files.list:
     - key: owner
       label: OWNER
       width: 12
-      fallback: uid
-    - key: gid
-      label: GID
-      width: 6
     - key: size
       label: SIZE
       width: 10
@@ -296,6 +292,33 @@ files.list:
       label: MODIFIED
       width: 20
       fallback: modifiedDate
+
+# SFTP file listing — shows uid/gid instead of owner name
+files.list.sftp:
+  type: table
+  title: Files (SFTP)
+  items_path: data
+  fields:
+    - key: fileName
+      label: NAME
+      width: 30
+      prefix_key: fileType
+      prefix_map:
+        directory: "[D]"
+        file: "[F]"
+    - key: uid
+      label: UID
+      width: 6
+    - key: gid
+      label: GID
+      width: 6
+    - key: size
+      label: SIZE
+      width: 10
+      format: size
+    - key: modifiedDate
+      label: MODIFIED
+      width: 20
 
 # ===========================================================================
 # Applications

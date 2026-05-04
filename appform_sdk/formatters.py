@@ -92,10 +92,9 @@ DEFAULT_TEMPLATES = {
                 "prefix_key": "fileType",
                 "prefix_map": {"directory": "[D]", "file": "[F]"},
             },
-            {"key": "owner", "label": "OWNER", "width": 12, "fallback": "uid"},
-            {"key": "gid", "label": "GID", "width": 6},
+            {"key": "owner", "label": "OWNER", "width": 12},
             {"key": "size", "label": "SIZE", "width": 10, "format": "size"},
-            {"key": "ts", "label": "MODIFIED", "width": 20, "fallback": "modifiedDate"},
+            {"key": "ts", "label": "MODIFIED", "width": 20},
         ],
     },
     "apps.list": {
