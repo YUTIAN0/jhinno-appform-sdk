@@ -584,6 +584,106 @@ class TestSFTPAPI:
         mgr.close.assert_called_once()
 
 
+class TestFormatMode:
+    """Tests for _format_mode() helper."""
+
+    def test_regular_file(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFREG | 0o644
+        assert _format_mode(mode) == "- rw-r--r--"
+
+    def test_directory(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFDIR | 0o755
+        assert _format_mode(mode) == "d rwxr-xr-x"
+
+    def test_executable_file(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFREG | 0o755
+        assert _format_mode(mode) == "- rwxr-xr-x"
+
+    def test_no_permissions(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFREG | 0o000
+        assert _format_mode(mode) == "- ---------"
+
+    def test_setuid_with_execute(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFREG | stat_module.S_ISUID | 0o755
+        assert _format_mode(mode) == "- rwsr-xr-x"
+
+    def test_setuid_without_execute(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFREG | stat_module.S_ISUID | 0o644
+        assert _format_mode(mode) == "- rwSr--r--"
+
+    def test_setgid_with_execute(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFREG | stat_module.S_ISGID | 0o755
+        assert _format_mode(mode) == "- rwxr-sr-x"
+
+    def test_setgid_without_execute(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFREG | stat_module.S_ISGID | 0o640
+        assert _format_mode(mode) == "- rw-r-S---"
+
+    def test_sticky_with_execute(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFDIR | stat_module.S_ISVTX | 0o755
+        assert _format_mode(mode) == "d rwxr-xr-t"
+
+    def test_sticky_without_execute(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFDIR | stat_module.S_ISVTX | 0o754
+        assert _format_mode(mode) == "d rwxr-xr-T"
+
+    def test_symlink(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFLNK | 0o777
+        assert _format_mode(mode) == "l rwxrwxrwx"
+
+    def test_fifo(self):
+        from appform_sdk.sftp import _format_mode
+
+        mode = stat_module.S_IFIFO | 0o644
+        assert _format_mode(mode) == "p rw-r--r--"
+
+
+class TestFileTypeFromMode:
+    """Tests for _file_type_from_mode() helper."""
+
+    def test_regular(self):
+        from appform_sdk.sftp import _file_type_from_mode
+
+        assert _file_type_from_mode(stat_module.S_IFREG | 0o644) == "file"
+
+    def test_directory(self):
+        from appform_sdk.sftp import _file_type_from_mode
+
+        assert _file_type_from_mode(stat_module.S_IFDIR | 0o755) == "directory"
+
+    def test_symlink(self):
+        from appform_sdk.sftp import _file_type_from_mode
+
+        assert _file_type_from_mode(stat_module.S_IFLNK | 0o777) == "symlink"
+
+    def test_unknown(self):
+        from appform_sdk.sftp import _file_type_from_mode
+
+        assert _file_type_from_mode(stat_module.S_IFSOCK | 0o644) == "unknown"
+
+
 class TestMkdirRecursive:
     """Tests for _mkdir_recursive helper."""
 

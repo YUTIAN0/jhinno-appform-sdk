@@ -119,8 +119,9 @@ def handle_files_command(args):
                 _handle_cat(client, args, method)
 
             elif args.files_command == "tailf":
+                path = resolve_home_in_path(client, args.path, "sftp")
                 tail_pid, channel = client.sftp.tailf(
-                    remote_path=args.path, encoding=args.encoding
+                    remote_path=path, encoding=args.encoding
                 )
                 try:
                     client.sftp.kill_tail(tail_pid)
