@@ -839,6 +839,97 @@ def format_generic(response: dict) -> str:
     return str(data)
 
 
+def format_config_show(response: dict) -> str:
+    """Format config show as a key-value detail view."""
+    if not response or not isinstance(response, dict):
+        return "(no data)"
+
+    pairs = []
+    for k, v in response.items():
+        if v is None:
+            continue
+        if isinstance(v, (dict, list)):
+            v = json.dumps(v, ensure_ascii=False)
+        pairs.append((k, str(v)))
+
+    if not pairs:
+        return "(no data)"
+
+    max_label = max(len(p[0]) for p in pairs)
+    lines = []
+    for label, value in pairs:
+        lines.append(f"  {label:<{max_label}} : {value}")
+    return "\n".join(lines)
+
+
+def format_sessions_start(response: dict) -> str:
+    """Format session start response with connection info."""
+    data = response.get("data", [])
+    if not data:
+        return response.get("message", "(no data)")
+    if isinstance(data, dict):
+        data = [data]
+
+    lines = []
+    for item in data:
+        session_id = item.get("session_id") or item.get("id", "")
+        if session_id:
+            lines.append(f"Session ID: {session_id}")
+        app_id = item.get("app_id", "")
+        if app_id:
+            lines.append(f"Application: {app_id}")
+        jhapp_url = item.get("jhappUrl", "")
+        if jhapp_url:
+            lines.append(f"JHApp URL: {jhapp_url}")
+        desktop_id = item.get("desktopId", "")
+        if desktop_id:
+            lines.append(f"Desktop ID: {desktop_id}")
+    if lines:
+        return "\n".join(lines)
+    return format_generic(response)
+
+
+def format_job_submit(response: dict) -> str:
+    """Format job submit response."""
+    data = response.get("data")
+    if data is None:
+        msg = response.get("message", "")
+        if msg:
+            return msg
+        return "(no data)"
+    if isinstance(data, dict):
+        job_id = data.get("jobId") or data.get("job_id") or data.get("id", "")
+        if job_id:
+            result = response.get("result", "")
+            status = f" (result: {result})" if result else ""
+            return f"Job submitted successfully, Job ID: {job_id}{status}"
+        lines = []
+        for k, v in data.items():
+            if v is not None and v != "":
+                lines.append(f"  {k}: {v}")
+        return "\n".join(lines) if lines else str(data)
+    return str(data)
+
+
+def format_simple_result(response: dict) -> str:
+    """Format simple success/failure result for mutation operations."""
+    result = response.get("result", "")
+    message = response.get("message", "")
+    data = response.get("data")
+
+    lines = []
+    if result:
+        lines.append(f"Result: {result}")
+    if message:
+        lines.append(f"Message: {message}")
+    if data is not None:
+        if isinstance(data, (dict, list)):
+            lines.append(f"Data: {json.dumps(data, ensure_ascii=False)}")
+        else:
+            lines.append(f"Data: {data}")
+    return "\n".join(lines) if lines else format_generic(response)
+
+
 # ---------------------------------------------------------------------------
 # Formatter registry
 # ---------------------------------------------------------------------------
@@ -847,12 +938,42 @@ _FORMATTERS: Dict[str, Callable] = {
     "jobs.list": format_jobs_list,
     "jobs.status": format_jobs_list,
     "jobs.get": format_job_detail,
+    "jobs.submit": format_job_submit,
+    "jobs.stop": format_simple_result,
+    "jobs.suspend": format_simple_result,
+    "jobs.resume": format_simple_result,
+    "jobs.delete": format_simple_result,
     "sessions.list": format_sessions_list,
     "sessions.list-all": format_sessions_list,
+    "sessions.start": format_sessions_start,
+    "sessions.connect": format_simple_result,
+    "sessions.disconnect": format_simple_result,
+    "sessions.close": format_simple_result,
+    "sessions.share": format_simple_result,
     "files.list": format_files_list,
+    "files.copy": format_simple_result,
+    "files.rename": format_simple_result,
+    "files.delete": format_simple_result,
+    "files.mkdir": format_simple_result,
+    "files.compress": format_simple_result,
+    "files.uncompress": format_simple_result,
+    "files.upload": format_simple_result,
+    "files.download": format_simple_result,
+    "files.conf": format_simple_result,
     "apps.list": format_apps_list,
     "departments.list": format_departments,
+    "departments.create": format_simple_result,
+    "departments.update": format_simple_result,
+    "departments.delete": format_simple_result,
     "users.list": format_users_list,
+    "users.create": format_simple_result,
+    "users.update": format_simple_result,
+    "users.delete": format_simple_result,
+    "users.reset-password": format_simple_result,
+    "config.show": format_config_show,
+    "auth.login": format_simple_result,
+    "auth.logout": format_simple_result,
+    "auth.ping": format_simple_result,
 }
 
 

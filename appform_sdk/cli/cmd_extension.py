@@ -7,7 +7,7 @@ def handle_extension_command(args):
     if args.extension_command == "list":
         client = create_client(args)
         extensions = client.extension_manager.list_extensions()
-        output_result({"extensions": extensions}, args.output)
+        output_result({"extensions": extensions}, args.output, "extension.list")
         client.close()
     elif args.extension_command == "load":
         client = create_client(args)

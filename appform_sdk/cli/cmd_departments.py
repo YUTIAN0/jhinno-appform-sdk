@@ -16,7 +16,7 @@ def handle_departments_command(args):
                 parent_dep=args.parent,
                 description=args.description,
             )
-            output_result(result, args.output)
+            output_result(result, args.output, "departments.create")
         elif args.departments_command == "update":
             result = client.organization.update_department(
                 dep_name=args.name,
@@ -24,9 +24,9 @@ def handle_departments_command(args):
                 parent_dep=args.parent,
                 description=args.description,
             )
-            output_result(result, args.output)
+            output_result(result, args.output, "departments.update")
         elif args.departments_command == "delete":
             result = client.organization.delete_department(dep_name=args.name)
-            output_result(result, args.output)
+            output_result(result, args.output, "departments.delete")
     finally:
         client.close()

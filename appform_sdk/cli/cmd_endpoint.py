@@ -22,6 +22,7 @@ def handle_endpoint_command(args):
                 }
             },
             args.output,
+            "endpoint.list",
         )
     elif args.endpoint_command == "call":
         try:
@@ -35,5 +36,5 @@ def handle_endpoint_command(args):
         result = client.call_endpoint(
             args.name, path_params=path_params, params=params, json_data=data
         )
-        output_result(result, args.output)
+        output_result(result, args.output, "endpoint.call")
     client.close()

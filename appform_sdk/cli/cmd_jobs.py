@@ -33,7 +33,7 @@ def handle_jobs_command(args, submit_extra_args=None):
             apps = pm.list_apps()
             if args.output == "json":
                 output_result(
-                    {"applications": apps, "config_file": pm.config_file}, args.output
+                    {"applications": apps, "config_file": pm.config_file}, args.output, "jobs.apps"
                 )
             else:
                 print_apps_table(apps)
@@ -51,7 +51,7 @@ def handle_jobs_command(args, submit_extra_args=None):
                 )
                 sys.exit(1)
             if args.output == "json":
-                output_result(profile.to_dict(), args.output)
+                output_result(profile.to_dict(), args.output, "jobs.params")
             else:
                 print_app_params(profile)
             return
@@ -64,7 +64,7 @@ def handle_jobs_command(args, submit_extra_args=None):
             client = create_client(args)
             try:
                 resp = client.jobs.submit(app_id=app_id, params=params)
-                output_result(resp, args.output)
+                output_result(resp, args.output, "jobs.submit")
             finally:
                 client.close()
             return
@@ -104,13 +104,13 @@ def handle_jobs_command(args, submit_extra_args=None):
             output_result(result, args.output, "jobs.get")
         elif args.jobs_command == "stop":
             result = client.jobs.stop(args.job_id)
-            output_result(result, args.output, "jobs.action")
+            output_result(result, args.output, "jobs.stop")
         elif args.jobs_command == "suspend":
             result = client.jobs.suspend(args.job_id)
-            output_result(result, args.output, "jobs.action")
+            output_result(result, args.output, "jobs.suspend")
         elif args.jobs_command == "resume":
             result = client.jobs.resume(args.job_id)
-            output_result(result, args.output, "jobs.action")
+            output_result(result, args.output, "jobs.resume")
         elif args.jobs_command == "output":
             result = client.jobs.get_output(args.job_id)
             output_result(result, args.output, "jobs.output")
