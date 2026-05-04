@@ -284,6 +284,10 @@ files.list:
     - key: owner
       label: OWNER
       width: 12
+      fallback: uid
+    - key: gid
+      label: GID
+      width: 6
     - key: size
       label: SIZE
       width: 10

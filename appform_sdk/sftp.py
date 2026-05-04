@@ -402,6 +402,8 @@ class SFTPAPI:
                         "fileType": "file",
                         "size": attr.st_size,
                         "modifiedDate": _format_mtime(attr.st_mtime),
+                        "uid": attr.st_uid,
+                        "gid": attr.st_gid,
                     }
                 )
         except IOError:
@@ -427,6 +429,8 @@ class SFTPAPI:
                         ),
                         "size": attr.st_size if stat.S_ISREG(attr.st_mode) else 0,
                         "modifiedDate": _format_mtime(attr.st_mtime),
+                        "uid": attr.st_uid,
+                        "gid": attr.st_gid,
                     }
                 )
 

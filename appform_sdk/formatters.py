@@ -92,9 +92,10 @@ DEFAULT_TEMPLATES = {
                 "prefix_key": "fileType",
                 "prefix_map": {"directory": "[D]", "file": "[F]"},
             },
-            {"key": "owner", "label": "OWNER", "width": 12},
+            {"key": "owner", "label": "OWNER", "width": 12, "fallback": "uid"},
+            {"key": "gid", "label": "GID", "width": 6},
             {"key": "size", "label": "SIZE", "width": 10, "format": "size"},
-            {"key": "ts", "label": "MODIFIED", "width": 20},
+            {"key": "ts", "label": "MODIFIED", "width": 20, "fallback": "modifiedDate"},
         ],
     },
     "apps.list": {
@@ -745,15 +746,20 @@ def format_files_list(response: dict) -> str:
     for f in files:
         ftype = f.get("fileType", "")
         icon = "[D]" if ftype == "directory" else "[F]"
+        owner = f.get("owner") or f.get("uid", "")
+        gid = f.get("gid", "")
+        size = _format_size(f.get("size", 0))
+        modified = f.get("ts") or f.get("modifiedDate", "")
         rows.append(
             [
                 f"{icon} {f.get('fileName', '')}",
-                f.get("owner", ""),
-                _format_size(f.get("size", 0)),
-                f.get("ts", ""),
+                owner,
+                gid,
+                size,
+                modified,
             ]
         )
-    header = ["NAME", "OWNER", "SIZE", "MODIFIED"]
+    header = ["NAME", "OWNER", "GID", "SIZE", "MODIFIED"]
     return _table(header, rows)
 
 
