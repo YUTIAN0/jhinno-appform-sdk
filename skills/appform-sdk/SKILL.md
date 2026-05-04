@@ -40,6 +40,8 @@ client = AppformClient(config=Config())
 
 配置优先级：直接参数 > 环境变量(`APPFORM_*`) > 配置文件。`verify_ssl=False` 可关闭 SSL 校验。
 
+**禁止直接读取 `~/.appform/config.json` 文件。如果需要查看配置内容，使用 `appform -o json config show` 命令获取。**
+
 ## 返回数据说明
 
 SDK 所有方法返回的是 API 原始 JSON（Python `dict`），需自行解析。典型响应结构：

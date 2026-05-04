@@ -32,8 +32,10 @@ appform auth logout
 查看当前配置：
 
 ```bash
-appform config show
+appform -o json config show
 ```
+
+**禁止直接读取 `~/.appform/config.json` 文件。始终使用 `appform -o json config show` 命令获取配置内容。**
 
 ## 返回数据说明
 
