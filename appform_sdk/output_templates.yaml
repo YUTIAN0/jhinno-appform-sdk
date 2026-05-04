@@ -293,12 +293,15 @@ files.list:
       width: 20
       fallback: modifiedDate
 
-# SFTP file listing — shows uid/gid instead of owner name
+# SFTP file listing — shows uid/gid and permissions
 files.list.sftp:
   type: table
   title: Files (SFTP)
   items_path: data
   fields:
+    - key: mode
+      label: MODE
+      width: 10
     - key: fileName
       label: NAME
       width: 30
@@ -306,6 +309,7 @@ files.list.sftp:
       prefix_map:
         directory: "[D]"
         file: "[F]"
+        symlink: "[L]"
     - key: uid
       label: UID
       width: 6

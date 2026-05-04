@@ -744,21 +744,41 @@ def format_files_list(response: dict) -> str:
     rows = []
     for f in files:
         ftype = f.get("fileType", "")
-        icon = "[D]" if ftype == "directory" else "[F]"
+        if ftype == "symlink":
+            icon = "[L]"
+        elif ftype == "directory":
+            icon = "[D]"
+        else:
+            icon = "[F]"
+        mode = f.get("mode", "")
         owner = f.get("owner") or f.get("uid", "")
         gid = f.get("gid", "")
         size = _format_size(f.get("size", 0))
         modified = f.get("ts") or f.get("modifiedDate", "")
-        rows.append(
-            [
-                f"{icon} {f.get('fileName', '')}",
-                owner,
-                gid,
-                size,
-                modified,
-            ]
-        )
-    header = ["NAME", "OWNER", "GID", "SIZE", "MODIFIED"]
+        if mode:
+            rows.append(
+                [
+                    mode,
+                    f"{icon} {f.get('fileName', '')}",
+                    owner,
+                    gid,
+                    size,
+                    modified,
+                ]
+            )
+        else:
+            rows.append(
+                [
+                    f"{icon} {f.get('fileName', '')}",
+                    owner,
+                    size,
+                    modified,
+                ]
+            )
+    if mode:
+        header = ["MODE", "NAME", "UID/GID", "GID", "SIZE", "MODIFIED"]
+        return _table(header, rows)
+    header = ["NAME", "OWNER", "SIZE", "MODIFIED"]
     return _table(header, rows)
 
 

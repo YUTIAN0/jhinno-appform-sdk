@@ -404,6 +404,7 @@ class SFTPAPI:
                         "modifiedDate": _format_mtime(attr.st_mtime),
                         "uid": attr.st_uid,
                         "gid": attr.st_gid,
+                        "mode": _format_mode(attr.st_mode),
                     }
                 )
         except IOError:
@@ -424,13 +425,12 @@ class SFTPAPI:
                     {
                         "fileName": attr.filename,
                         "path": f"{path.rstrip('/')}/{attr.filename}",
-                        "fileType": (
-                            "directory" if stat.S_ISDIR(attr.st_mode) else "file"
-                        ),
+                        "fileType": _file_type_from_mode(attr.st_mode),
                         "size": attr.st_size if stat.S_ISREG(attr.st_mode) else 0,
                         "modifiedDate": _format_mtime(attr.st_mtime),
                         "uid": attr.st_uid,
                         "gid": attr.st_gid,
+                        "mode": _format_mode(attr.st_mode),
                     }
                 )
 
@@ -774,6 +774,63 @@ def _format_mtime(ts) -> str:
         return dt.strftime("%Y-%m-%d %H:%M:%S")
     except (OSError, ValueError):
         return str(int(ts))
+
+
+def _format_mode(mode) -> str:
+    """Format a Unix file mode to 'l/ d/-rwxr-xr-x' string."""
+    if stat.S_ISLNK(mode):
+        type_char = "l"
+    elif stat.S_ISDIR(mode):
+        type_char = "d"
+    elif stat.S_ISREG(mode):
+        type_char = "-"
+    elif stat.S_ISFIFO(mode):
+        type_char = "p"
+    elif stat.S_ISCHR(mode):
+        type_char = "c"
+    elif stat.S_ISBLK(mode):
+        type_char = "b"
+    else:
+        type_char = "?"
+
+    perms = ""
+    for who in ("USR", "GRP", "OTH"):
+        r = mode & getattr(stat, f"S_IR{who}")
+        w = mode & getattr(stat, f"S_IW{who}")
+        x = mode & getattr(stat, f"S_IX{who}")
+        perms += "r" if r else "-"
+        perms += "w" if w else "-"
+        if who == "USR":
+            perms += (
+                "s"
+                if (mode & stat.S_ISUID and not x)
+                else ("S" if (mode & stat.S_ISUID) else ("x" if x else "-"))
+            )
+        elif who == "GRP":
+            perms += (
+                "s"
+                if (mode & stat.S_ISGID and not x)
+                else ("S" if (mode & stat.S_ISGID) else ("x" if x else "-"))
+            )
+        else:
+            perms += (
+                "t"
+                if (mode & stat.S_ISVTX and not x)
+                else ("T" if (mode & stat.S_ISVTX) else ("x" if x else "-"))
+            )
+
+    return f"{type_char} {perms}"
+
+
+def _file_type_from_mode(mode) -> str:
+    """Return a file type string from a Unix mode."""
+    if stat.S_ISLNK(mode):
+        return "symlink"
+    if stat.S_ISDIR(mode):
+        return "directory"
+    if stat.S_ISREG(mode):
+        return "file"
+    return "unknown"
 
 
 def _copy_recursive(sftp, src: str, dest: str):
