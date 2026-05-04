@@ -360,7 +360,7 @@ users.list:
 jobs.submit:
   type: detail
   title: Submit Result
-  item_path: data.0
+  item_path: data
 
 jobs.action:
   type: detail
@@ -390,7 +390,7 @@ sessions.start:
 sessions.connect:
   type: detail
   title: Session Connected
-  item_path: data.0
+  item_path: data
   fields:
     - key: jhappUrl
       label: jhapp URL
@@ -427,4 +427,123 @@ files.mkdir:
 files.delete:
   type: detail
   title: Files Deleted
+  item_path: data
+
+# ===========================================================================
+# Auth
+# ===========================================================================
+
+auth.login:
+  type: detail
+  title: Login Result
+  item_path: data
+
+auth.ping:
+  type: detail
+  title: Ping Result
+  item_path: data
+
+auth.logout:
+  type: detail
+  title: Logout Result
+  item_path: data
+
+# ===========================================================================
+# Config
+# ===========================================================================
+
+config.show:
+  type: detail
+  title: Configuration
+  item_path: data
+
+# ===========================================================================
+# Users (mutations)
+# ===========================================================================
+
+users.create:
+  type: detail
+  title: User Created
+  item_path: data
+
+users.update:
+  type: detail
+  title: User Updated
+  item_path: data
+
+users.delete:
+  type: detail
+  title: User Deleted
+  item_path: data
+
+users.reset-password:
+  type: detail
+  title: Password Reset
+  item_path: data
+
+# ===========================================================================
+# Departments (mutations)
+# ===========================================================================
+
+departments.create:
+  type: detail
+  title: Department Created
+  item_path: data
+
+departments.update:
+  type: detail
+  title: Department Updated
+  item_path: data
+
+departments.delete:
+  type: detail
+  title: Department Deleted
+  item_path: data
+
+# ===========================================================================
+# Files (mutations)
+# ===========================================================================
+
+files.copy:
+  type: detail
+  title: Files Copied
+  item_path: data
+
+files.rename:
+  type: detail
+  title: File Renamed
+  item_path: data
+
+files.compress:
+  type: detail
+  title: Files Compressed
+  item_path: data
+
+files.uncompress:
+  type: detail
+  title: Files Extracted
+  item_path: data
+
+# ===========================================================================
+# Endpoint
+# ===========================================================================
+
+endpoint.list:
+  type: table
+  title: Endpoints
+  items_path: data
+  fields:
+    - key: name
+      label: NAME
+      width: 30
+    - key: path
+      label: PATH
+      width: 40
+    - key: method
+      label: METHOD
+      width: 8
+
+endpoint.call:
+  type: detail
+  title: Endpoint Result
   item_path: data
