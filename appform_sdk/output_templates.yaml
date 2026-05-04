@@ -291,6 +291,7 @@ files.list:
     - key: ts
       label: MODIFIED
       width: 20
+      fallback: modifiedDate
 
 # ===========================================================================
 # Applications
