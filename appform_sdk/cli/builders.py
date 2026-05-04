@@ -353,6 +353,13 @@ def _add_jobs_files_parser(jobs_subparsers):
         "--all", "-a", action="store_true", dest="list_all", help="List all items"
     )
     jf_ls.add_argument(
+        "--all-hidden",
+        "-A",
+        action="store_true",
+        dest="hidden",
+        help="Show hidden files (starting with .)",
+    )
+    jf_ls.add_argument(
         "--method", choices=["http", "sftp"], default=None, help="Transfer method"
     )
 
@@ -598,6 +605,13 @@ def _add_files_parser(subparsers):
         action="store_true",
         dest="list_all",
         help="List all items (auto-pagination)",
+    )
+    files_ls_parser.add_argument(
+        "--all-hidden",
+        "-A",
+        action="store_true",
+        dest="hidden",
+        help="Show hidden files (starting with .)",
     )
     files_ls_parser.add_argument(
         "--method",

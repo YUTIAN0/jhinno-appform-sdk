@@ -377,8 +377,16 @@ class SFTPAPI:
         path: str = "/",
         page: int = 1,
         page_size: int = 100,
+        hidden: bool = False,
     ) -> Dict[str, Any]:
-        """List remote directory contents via SFTP."""
+        """List remote directory contents via SFTP.
+
+        Args:
+            path: Directory path
+            page: Page number
+            page_size: Items per page
+            hidden: Whether to show hidden files (starting with .)
+        """
         sftp = self._get_manager().sftp
         items = []
 
@@ -407,6 +415,8 @@ class SFTPAPI:
 
             for attr in entries:
                 if attr.filename in (".", ".."):
+                    continue
+                if not hidden and attr.filename.startswith("."):
                     continue
                 items.append(
                     {
@@ -510,9 +520,9 @@ class SFTPAPI:
             raise SFTPError(f"Failed to delete '{path}': {e}")
         return {"result": True, "message": "Deleted"}
 
-    def list_all(self, path: str = "/") -> List[Dict[str, Any]]:
+    def list_all(self, path: str = "/", hidden: bool = False) -> List[Dict[str, Any]]:
         """List all files in a directory via SFTP (no pagination)."""
-        result = self.list(path=path, page=1, page_size=999999)
+        result = self.list(path=path, page=1, page_size=999999, hidden=hidden)
         return result.get("data", [])
 
     def cat(

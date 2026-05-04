@@ -174,9 +174,10 @@ def handle_jobs_files_command(args):
             if cmd == "ls":
                 cmd_method = getattr(args, "method", None) or method
                 remote = resolve_jobs_path(args.path)
+                hidden = getattr(args, "hidden", False)
                 if args.list_all:
                     items = client.files.list_all(
-                        path=remote, transfer_method=cmd_method
+                        path=remote, transfer_method=cmd_method, hidden=hidden
                     )
                     result = {"data": items, "path": remote, "count": len(items)}
                 else:
@@ -185,6 +186,7 @@ def handle_jobs_files_command(args):
                         page=args.page,
                         page_size=args.page_size,
                         transfer_method=cmd_method,
+                        hidden=hidden,
                     )
                 output_result(result, args.output, "files.list")
 

@@ -224,6 +224,7 @@ class FilesAPI:
         page: int = 1,
         page_size: int = 100,
         transfer_method: str = "http",
+        hidden: bool = False,
     ) -> Dict[str, Any]:
         """
         List files in a directory.
@@ -233,16 +234,19 @@ class FilesAPI:
             page: Page number
             page_size: Number of items per page
             transfer_method: Transfer protocol ("http" or "sftp", default "http")
+            hidden: Whether to show hidden files (default False)
         """
         if transfer_method == "sftp":
-            return self._client.sftp.list(path=path, page=page, page_size=page_size)
+            return self._client.sftp.list(
+                path=path, page=page, page_size=page_size, hidden=hidden
+            )
         return self._client.get(
             "/appform/ws/api/files",
             params={"dir": path, "page": page, "pageSize": page_size},
         )
 
     def list_all(
-        self, path: str = "/", transfer_method: str = "http"
+        self, path: str = "/", transfer_method: str = "http", hidden: bool = False
     ) -> List[Dict[str, Any]]:
         """
         List all files in a directory (auto-pagination).
@@ -250,13 +254,14 @@ class FilesAPI:
         Args:
             path: Directory path
             transfer_method: Transfer protocol ("http" or "sftp", default "http")
+            hidden: Whether to show hidden files (default False)
         """
         if transfer_method == "sftp":
-            return self._client.sftp.list_all(path=path)
+            return self._client.sftp.list_all(path=path, hidden=hidden)
         page = 1
         all_items = []
         while True:
-            result = self.list(path=path, page=page, page_size=100)
+            result = self.list(path=path, page=page, page_size=100, hidden=hidden)
             data = result.get("data", [])
             if isinstance(data, list):
                 if not data:

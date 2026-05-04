@@ -27,8 +27,11 @@ def handle_files_command(args):
             if args.files_command == "ls":
                 cmd_method = getattr(args, "method", None) or method
                 path = resolve_home_in_path(client, args.path, cmd_method)
+                hidden = getattr(args, "hidden", False)
                 if args.list_all:
-                    items = client.files.list_all(path=path, transfer_method=cmd_method)
+                    items = client.files.list_all(
+                        path=path, transfer_method=cmd_method, hidden=hidden
+                    )
                     result = {"data": items, "path": path, "count": len(items)}
                 else:
                     result = client.files.list(
@@ -36,6 +39,7 @@ def handle_files_command(args):
                         page=args.page,
                         page_size=args.page_size,
                         transfer_method=cmd_method,
+                        hidden=hidden,
                     )
                 output_result(result, args.output, "files.list")
 
