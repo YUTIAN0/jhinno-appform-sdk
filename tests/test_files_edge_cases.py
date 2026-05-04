@@ -243,7 +243,7 @@ class TestList:
         api._client.sftp.list_all = MagicMock(return_value=[{"id": 1}])
 
         result = api.list_all("/path", transfer_method="sftp")
-        api._client.sftp.list_all.assert_called_once_with(path="/path")
+        api._client.sftp.list_all.assert_called_once_with(path="/path", hidden=False)
 
 
 class TestUploadDownload:
