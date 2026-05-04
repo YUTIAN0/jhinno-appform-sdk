@@ -456,6 +456,47 @@ config.show:
   type: detail
   title: Configuration
   item_path: data
+  fields:
+    - key: base_url
+      label: Base URL
+    - key: access_key
+      label: Access Key
+    - key: access_key_secret
+      label: Access Key Secret
+    - key: username
+      label: Username
+    - key: password
+      label: Password
+    - key: token
+      label: Token
+    - key: timeout
+      label: Timeout
+    - key: verify_ssl
+      label: Verify SSL
+    - key: api_version
+      label: API Version
+    - key: extensions_dir
+      label: Extensions Dir
+    - key: job_profile_config
+      label: Job Profile Config
+    - key: output_format
+      label: Output Format
+    - key: output_template
+      label: Output Template
+    - key: default_remote_path
+      label: Default Remote Path
+    - key: chunk_size
+      label: Chunk Size
+    - key: default_method
+      label: Default Method
+    - key: sftp_host
+      label: SFTP Host
+    - key: sftp_port
+      label: SFTP Port
+    - key: sftp_username
+      label: SFTP Username
+    - key: sftp_key_file
+      label: SFTP Key File
 
 # ===========================================================================
 # Users (mutations)

@@ -43,4 +43,4 @@ def handle_config_command(args):
         print(f"Configuration saved to {config_path}")
     elif args.config_command == "show":
         config = Config(config_file=getattr(args, "config_file", None))
-        output_result(config.to_dict(), args.output, "config.show")
+        output_result({"data": config.to_dict()}, args.output, "config.show")

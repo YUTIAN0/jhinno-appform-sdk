@@ -522,13 +522,16 @@ def _format_detail_template(template: dict, response: dict) -> str:
     """Format using a detail (key-value) template."""
     item = _resolve_path(response, template.get("item_path", "data"))
     if item is None:
-        return "(no data)"
+        return None  # Fall through to built-in
     if isinstance(item, list):
         item = item[0] if item else {}
     if not isinstance(item, dict):
         return str(item)
 
     fields = template.get("fields", [])
+    if not fields:
+        return None  # No fields defined, fall through to built-in
+
     pairs = []
     for f in fields:
         value = _get_field_value(item, f)
@@ -537,7 +540,7 @@ def _format_detail_template(template: dict, response: dict) -> str:
             pairs.append((label, value))
 
     if not pairs:
-        return "(no data)"
+        return None  # All fields empty, fall through
 
     max_label = max(len(p[0]) for p in pairs)
     lines = []
@@ -1078,13 +1081,21 @@ def format_output(command: str, response: dict, output_format: str = "table") ->
         try:
             t = template.get("type", "table")
             if t == "table":
-                return _format_table_template(template, response)
+                result = _format_table_template(template, response)
+                if result:
+                    return result
             elif t == "detail":
-                return _format_detail_template(template, response)
+                result = _format_detail_template(template, response)
+                if result:
+                    return result
             elif t == "tree":
-                return _format_tree_template(template, response)
+                result = _format_tree_template(template, response)
+                if result:
+                    return result
             elif t == "text":
-                return _format_text_template(template, response)
+                result = _format_text_template(template, response)
+                if result:
+                    return result
         except Exception:
             pass  # Fall through to built-in
 
