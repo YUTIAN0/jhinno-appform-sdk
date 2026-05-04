@@ -87,16 +87,16 @@ def handle_files_command(args):
                 _handle_get(client, config, args, method)
 
             elif args.files_command == "compress":
-                path = resolve_home_in_path(client, args.source, cmd_method or "http")
-                target = resolve_home_in_path(client, args.target, cmd_method or "http")
+                cmd_method = getattr(args, "method", None) or method
+                path = resolve_home_in_path(client, args.source, cmd_method)
+                target = resolve_home_in_path(client, args.target, cmd_method)
                 result = client.files.compress(source_dir=path, target_path=target)
                 output_result(result, args.output, "files.compress")
 
             elif args.files_command == "uncompress":
-                archive = resolve_home_in_path(
-                    client, args.archive, cmd_method or "http"
-                )
-                dest = resolve_home_in_path(client, args.dest, cmd_method or "http")
+                cmd_method = getattr(args, "method", None) or method
+                archive = resolve_home_in_path(client, args.archive, cmd_method)
+                dest = resolve_home_in_path(client, args.dest, cmd_method)
                 result = client.files.uncompress(
                     archive_path=archive,
                     dest_dir=dest,

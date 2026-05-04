@@ -803,19 +803,19 @@ def _format_mode(mode) -> str:
         if who == "USR":
             perms += (
                 "s"
-                if (mode & stat.S_ISUID and not x)
+                if (mode & stat.S_ISUID and x)
                 else ("S" if (mode & stat.S_ISUID) else ("x" if x else "-"))
             )
         elif who == "GRP":
             perms += (
                 "s"
-                if (mode & stat.S_ISGID and not x)
+                if (mode & stat.S_ISGID and x)
                 else ("S" if (mode & stat.S_ISGID) else ("x" if x else "-"))
             )
         else:
             perms += (
                 "t"
-                if (mode & stat.S_ISVTX and not x)
+                if (mode & stat.S_ISVTX and x)
                 else ("T" if (mode & stat.S_ISVTX) else ("x" if x else "-"))
             )
 

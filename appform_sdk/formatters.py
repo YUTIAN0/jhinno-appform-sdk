@@ -741,6 +741,7 @@ def format_sessions_list(response: dict) -> str:
 
 def format_files_list(response: dict) -> str:
     _, files = _extract_list_data(response)
+    has_mode = any(f.get("mode") for f in files)
     rows = []
     for f in files:
         ftype = f.get("fileType", "")
@@ -755,7 +756,7 @@ def format_files_list(response: dict) -> str:
         gid = f.get("gid", "")
         size = _format_size(f.get("size", 0))
         modified = f.get("ts") or f.get("modifiedDate", "")
-        if mode:
+        if has_mode:
             rows.append(
                 [
                     mode,
@@ -775,7 +776,7 @@ def format_files_list(response: dict) -> str:
                     modified,
                 ]
             )
-    if mode:
+    if has_mode:
         header = ["MODE", "NAME", "UID/GID", "GID", "SIZE", "MODIFIED"]
         return _table(header, rows)
     header = ["NAME", "OWNER", "SIZE", "MODIFIED"]

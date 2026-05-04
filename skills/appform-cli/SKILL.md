@@ -234,6 +234,7 @@ appform sessions share session_id --usernames user2,user3
 appform files ls /home/user
 appform files ls /home/user --all          # 自动分页列出所有
 appform files ls /home/user --method sftp
+appform files ls /home/user --method sftp -A  # 显示隐藏文件
 
 # 上传 / 下载
 appform files put local.txt /remote/path
