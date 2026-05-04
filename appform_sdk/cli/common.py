@@ -155,6 +155,20 @@ def resolve_remote_path(path: str, config: Config) -> str:
     return f"{default_remote.rstrip('/')}/{path}"
 
 
+def resolve_home_in_path(client, path: str, transfer_method: str) -> str:
+    """Resolve $HOME in a remote path for SFTP transfers.
+
+    HTTP API handles $HOME server-side; SFTP resolves it via SSH ``echo ~``.
+    Returns the path unchanged if HTTP or if $HOME not present.
+    """
+    if transfer_method == "sftp" and "$HOME" in path:
+        remote_home = client.sftp.get_home_dir()
+        path = path.replace("$HOME", remote_home)
+        while path.startswith("//"):
+            path = path[1:]
+    return path
+
+
 def remote_file_exists(client, remote_dir: str, filename: str) -> bool:
     """Check if a file already exists in the remote directory."""
     try:

@@ -7,6 +7,7 @@ from appform_sdk.cli.common import (
     create_client,
     output_result,
     remote_file_exists,
+    resolve_home_in_path,
     resolve_remote_path,
 )
 from appform_sdk.config import Config
@@ -25,14 +26,13 @@ def handle_files_command(args):
         try:
             if args.files_command == "ls":
                 cmd_method = getattr(args, "method", None) or method
+                path = resolve_home_in_path(client, args.path, cmd_method)
                 if args.list_all:
-                    items = client.files.list_all(
-                        path=args.path, transfer_method=cmd_method
-                    )
-                    result = {"data": items, "path": args.path, "count": len(items)}
+                    items = client.files.list_all(path=path, transfer_method=cmd_method)
+                    result = {"data": items, "path": path, "count": len(items)}
                 else:
                     result = client.files.list(
-                        path=args.path,
+                        path=path,
                         page=args.page,
                         page_size=args.page_size,
                         transfer_method=cmd_method,
@@ -41,28 +41,34 @@ def handle_files_command(args):
 
             elif args.files_command == "cp":
                 cmd_method = getattr(args, "method", None) or method
+                src = resolve_home_in_path(client, args.src, cmd_method)
+                dest = resolve_home_in_path(client, args.dest, cmd_method)
                 result = client.files.copy(
-                    src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method
+                    src_path=src, dest_dir=dest, transfer_method=cmd_method
                 )
                 output_result(result, args.output, "files.copy")
 
             elif args.files_command == "mv":
                 cmd_method = getattr(args, "method", None) or method
+                src = resolve_home_in_path(client, args.src, cmd_method)
+                dest = resolve_home_in_path(client, args.dest, cmd_method)
                 result = client.files.move(
-                    src_path=args.src, dest_dir=args.dest, transfer_method=cmd_method
+                    src_path=src, dest_dir=dest, transfer_method=cmd_method
                 )
                 output_result(result, args.output, "files.rename")
 
             elif args.files_command == "rm":
                 cmd_method = getattr(args, "method", None) or method
-                result = client.files.delete(path=args.path, transfer_method=cmd_method)
+                path = resolve_home_in_path(client, args.path, cmd_method)
+                result = client.files.delete(path=path, transfer_method=cmd_method)
                 output_result(result, args.output, "files.delete")
 
             elif args.files_command == "mkdir":
                 force = not args.no_force
                 cmd_method = getattr(args, "method", None) or method
+                path = resolve_home_in_path(client, args.path, cmd_method)
                 result = client.files.mkdir(
-                    path=args.path, force=force, transfer_method=cmd_method
+                    path=path, force=force, transfer_method=cmd_method
                 )
                 output_result(result, args.output, "files.mkdir")
 
@@ -74,15 +80,19 @@ def handle_files_command(args):
                 _handle_get(client, config, args, method)
 
             elif args.files_command == "compress":
-                result = client.files.compress(
-                    source_dir=args.source, target_path=args.target
-                )
+                path = resolve_home_in_path(client, args.source, cmd_method or "http")
+                target = resolve_home_in_path(client, args.target, cmd_method or "http")
+                result = client.files.compress(source_dir=path, target_path=target)
                 output_result(result, args.output, "files.compress")
 
             elif args.files_command == "uncompress":
+                archive = resolve_home_in_path(
+                    client, args.archive, cmd_method or "http"
+                )
+                dest = resolve_home_in_path(client, args.dest, cmd_method or "http")
                 result = client.files.uncompress(
-                    archive_path=args.archive,
-                    dest_dir=args.dest,
+                    archive_path=archive,
+                    dest_dir=dest,
                     password=args.password,
                 )
                 output_result(result, args.output, "files.uncompress")
@@ -92,13 +102,14 @@ def handle_files_command(args):
                     result = client.files.get_confidentiality_levels()
                     output_result(result, args.output, "files.conf")
                 elif args.set_conf:
+                    path = resolve_home_in_path(client, args.set_conf[0], "http")
                     result = client.files.set_confidentiality(
-                        path=args.set_conf[0], level=args.set_conf[1]
+                        path=path, level=args.set_conf[1]
                     )
                     output_result(result, args.output, "files.conf")
 
             elif args.files_command == "cat":
-                _handle_cat(client, args)
+                _handle_cat(client, args, method)
 
             elif args.files_command == "tailf":
                 tail_pid, channel = client.sftp.tailf(
@@ -136,6 +147,7 @@ def _handle_put(client, config, args, method):
     if remote is None:
         remote = config.default_remote_path or "/"
     remote = resolve_remote_path(remote, config)
+    remote = resolve_home_in_path(client, remote, cmd_method)
 
     local_path = Path(local)
     cs_arg = getattr(args, "chunk_size", None)
@@ -220,6 +232,7 @@ def _handle_get(client, config, args, method):
     remote = args.remote
     local = args.local
     cmd_method = getattr(args, "method", None) or method
+    remote = resolve_home_in_path(client, remote, cmd_method)
     cs_arg = getattr(args, "chunk_size", None)
     if cs_arg:
         chunk_size = parse_size(cs_arg)
@@ -270,7 +283,7 @@ def _handle_get(client, config, args, method):
         print(f"Downloaded to {save_path}")
 
 
-def _handle_cat(client, args):
+def _handle_cat(client, args, method):
     """Handle the 'files cat' subcommand."""
     head = args.head
     tail = args.tail
@@ -314,8 +327,9 @@ def _handle_cat(client, args):
                 client.close()
                 sys.exit(1)
 
+    path = resolve_home_in_path(client, args.path, "sftp")
     lines = client.files.cat(
-        remote_path=args.path,
+        remote_path=path,
         head=head,
         tail=tail,
         start=start,
