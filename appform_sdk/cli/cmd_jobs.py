@@ -33,7 +33,9 @@ def handle_jobs_command(args, submit_extra_args=None):
             apps = pm.list_apps()
             if args.output == "json":
                 output_result(
-                    {"applications": apps, "config_file": pm.config_file}, args.output, "jobs.apps"
+                    {"applications": apps, "config_file": pm.config_file},
+                    args.output,
+                    "jobs.apps",
                 )
             else:
                 print_apps_table(apps)
