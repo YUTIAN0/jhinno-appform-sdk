@@ -3,6 +3,7 @@
 import sys
 
 from appform_sdk.cli.common import (
+    check_is_directory,
     confirm_overwrite,
     create_client,
     output_result,
@@ -252,7 +253,7 @@ def _handle_get(client, config, args, method):
     else:
         chunk_size = config.chunk_size or 104857600
 
-    is_dir = _check_is_directory(client, cmd_method, remote)
+    is_dir = check_is_directory(client, cmd_method, remote)
 
     if is_dir:
         local_path = Path(local)
@@ -352,22 +353,3 @@ def _handle_cat(client, args, method):
     )
     for line in lines:
         print(line)
-
-
-def _check_is_directory(client, cmd_method, remote):
-    """Check if a remote path is a directory."""
-    if cmd_method == "http":
-        try:
-            items = client.files.list(path=remote, page=1, page_size=1)
-            data = items.get("data", [])
-            if isinstance(data, dict):
-                file_list = data.get("files", data.get("records", []))
-            elif isinstance(data, list):
-                file_list = data
-            else:
-                file_list = []
-            return len(file_list) > 0 and file_list[0].get("fileType") == "directory"
-        except Exception:
-            return False
-    else:
-        return remote.endswith("/")

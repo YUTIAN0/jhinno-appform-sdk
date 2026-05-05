@@ -3,6 +3,7 @@
 import sys
 
 from appform_sdk.cli.common import (
+    check_is_directory,
     confirm_overwrite,
     create_client,
     output_result,
@@ -240,7 +241,7 @@ def handle_jobs_files_command(args):
                 chunk_size = _get_chunk_size(cs_arg, config)
 
                 # Check if remote path is a directory
-                is_dir = _check_is_directory(client, cmd_method, remote)
+                is_dir = check_is_directory(client, cmd_method, remote)
 
                 if is_dir:
                     from pathlib import Path
@@ -471,25 +472,6 @@ def _get_chunk_size(cs_arg, config):
     if cs_arg:
         return parse_size(cs_arg)
     return config.chunk_size or 104857600
-
-
-def _check_is_directory(client, cmd_method, remote):
-    """Check if a remote path is a directory."""
-    if cmd_method == "http":
-        try:
-            items = client.files.list(path=remote, page=1, page_size=1)
-            data = items.get("data", [])
-            if isinstance(data, dict):
-                file_list = data.get("files", data.get("records", []))
-            elif isinstance(data, list):
-                file_list = data
-            else:
-                file_list = []
-            return len(file_list) > 0 and file_list[0].get("fileType") == "directory"
-        except Exception:
-            return False
-    else:
-        return remote.endswith("/")
 
 
 def _handle_jobs_files_put(client, config, args, resolve_jobs_path):

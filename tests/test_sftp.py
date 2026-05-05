@@ -743,10 +743,10 @@ class TestCopyRemoveRecursive:
 
         sftp = MagicMock()
         sftp.stat.return_value = _make_sftp_attr("f", 100)
-        buf = io.BytesIO(b"content")
+        sftp.getfo.return_value = None
+        sftp.putfo.return_value = None
 
-        with patch("io.BytesIO", return_value=buf):
-            _copy_recursive(sftp, "/src/f.txt", "/dst/f.txt")
+        _copy_recursive(sftp, "/src/f.txt", "/dst/f.txt")
         sftp.getfo.assert_called()
         sftp.putfo.assert_called()
 

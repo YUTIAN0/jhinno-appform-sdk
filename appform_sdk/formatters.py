@@ -7,6 +7,7 @@ Supports customizable output templates via YAML/JSON configuration.
 
 import json
 import os
+import re
 from typing import Any, Callable, Dict, List, Optional
 
 try:
@@ -15,6 +16,17 @@ try:
     YAML_AVAILABLE = True
 except ImportError:
     YAML_AVAILABLE = False
+
+
+# Pre-compiled regex patterns for _format_text_template
+_RE_MULTI_SPACE = re.compile(r" +")
+_RE_PUNCT_UPPER = re.compile(r"([);,.])\s*([A-Z])")
+_RE_LOWER_UPPER = re.compile(r"([a-z0-9])([A-Z]{2,})")
+_RE_PAREN_UPPER = re.compile(r"(\))\s*([A-Z])")
+_RE_SPACE_COMMA = re.compile(r" +,")
+_RE_SPACE_SEMIC = re.compile(r" +;")
+_RE_SPACE_DOT = re.compile(r" +\.")
+_RE_DOUBLE_SPC = re.compile(r"  +")
 
 
 # ---------------------------------------------------------------------------
@@ -582,8 +594,6 @@ def _format_tree_template(template: dict, response: dict) -> str:
 
 def _format_text_template(template: dict, response: dict) -> str:
     """Format using a text template — outputs raw field values."""
-    import re
-
     items = _resolve_path(response, template.get("items_path", "data"))
     if not items:
         return "(no data)"
@@ -623,19 +633,19 @@ def _format_text_template(template: dict, response: dict) -> str:
                 return ""
             return " "
 
-        cleaned = re.sub(r" +", _replace_space, val)
+        cleaned = _RE_MULTI_SPACE.sub(_replace_space, val)
         # Fix glued punctuation → uppercase: ")Fri" → ") Fri", ";Fri" → "; Fri"
-        cleaned = re.sub(r"([);,.])\s*([A-Z])", r"\1 \2", cleaned)
+        cleaned = _RE_PUNCT_UPPER.sub(r"\1 \2", cleaned)
         # Fix glued lowercase → uppercase run: "minFri" → "min Fri"
-        cleaned = re.sub(r"([a-z0-9])([A-Z]{2,})", r"\1 \2", cleaned)
+        cleaned = _RE_LOWER_UPPER.sub(r"\1 \2", cleaned)
         # Fix glued closing paren → uppercase: ")Fri" → ") Fri"
-        cleaned = re.sub(r"(\))\s*([A-Z])", r"\1 \2", cleaned)
+        cleaned = _RE_PAREN_UPPER.sub(r"\1 \2", cleaned)
         # Fix space before comma/semicolon/period, ensure single space after
-        cleaned = re.sub(r" +,", ", ", cleaned)
-        cleaned = re.sub(r" +;", "; ", cleaned)
-        cleaned = re.sub(r" +\.", ". ", cleaned)
+        cleaned = _RE_SPACE_COMMA.sub(", ", cleaned)
+        cleaned = _RE_SPACE_SEMIC.sub("; ", cleaned)
+        cleaned = _RE_SPACE_DOT.sub(". ", cleaned)
         # Collapse any remaining double+ spaces to single
-        cleaned = re.sub(r"  +", " ", cleaned)
+        cleaned = _RE_DOUBLE_SPC.sub(" ", cleaned)
         cleaned = cleaned.strip()
         if cleaned:
             result_lines.append(cleaned)

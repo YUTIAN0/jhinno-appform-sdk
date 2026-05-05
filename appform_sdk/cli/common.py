@@ -195,3 +195,22 @@ def confirm_overwrite(filename: str) -> bool:
         return answer.strip().lower() in ("y", "yes")
     except (EOFError, KeyboardInterrupt):
         return False
+
+
+def check_is_directory(client, cmd_method, remote):
+    """Check if a remote path is a directory."""
+    if cmd_method == "http":
+        try:
+            items = client.files.list(path=remote, page=1, page_size=1)
+            data = items.get("data", [])
+            if isinstance(data, dict):
+                file_list = data.get("files", data.get("records", []))
+            elif isinstance(data, list):
+                file_list = data
+            else:
+                file_list = []
+            return len(file_list) > 0 and file_list[0].get("fileType") == "directory"
+        except Exception:
+            return False
+    else:
+        return remote.endswith("/")

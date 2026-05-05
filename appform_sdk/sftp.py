@@ -5,6 +5,7 @@ Provides SFTP-based upload/download as an alternative to HTTP API file transfer.
 Requires paramiko: pip install jhinno-appform-sdk[sftp]
 """
 
+import io
 import os
 import stat
 import sys
@@ -336,8 +337,6 @@ class SFTPAPI:
             return None
         else:
             # Return bytes for small files
-            import io
-
             buf = io.BytesIO()
             if on_progress:
 
@@ -526,8 +525,52 @@ class SFTPAPI:
 
     def list_all(self, path: str = "/", hidden: bool = False) -> List[Dict[str, Any]]:
         """List all files in a directory via SFTP (no pagination)."""
-        result = self.list(path=path, page=1, page_size=999999, hidden=hidden)
-        return result.get("data", [])
+        sftp = self._get_manager().sftp
+        items = []
+
+        try:
+            attr = sftp.stat(path)
+            if stat.S_ISREG(attr.st_mode):
+                name = Path(path).name
+                items.append(
+                    {
+                        "fileName": name,
+                        "path": path,
+                        "fileType": "file",
+                        "size": attr.st_size,
+                        "modifiedDate": _format_mtime(attr.st_mtime),
+                        "uid": attr.st_uid,
+                        "gid": attr.st_gid,
+                        "mode": _format_mode(attr.st_mode),
+                    }
+                )
+                return items
+        except IOError:
+            pass
+
+        try:
+            entries = sftp.listdir_attr(path)
+        except IOError as e:
+            raise FileNotFoundError(f"Remote path not found: {path}") from e
+
+        for attr in entries:
+            if attr.filename in (".", ".."):
+                continue
+            if not hidden and attr.filename.startswith("."):
+                continue
+            items.append(
+                {
+                    "fileName": attr.filename,
+                    "path": f"{path.rstrip('/')}/{attr.filename}",
+                    "fileType": _file_type_from_mode(attr.st_mode),
+                    "size": attr.st_size if stat.S_ISREG(attr.st_mode) else 0,
+                    "modifiedDate": _format_mtime(attr.st_mtime),
+                    "uid": attr.st_uid,
+                    "gid": attr.st_gid,
+                    "mode": _format_mode(attr.st_mode),
+                }
+            )
+        return items
 
     def cat(
         self,
@@ -568,9 +611,11 @@ class SFTPAPI:
         file_size = attr.st_size
 
         # --all or small file: read all into memory
-        if all_lines or file_size < small_threshold:
-            import io
-
+        # If all_lines is set but head/tail/start/end are also specified,
+        # skip the all_lines path to avoid reading the entire file unnecessarily.
+        has_slice = head is not None or tail is not None or start is not None
+        read_all = (all_lines and not has_slice) or file_size < small_threshold
+        if read_all:
             buf = io.BytesIO()
             try:
                 sftp.getfo(remote_path, buf)
@@ -776,6 +821,14 @@ def _format_mtime(ts) -> str:
         return str(int(ts))
 
 
+# Map group name → (special-bit, char-with-execute, char-without-execute)
+_MODE_SPECIAL_BITS = {
+    "USR": (stat.S_ISUID, "s", "S"),
+    "GRP": (stat.S_ISGID, "s", "S"),
+    "OTH": (stat.S_ISVTX, "t", "T"),
+}
+
+
 def _format_mode(mode) -> str:
     """Format a Unix file mode to 'l/ d/-rwxr-xr-x' string."""
     if stat.S_ISLNK(mode):
@@ -800,24 +853,11 @@ def _format_mode(mode) -> str:
         x = mode & getattr(stat, f"S_IX{who}")
         perms += "r" if r else "-"
         perms += "w" if w else "-"
-        if who == "USR":
-            perms += (
-                "s"
-                if (mode & stat.S_ISUID and x)
-                else ("S" if (mode & stat.S_ISUID) else ("x" if x else "-"))
-            )
-        elif who == "GRP":
-            perms += (
-                "s"
-                if (mode & stat.S_ISGID and x)
-                else ("S" if (mode & stat.S_ISGID) else ("x" if x else "-"))
-            )
+        bit, low, up = _MODE_SPECIAL_BITS[who]
+        if mode & bit:
+            perms += low if x else up
         else:
-            perms += (
-                "t"
-                if (mode & stat.S_ISVTX and x)
-                else ("T" if (mode & stat.S_ISVTX) else ("x" if x else "-"))
-            )
+            perms += "x" if x else "-"
 
     return f"{type_char} {perms}"
 
@@ -863,18 +903,19 @@ def _copy_recursive(sftp, src: str, dest: str):
         if dest_parent:
             _mkdir_recursive(sftp, dest_parent)
 
-        import io
+        # Use SpooledTemporaryFile to avoid OOM on large files:
+        # small files stay in memory, large ones spill to disk.
+        import tempfile
 
-        buf = io.BytesIO()
+        buf = tempfile.SpooledTemporaryFile(max_size=10 * 1024 * 1024)
         try:
             sftp.getfo(src, buf)
-        except IOError as e:
-            raise SFTPError(f"Failed to read '{src}' for copy: {e}")
-        buf.seek(0)
-        try:
+            buf.seek(0)
             sftp.putfo(buf, dest)
         except IOError as e:
-            raise SFTPError(f"Failed to write '{dest}' during copy: {e}")
+            raise SFTPError(f"Failed to copy '{src}' to '{dest}': {e}")
+        finally:
+            buf.close()
 
 
 def _remove_recursive(sftp, path: str):
@@ -909,16 +950,20 @@ def _remove_recursive(sftp, path: str):
 # ---------------------------------------------------------------------------
 
 
-def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
-    """Read first n lines from a remote file without downloading it fully."""
-    import io
-
+def _get_remote_file_buf(sftp, remote_path: str) -> io.BytesIO:
+    """Download a remote file into a BytesIO buffer and seek to start."""
     buf = io.BytesIO()
     try:
         sftp.getfo(remote_path, buf)
     except IOError as e:
         raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
     buf.seek(0)
+    return buf
+
+
+def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
+    """Read first n lines from a remote file."""
+    buf = _get_remote_file_buf(sftp, remote_path)
     lines = []
     for line in buf:
         lines.append(line.decode(encoding, errors="replace").rstrip("\n\r"))
@@ -931,8 +976,6 @@ def _read_tail(
     sftp, remote_path: str, n: int, encoding: str, file_size: int
 ) -> List[str]:
     """Read last n lines from a remote file by seeking near the end."""
-    import io
-
     chunk_size = 8192
     collected = []
     pos = file_size
@@ -964,14 +1007,7 @@ def _read_range(
     sftp, remote_path: str, start: int, end: int, encoding: str
 ) -> List[str]:
     """Read lines start..end (1-based inclusive) from a remote file."""
-    import io
-
-    buf = io.BytesIO()
-    try:
-        sftp.getfo(remote_path, buf)
-    except IOError as e:
-        raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
-    buf.seek(0)
+    buf = _get_remote_file_buf(sftp, remote_path)
     lines = []
     for i, line in enumerate(buf, 1):
         if i >= start:
@@ -983,14 +1019,7 @@ def _read_range(
 
 def _read_from(sftp, remote_path: str, start: int, encoding: str) -> List[str]:
     """Read from line start to EOF (1-based) from a remote file."""
-    import io
-
-    buf = io.BytesIO()
-    try:
-        sftp.getfo(remote_path, buf)
-    except IOError as e:
-        raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
-    buf.seek(0)
+    buf = _get_remote_file_buf(sftp, remote_path)
     lines = []
     for i, line in enumerate(buf, 1):
         if i >= start:
