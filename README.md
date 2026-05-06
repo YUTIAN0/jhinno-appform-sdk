@@ -2,6 +2,8 @@
 
 Python SDK for Appform 6.0, 6.3, 6.5, and 6.6 APIs.
 
+[中文文档](docs/README.md)
+
 ## Features
 
 - Support for Appform 6.0, 6.3, 6.5, and 6.6 API versions
