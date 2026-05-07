@@ -27,9 +27,7 @@ Python SDK for Appform 6.0, 6.3, 6.5, and 6.6 APIs.
 ### Standard installation (recommended)
 
 ```bash
-git clone https://github.com/YUTIAN0/jhinno-appform-sdk.git
-cd jhinno-appform-sdk
-pip install -e .
+pip install git+https://github.com/YUTIAN0/jhinno-appform-sdk.git
 ```
 
 ### Offline installation
