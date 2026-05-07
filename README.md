@@ -27,7 +27,9 @@ Python SDK for Appform 6.0, 6.3, 6.5, and 6.6 APIs.
 ### Standard installation (recommended)
 
 ```bash
-pip install jhinno-appform-sdk
+git clone https://github.com/YUTIAN0/jhinno-appform-sdk.git
+cd jhinno-appform-sdk
+pip install -e .
 ```
 
 ### Offline installation
@@ -46,16 +48,6 @@ pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
 ```powershell
 Expand-Archive jhinno-appform-sdk-X.Y.Z-windows-x86_64-cp312.zip
 pip install --no-index --find-links=./bundle/ jhinno-appform-sdk
-```
-
-> Replace the version number and `cp312` with your Python version (e.g., `cp310` for Python 3.10).
-
-Or install from source:
-
-```bash
-git clone https://github.com/YUTIAN0/jhinno-appform-sdk.git
-cd jhinno-appform-sdk
-pip install -e .
 ```
 
 ### Requirements
