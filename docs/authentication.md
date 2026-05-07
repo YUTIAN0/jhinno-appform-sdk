@@ -116,7 +116,7 @@ appform config set --username your_username --password your_password
 
 # 之后直接使用，自动完成登录
 appform jobs list
-appform files list
+appform files ls
 job_submit -a starccm -i /path/to/file.sim -n 8
 ```
 

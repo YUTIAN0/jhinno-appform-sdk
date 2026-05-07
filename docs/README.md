@@ -93,8 +93,10 @@ history = client.jobs.get_history("241028")
 ### 会话管理
 
 ```python
-# 列出所有会话
-result = client.sessions.list_all(page=1, page_size=20)
+# 列出所有会话（当前用户）
+result = client.sessions.list_all()
+# 分页查询
+result = client.sessions.list(page=1, page_size=20)
 
 # 按 ID 查询会话
 result = client.sessions.list(session_ids=["494039"])
@@ -312,7 +314,7 @@ appform sessions list --ids 494039
 appform sessions start --app-id gedit --start-new --cwd ${HOME}
 
 # 文件管理
-appform files list --path /home/user
+appform files ls /home/user
 appform files mkdir --path /home/user --name new_dir
 appform files cat /home/user/file.txt --head 10
 appform files tailf /home/user/output.log  # 实时跟踪文件输出 (SFTP)
