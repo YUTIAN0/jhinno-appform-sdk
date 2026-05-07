@@ -628,8 +628,12 @@ def _apply_path_conversion(
             new_parts = []
             for part in parts:
                 converted = convert_windows_path(part, disk_mapping)
-                if not os.path.isabs(converted):
-                    converted = os.path.abspath(converted)
+                # convert_windows_path already converts Windows paths to Linux absolute paths.
+                # Don't use os.path.isabs() here — on Windows it can't recognize Linux paths.
+                # Only fall back to os.path.abspath() for truly relative non-Windows paths.
+                if not (converted.startswith("/") or (len(converted) >= 2 and converted[1] == ":")):
+                    if not os.path.isabs(converted):
+                        converted = os.path.abspath(converted)
                 new_parts.append(converted)
             result[key] = ",".join(new_parts)
         else:
