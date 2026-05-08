@@ -159,6 +159,18 @@ class TestIsPathMapped:
     def test_none_mapping(self):
         assert _is_path_mapped("/apps/test.k", None) is False
 
+    def test_absolute_linux_path_skips_abspath(self):
+        r"""Absolute Linux path must NOT go through os.path.abspath()
+        which on Windows would prepend a drive letter (S:\apps\...)."""
+        # Simulate Windows behavior: abspath prepends a drive letter
+        with patch(
+            "appform_sdk.job_submit.os.path.abspath",
+            return_value=r"S:\apps\home\user\test.k",
+        ):
+            # Should still recognize /apps/... as mapped without calling abspath
+            assert _is_path_mapped("/apps/home/user/test.k", DM) is True
+            assert _is_path_mapped("/tmp/test.k", DM) is False
+
 
 # ── _resolve_remote_path ────────────────────────────────────────────────
 
@@ -209,6 +221,19 @@ class TestResolveRemotePath:
 
     def test_empty_mapping(self):
         assert _resolve_remote_path("/apps/test.k", {}) is None
+
+    def test_absolute_linux_path_skips_abspath(self):
+        r"""Absolute Linux path must NOT go through os.path.abspath()
+        which on Windows would prepend a drive letter."""
+        with patch(
+            "appform_sdk.job_submit.os.path.abspath",
+            return_value=r"S:\apps\home\user\test.k",
+        ):
+            assert (
+                _resolve_remote_path("/apps/home/user/test.k", DM)
+                == "/apps/home/user/test.k"
+            )
+            assert _resolve_remote_path("/tmp/test.k", DM) is None
 
 
 # ── _apply_path_conversion ─────────────────────────────────────────────
