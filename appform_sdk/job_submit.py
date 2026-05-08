@@ -139,7 +139,11 @@ def convert_windows_path(file_path: str, disk_mapping: Dict[str, str]) -> str:
     for drive_letter, linux_base in disk_mapping.items():
         # Check if the resolved absolute path starts with the mapped drive
         win_prefix = drive_letter[:2].upper()  # e.g. "S:"
-        if len(abs_path) >= 3 and abs_path[1] == ":" and abs_path[:2].upper() == win_prefix:
+        if (
+            len(abs_path) >= 3
+            and abs_path[1] == ":"
+            and abs_path[:2].upper() == win_prefix
+        ):
             linux_prefix = linux_base.rstrip("/")
             after_drive = abs_path[2:].lstrip("\\/")
             relative = after_drive.replace("\\", "/")
@@ -178,17 +182,23 @@ def _is_path_mapped(file_path: str, disk_mapping: Dict[str, str]) -> bool:
     if not disk_mapping or not file_path:
         return False
 
-    is_windows = platform.system() == "Windows"
-    abs_path = os.path.abspath(file_path) if is_windows else os.path.abspath(file_path)
-
-    # Build a list of (win_prefix, linux_prefix) pairs
     for drive, linux_path in disk_mapping.items():
         win_prefix = drive[:2].upper()  # e.g. "S:"
         linux_prefix = linux_path.rstrip("/")
 
-        # Windows mapped drive: S:\home\... → starts with "S:"
-        if abs_path[:2].upper() == win_prefix:
-            return True
+        # Drive-letter path (any platform): detect before abspath() which
+        # would corrupt S:\... on Linux into /cwd/S:\...
+        if (
+            len(file_path) >= 3
+            and file_path[1] == ":"
+            and file_path[2:3] in ("\\", "/")
+        ):
+            if file_path[:2].upper() == win_prefix:
+                return True
+            continue  # different drive letter — skip to next mapping
+
+        # Resolve relative paths to absolute
+        abs_path = os.path.abspath(file_path)
 
         # Linux-style path: /apps/home/... → starts with "/apps"
         if abs_path.startswith(linux_prefix + "/") or abs_path == linux_prefix:
@@ -206,16 +216,25 @@ def _resolve_remote_path(file_path: str, disk_mapping: Dict[str, str]) -> Option
     if not disk_mapping or not file_path:
         return None
 
-    is_windows = platform.system() == "Windows"
-    abs_path = os.path.abspath(file_path) if is_windows else os.path.abspath(file_path)
-
     for drive, linux_path in disk_mapping.items():
         win_prefix = drive[:2].upper()  # e.g. "S:"
         linux_prefix = linux_path.rstrip("/")
-        # Match Windows mapped drive path (e.g. S:\home\user\test.k)
-        if abs_path[:2].upper() == win_prefix:
-            relative = abs_path[2:].lstrip("\\").replace("\\", "/")
-            return linux_prefix + "/" + relative if relative else linux_prefix
+
+        # Drive-letter path (any platform): detect before abspath() which
+        # would corrupt S:\... on Linux into /cwd/S:\...
+        if (
+            len(file_path) >= 3
+            and file_path[1] == ":"
+            and file_path[2:3] in ("\\", "/")
+        ):
+            if file_path[:2].upper() == win_prefix:
+                relative = file_path[2:].lstrip("\\/").replace("\\", "/")
+                return linux_prefix + "/" + relative if relative else linux_prefix
+            continue  # different drive letter — skip
+
+        # Resolve relative / absolute Linux paths
+        abs_path = os.path.abspath(file_path)
+
         # Match Linux-style path on mapped drive (e.g. /apps/home/user/test.k)
         if abs_path.startswith(linux_prefix + "/") or abs_path == linux_prefix:
             return abs_path
@@ -255,7 +274,16 @@ def _upload_files(
     seen_local: set = set()
 
     for local_path in local_paths:
-        lp = os.path.abspath(local_path)
+        # Guard: on Linux os.path.abspath() corrupts drive-letter paths
+        # (e.g. S:\foo → /cwd/S:\foo).  Detect and skip resolution.
+        if (
+            len(local_path) >= 3
+            and local_path[1] == ":"
+            and local_path[2:3] in ("\\", "/")
+        ):
+            lp = local_path.replace("\\", "/")
+        else:
+            lp = os.path.abspath(local_path)
         if lp in seen_local:
             continue
         seen_local.add(lp)
@@ -311,7 +339,12 @@ def _apply_uploaded_paths(
         parts = [p.strip() for p in value.split(",")]
         new_parts = []
         for part in parts:
-            abs_part = os.path.abspath(part)
+            # Guard: on Linux os.path.abspath() corrupts drive-letter paths.
+            # Detect and keep the original form for lookup.
+            if len(part) >= 3 and part[1] == ":" and part[2:3] in ("\\", "/"):
+                abs_part = part
+            else:
+                abs_part = os.path.abspath(part)
             mapped = path_mapping.get(abs_part, part)
             new_parts.append(mapped)
         result[key] = ",".join(new_parts)
