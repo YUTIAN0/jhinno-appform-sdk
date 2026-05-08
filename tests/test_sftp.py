@@ -743,12 +743,12 @@ class TestCopyRemoveRecursive:
 
         sftp = MagicMock()
         sftp.stat.return_value = _make_sftp_attr("f", 100)
-        sftp.getfo.return_value = None
-        sftp.putfo.return_value = None
+        sftp.get.return_value = None
+        sftp.put.return_value = None
 
         _copy_recursive(sftp, "/src/f.txt", "/dst/f.txt")
-        sftp.getfo.assert_called()
-        sftp.putfo.assert_called()
+        sftp.get.assert_called()
+        sftp.put.assert_called()
 
     def test_copy_directory(self):
         """Test _copy_recursive for a directory."""
@@ -771,14 +771,14 @@ class TestCopyRemoveRecursive:
 
         sftp.stat.side_effect = stat_side
         sftp.listdir_attr.return_value = [child]
-        # getfo/putfo write to a BytesIO object - let them pass through
-        sftp.getfo.return_value = None
-        sftp.putfo.return_value = None
+        # get/put copy via temp file - let them pass through
+        sftp.get.return_value = None
+        sftp.put.return_value = None
 
         _copy_recursive(sftp, "/src/", "/dst/")
         sftp.mkdir.assert_called()
-        assert sftp.getfo.called
-        assert sftp.putfo.called
+        assert sftp.get.called
+        assert sftp.put.called
 
     def test_remove_missing(self):
         """Test _remove_recursive is a no-op for missing paths."""

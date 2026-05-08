@@ -360,51 +360,51 @@ class Config:
             except (json.JSONDecodeError, IOError):
                 pass
 
-        if base_url:
+        if base_url is not None:
             existing["base_url"] = base_url
-        if access_key:
+        if access_key is not None:
             existing["access_key"] = access_key
-        if access_key_secret:
+        if access_key_secret is not None:
             existing["access_key_secret"] = access_key_secret
-        if username:
+        if username is not None:
             existing["username"] = username
-        if password:
+        if password is not None:
             existing["password"] = password
-        if token:
+        if token is not None:
             existing["token"] = token
-        if aes_key:
+        if aes_key is not None:
             existing["aes_key"] = aes_key
         if timeout is not None:
             existing["timeout"] = timeout
         if verify_ssl is not None:
             existing["verify_ssl"] = verify_ssl
-        if api_version:
+        if api_version is not None:
             existing["api_version"] = api_version
-        if extensions_dir:
+        if extensions_dir is not None:
             existing["extensions_dir"] = extensions_dir
-        if job_profile_config:
+        if job_profile_config is not None:
             existing["job_profile_config"] = job_profile_config
-        if output_format:
+        if output_format is not None:
             existing["output_format"] = output_format
-        if output_template:
+        if output_template is not None:
             existing["output_template"] = output_template
-        if default_remote_path:
+        if default_remote_path is not None:
             existing["default_remote_path"] = default_remote_path
         if chunk_size is not None:
             existing["chunk_size"] = chunk_size
-        if default_method:
+        if default_method is not None:
             existing["default_method"] = default_method
-        if sftp_host:
+        if sftp_host is not None:
             existing["sftp_host"] = sftp_host
         if sftp_port is not None:
             existing["sftp_port"] = sftp_port
-        if sftp_username:
+        if sftp_username is not None:
             existing["sftp_username"] = sftp_username
-        if sftp_password:
+        if sftp_password is not None:
             existing["sftp_password"] = sftp_password
-        if sftp_key_file:
+        if sftp_key_file is not None:
             existing["sftp_key_file"] = sftp_key_file
-        if sftp_key_password:
+        if sftp_key_password is not None:
             existing["sftp_key_password"] = sftp_key_password
 
         with open(config_path, "w", encoding="utf-8") as f:

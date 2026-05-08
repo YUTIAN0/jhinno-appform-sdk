@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from .registry import APIRegistry, EndpointDefinition, get_registry
+from .utils import compare_versions as _compare_versions
 
 
 @dataclass
@@ -863,33 +864,6 @@ def init_default_registry(version: str = "6.5") -> APIRegistry:
         registry.load_from_dict(ENDPOINTS_6_6)
 
     return registry
-
-
-def _compare_versions(v1: str, v2: str) -> int:
-    """
-    Compare two version strings.
-
-    Args:
-        v1: First version string
-        v2: Second version string
-
-    Returns:
-        -1 if v1 < v2, 0 if v1 == v2, 1 if v1 > v2
-    """
-    parts1 = [int(x) for x in v1.split(".")]
-    parts2 = [int(x) for x in v2.split(".")]
-
-    for p1, p2 in zip(parts1, parts2):
-        if p1 < p2:
-            return -1
-        if p1 > p2:
-            return 1
-
-    if len(parts1) < len(parts2):
-        return -1
-    if len(parts1) > len(parts2):
-        return 1
-    return 0
 
 
 # Version constants

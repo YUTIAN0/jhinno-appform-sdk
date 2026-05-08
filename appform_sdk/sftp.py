@@ -7,6 +7,7 @@ Requires paramiko: pip install jhinno-appform-sdk[sftp]
 
 import io
 import os
+import re
 import stat
 import sys
 from pathlib import Path
@@ -27,6 +28,30 @@ def _require_paramiko():
 
 
 from .exceptions import SFTPError
+
+# Characters/patterns that would allow command injection in shell commands
+_DANGEROUS_PATH_CHARS = re.compile(r"[;&|`(){}$\\><]")
+
+
+def _validate_path(path: str) -> str:
+    """Validate a file/directory path for use in shell commands.
+
+    Allows glob patterns (* ? [...]) but rejects characters that could
+    be used for command injection (semicolons, pipes, redirects,
+    subshells, variable expansion, backslashes).
+
+    Returns the unchanged path if safe. Raises SFTPError if dangerous.
+    """
+    if ".." in path:
+        raise SFTPError(f"Directory traversal not allowed in path: {path!r}")
+    if _DANGEROUS_PATH_CHARS.search(path):
+        raise SFTPError(
+            f"Invalid characters in path: {path!r}. "
+            "Paths must not contain shell metacharacters (; & | ( ) `{ } $ \\)."
+        )
+    if "\n" in path:
+        raise SFTPError(f"Newline not allowed in path: {path!r}")
+    return path
 
 
 class SFTPClientManager:
@@ -667,6 +692,8 @@ class SFTPAPI:
         """
         import time
 
+        _validate_path(remote_path)
+
         manager = self._get_manager()
         _ = manager.sftp
         transport = manager._transport
@@ -674,7 +701,10 @@ class SFTPAPI:
             raise SFTPError("SFTP transport not connected")
 
         channel = transport.open_session()
-        channel.setblocking(False)
+        # Use blocking mode with a timeout instead of setblocking(False) + sleep
+        # polling, which adds up to 100ms latency per data chunk.
+        channel.setblocking(True)
+        channel.settimeout(1.0)
         # Start tail in background, get PID on stdout.
         # Do NOT quote remote_path so shell glob patterns are expanded.
         cmd = f"tail -f {remote_path} 2>&1 & echo $!"
@@ -685,25 +715,26 @@ class SFTPAPI:
         # Stream output; extract PID from first line
         try:
             while not channel.closed:
-                if channel.recv_ready():
+                try:
                     data = channel.recv(65536)
-                    if not data:
-                        break
-                    text = data.decode(encoding, errors="replace")
+                except (TimeoutError, OSError):
+                    # socket.timeout / channel timeout — loop back to check .closed
+                    continue
+                if not data:
+                    break
+                text = data.decode(encoding, errors="replace")
 
-                    if first_chunk:
-                        first_chunk = False
-                        # First line is the PID, rest is tail output
-                        parts = text.split("\n", 1)
-                        tail_pid = parts[0].strip()
-                        if len(parts) > 1:
-                            sys.stdout.write(parts[1])
-                            sys.stdout.flush()
-                    else:
-                        sys.stdout.write(text)
+                if first_chunk:
+                    first_chunk = False
+                    # First line is the PID, rest is tail output
+                    parts = text.split("\n", 1)
+                    tail_pid = parts[0].strip()
+                    if len(parts) > 1:
+                        sys.stdout.write(parts[1])
                         sys.stdout.flush()
                 else:
-                    time.sleep(0.1)
+                    sys.stdout.write(text)
+                    sys.stdout.flush()
         except KeyboardInterrupt:
             pass
 
@@ -717,6 +748,10 @@ class SFTPAPI:
         """
         import time
 
+        # Validate PID is numeric to prevent command injection
+        if not tail_pid or not str(tail_pid).isdigit():
+            raise SFTPError(f"Invalid tail PID: {tail_pid!r} (must be numeric)")
+
         manager = self._get_manager()
         _ = manager.sftp
         transport = manager._transport
@@ -724,15 +759,13 @@ class SFTPAPI:
             raise SFTPError("SFTP transport not connected")
 
         kill_ch = transport.open_session()
-        kill_ch.setblocking(False)
+        kill_ch.setblocking(True)
+        kill_ch.settimeout(2.0)
         kill_ch.exec_command(f"kill {tail_pid} 2>/dev/null")
         try:
-            for _ in range(20):
-                if kill_ch.recv_ready():
-                    kill_ch.recv(65536)
-                if kill_ch.exit_status_ready():
-                    break
-                time.sleep(0.05)
+            kill_ch.recv_exit_status()
+        except Exception:
+            pass
         finally:
             kill_ch.close()
 
@@ -903,19 +936,24 @@ def _copy_recursive(sftp, src: str, dest: str):
         if dest_parent:
             _mkdir_recursive(sftp, dest_parent)
 
-        # Use SpooledTemporaryFile to avoid OOM on large files:
-        # small files stay in memory, large ones spill to disk.
+        # Use a temporary file for streaming copy:
+        # SpooledTemporaryFile buffers in memory then spills to disk,
+        # but putfo() re-reads the entire file. Using sftp.get()/sftp.put()
+        # with a real temp file lets paramiko stream in chunks directly.
         import tempfile
 
-        buf = tempfile.SpooledTemporaryFile(max_size=10 * 1024 * 1024)
+        tmp_fd, tmp_path = tempfile.mkstemp()
         try:
-            sftp.getfo(src, buf)
-            buf.seek(0)
-            sftp.putfo(buf, dest)
+            os.close(tmp_fd)
+            sftp.get(src, tmp_path)
+            sftp.put(tmp_path, dest)
         except IOError as e:
             raise SFTPError(f"Failed to copy '{src}' to '{dest}': {e}")
         finally:
-            buf.close()
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 def _remove_recursive(sftp, path: str):

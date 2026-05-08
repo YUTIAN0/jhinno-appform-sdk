@@ -314,3 +314,19 @@ def build_filter_group(filters: list, logic: str = "and") -> dict:
         "filters": filters,
         "logic": logic,
     }
+
+
+def compare_versions(v1: str, v2: str) -> int:
+    """Compare version strings. Returns -1, 0, 1."""
+    parts1 = [int(x) for x in v1.split(".")]
+    parts2 = [int(x) for x in v2.split(".")]
+    for p1, p2 in zip(parts1, parts2):
+        if p1 < p2:
+            return -1
+        if p1 > p2:
+            return 1
+    if len(parts1) < len(parts2):
+        return -1
+    if len(parts1) > len(parts2):
+        return 1
+    return 0
