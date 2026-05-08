@@ -90,40 +90,58 @@ def _check_jcluster() -> bool:
 
 
 def convert_windows_path(file_path: str, disk_mapping: Dict[str, str]) -> str:
-    """
-    Convert a Windows path to Linux path using disk mapping config.
+    r"""Convert a file path to its Linux equivalent using disk mapping config.
+
+    Works regardless of platform — on Linux this still converts Windows-style
+    paths (e.g. ``S:\\project\\file.sim``) to Linux paths when a mapping exists.
+
+    Handles:
+    * Windows drive-letter paths with ``X:\\`` or ``X:/`` prefix (any platform)
+    * Linux paths whose prefix matches a mapped Linux path (returned as-is)
+    * Absolute Linux paths outside the mapped area (returned as-is)
+    * Relative paths — when CWD is under a mapped Linux prefix the path is
+      resolved against that prefix instead of the local filesystem
 
     Args:
-        file_path: Windows file path (e.g., S:\\project\\file.sim)
-        disk_mapping: Drive letter mapping (e.g., {'S:': '/apps'})
+        file_path: File path (Windows-style, Linux-style, or relative)
+        disk_mapping: Drive letter mapping (e.g. ``{'S:': '/apps'}``)
 
     Returns:
         Converted Linux path
     """
-    if not file_path:
+    if not file_path or not disk_mapping:
         return file_path
 
-    is_windows = platform.system() == "Windows"
-    if not is_windows:
-        return file_path
-
-    normalized = os.path.normpath(file_path)
-
-    if len(normalized) >= 2 and normalized[1] == ":":
-        drive = normalized[:2].upper()
+    # --- 0. Windows drive-letter path detection (any platform) ---
+    # This must come BEFORE os.path.isabs() because on Linux abspath() doesn't
+    # recognize Windows drive letters and would mangle them entirely.
+    if len(file_path) >= 3 and file_path[1] == ":" and file_path[2:3] in ("\\", "/"):
+        drive = file_path[:2].upper()
         if drive in disk_mapping:
             linux_base = disk_mapping[drive]
-            relative = normalized[2:].lstrip("\\").replace("\\", "/")
+            after_drive = file_path[2:].lstrip("\\/")
+            relative = after_drive.replace("\\", "/")
             linux_path = (
                 linux_base.rstrip("/") + "/" + relative if relative else linux_base
             )
             print(f"  Path conversion: {file_path} -> {linux_path}")
             return linux_path
-        else:
-            print(f"  Warning: no mapping for drive {drive}")
-            return file_path
 
-    return file_path.replace("\\", "/")
+    # --- 1. Absolute Linux path (already on mapped drive or elsewhere) ---
+    if os.path.isabs(file_path):
+        return file_path
+
+    # --- 2. Relative path — check if CWD is under a mapped Linux prefix ---
+    cwd = os.getcwd()
+    for drive, linux_path in disk_mapping.items():
+        linux_prefix = linux_path.rstrip("/")
+        if cwd == linux_prefix or cwd.startswith(linux_prefix + "/"):
+            converted = linux_prefix + "/" + file_path.lstrip("/\\")
+            print(f"  Path conversion (mapped CWD): {file_path} -> {converted}")
+            return converted
+
+    # --- 3. Relative path, CWD not on mapped drive — resolve locally ---
+    return os.path.abspath(file_path)
 
 
 # ---------------------------------------------------------------------------
@@ -132,19 +150,62 @@ def convert_windows_path(file_path: str, disk_mapping: Dict[str, str]) -> str:
 
 
 def _is_path_mapped(file_path: str, disk_mapping: Dict[str, str]) -> bool:
-    """Check if a file path is already on a remote (mapped) path.
+    r"""Check if a file path is already on a remote (mapped) path.
 
     Uses the values of disk_mapping (e.g. {'S:': '/apps'}) as the set of
     remote prefixes.  If *file_path* starts with any of them it is already
     on the server and does not need uploading.
+
+    Handles both Windows drive-letter paths (``S:\home\...\file.k``) and
+    Linux-style paths (``/apps/home/.../file.k``), including relative paths
+    that are resolved to absolute via :func:`os.path.abspath`.
     """
     if not disk_mapping or not file_path:
         return False
-    remote_prefixes = [p.rstrip("/") for p in disk_mapping.values()]
-    for prefix in remote_prefixes:
-        if file_path.startswith(prefix + "/") or file_path == prefix:
+
+    is_windows = platform.system() == "Windows"
+    abs_path = os.path.abspath(file_path) if is_windows else os.path.abspath(file_path)
+
+    # Build a list of (win_prefix, linux_prefix) pairs
+    for drive, linux_path in disk_mapping.items():
+        win_prefix = drive[:2].upper()  # e.g. "S:"
+        linux_prefix = linux_path.rstrip("/")
+
+        # Windows mapped drive: S:\home\... → starts with "S:"
+        if abs_path[:2].upper() == win_prefix:
             return True
+
+        # Linux-style path: /apps/home/... → starts with "/apps"
+        if abs_path.startswith(linux_prefix + "/") or abs_path == linux_prefix:
+            return True
+
     return False
+
+
+def _resolve_remote_path(file_path: str, disk_mapping: Dict[str, str]) -> Optional[str]:
+    r"""Resolve a local path to its remote equivalent if it's on a mapped drive.
+
+    Returns the remote path (e.g. ``/apps/home/user/test.k``) or ``None`` if
+    the file is not on a mapped drive (i.e. it needs uploading).
+    """
+    if not disk_mapping or not file_path:
+        return None
+
+    is_windows = platform.system() == "Windows"
+    abs_path = os.path.abspath(file_path) if is_windows else os.path.abspath(file_path)
+
+    for drive, linux_path in disk_mapping.items():
+        win_prefix = drive[:2].upper()  # e.g. "S:"
+        linux_prefix = linux_path.rstrip("/")
+        # Match Windows mapped drive path (e.g. S:\home\user\test.k)
+        if abs_path[:2].upper() == win_prefix:
+            relative = abs_path[2:].lstrip("\\").replace("\\", "/")
+            return linux_prefix + "/" + relative if relative else linux_prefix
+        # Match Linux-style path on mapped drive (e.g. /apps/home/user/test.k)
+        if abs_path.startswith(linux_prefix + "/") or abs_path == linux_prefix:
+            return abs_path
+
+    return None
 
 
 def _get_default_upload_path() -> str:
@@ -594,10 +655,15 @@ def _apply_path_conversion(
 ) -> Dict[str, str]:
     """Convert Windows paths in upload-type parameters.
 
-    Handles comma-separated multi-file values.
+    Handles comma-separated multi-file values.  Must work on any platform —
+    the user may be running the SDK on Linux but passing Windows-style paths.
+
+    The key invariant: **drive-letter paths (e.g. ``S:\\\\...``) are detected
+    and converted BEFORE any call to :func:`os.path.abspath`**, because on Linux
+    ``abspath()`` doesn't recognize Windows drive letters and would corrupt them
+    (e.g. ``S:\\foo`` → ``/cwd/S:\\foo``).
     """
-    is_windows = platform.system() == "Windows"
-    if not is_windows or not disk_mapping:
+    if not disk_mapping:
         return overrides
 
     upload_params = {
@@ -620,22 +686,48 @@ def _apply_path_conversion(
         "JH_SCRIPT_FILE",
     }
 
+    def _convert_one(part: str) -> str:
+        """Convert a single path segment.
+
+        Drive-letter paths are checked first — on Linux ``os.path.isabs()``
+        returns ``False`` for ``S:\\...`` so without this the code would
+        fall through to ``os.path.abspath()`` and corrupt the path.
+        """
+        # 1. Windows drive-letter path (X:\\ or X:/) — convert before any
+        #    os.path.isabs()/abspath() call because those on Linux would
+        #    mangle Windows paths (S:\foo → /cwd/S:\foo).
+        if len(part) >= 3 and part[1] == ":" and part[2:3] in ("\\", "/"):
+            drive = part[:2].upper()
+            if drive in disk_mapping:
+                linux_base = disk_mapping[drive]
+                after_drive = part[2:].lstrip("\\/")
+                relative = after_drive.replace("\\", "/")
+                linux_path = (
+                    linux_base.rstrip("/") + "/" + relative if relative else linux_base
+                )
+                print(f"  Path conversion: {part} -> {linux_path}")
+                return linux_path
+
+        # 2. Absolute Linux path — return as-is
+        if os.path.isabs(part):
+            return part
+
+        # 3. Relative path — resolve relative to CWD if it's under a mapped
+        #    Linux prefix, otherwise resolve locally
+        cwd = os.getcwd()
+        for drive, linux_path in disk_mapping.items():
+            linux_prefix = linux_path.rstrip("/")
+            if cwd == linux_prefix or cwd.startswith(linux_prefix + "/"):
+                converted = linux_prefix + "/" + part.lstrip("/\\")
+                print(f"  Path conversion (mapped CWD): {part} -> {converted}")
+                return converted
+        return os.path.abspath(part)
+
     result = {}
     for key, value in overrides.items():
         if key in upload_params and value:
-            # Handle comma-separated multi-file values
             parts = [p.strip() for p in value.split(",")]
-            new_parts = []
-            for part in parts:
-                converted = convert_windows_path(part, disk_mapping)
-                # convert_windows_path already converts Windows paths to Linux absolute paths.
-                # Don't use os.path.isabs() here — on Windows it can't recognize Linux paths.
-                # Only fall back to os.path.abspath() for truly relative non-Windows paths.
-                if not (converted.startswith("/") or (len(converted) >= 2 and converted[1] == ":")):
-                    if not os.path.isabs(converted):
-                        converted = os.path.abspath(converted)
-                new_parts.append(converted)
-            result[key] = ",".join(new_parts)
+            result[key] = ",".join(_convert_one(p) for p in parts)
         else:
             result[key] = value
 
