@@ -97,10 +97,10 @@ def convert_windows_path(file_path: str, disk_mapping: Dict[str, str]) -> str:
 
     Handles:
     * Windows drive-letter paths with ``X:\\`` or ``X:/`` prefix (any platform)
-    * Linux paths whose prefix matches a mapped Linux path (returned as-is)
-    * Absolute Linux paths outside the mapped area (returned as-is)
-    * Relative paths — when CWD is under a mapped Linux prefix the path is
-      resolved against that prefix instead of the local filesystem
+    * Absolute Linux paths (returned as-is)
+    * Relative paths — resolved against the mapped Linux prefix when the
+      current working directory (or the resolved absolute path) is on a
+      mapped drive
 
     Args:
         file_path: File path (Windows-style, Linux-style, or relative)
@@ -113,8 +113,6 @@ def convert_windows_path(file_path: str, disk_mapping: Dict[str, str]) -> str:
         return file_path
 
     # --- 0. Windows drive-letter path detection (any platform) ---
-    # This must come BEFORE os.path.isabs() because on Linux abspath() doesn't
-    # recognize Windows drive letters and would mangle them entirely.
     if len(file_path) >= 3 and file_path[1] == ":" and file_path[2:3] in ("\\", "/"):
         drive = file_path[:2].upper()
         if drive in disk_mapping:
@@ -126,22 +124,39 @@ def convert_windows_path(file_path: str, disk_mapping: Dict[str, str]) -> str:
             )
             print(f"  Path conversion: {file_path} -> {linux_path}")
             return linux_path
+        # Unmapped drive letter — return as-is to avoid os.path.abspath() corrupting it
+        return file_path
 
     # --- 1. Absolute Linux path (already on mapped drive or elsewhere) ---
     if os.path.isabs(file_path):
         return file_path
 
-    # --- 2. Relative path — check if CWD is under a mapped Linux prefix ---
-    cwd = os.getcwd()
-    for drive, linux_path in disk_mapping.items():
-        linux_prefix = linux_path.rstrip("/")
+    # --- 2. Relative path — resolve against mapped drive ---
+    # On Windows, os.path.abspath() gives e.g. S:\home\user\test.k.
+    # We need to detect the drive letter in the CWD or in the resolved path
+    # and map it through disk_mapping before falling through to plain abspath().
+    abs_path = os.path.abspath(file_path)
+    for drive_letter, linux_base in disk_mapping.items():
+        # Check if the resolved absolute path starts with the mapped drive
+        win_prefix = drive_letter[:2].upper()  # e.g. "S:"
+        if len(abs_path) >= 3 and abs_path[1] == ":" and abs_path[:2].upper() == win_prefix:
+            linux_prefix = linux_base.rstrip("/")
+            after_drive = abs_path[2:].lstrip("\\/")
+            relative = after_drive.replace("\\", "/")
+            linux_path = linux_prefix + "/" + relative if relative else linux_prefix
+            print(f"  Path conversion: {file_path} -> {linux_path}")
+            return linux_path
+        # Also check if CWD is under the Linux prefix (e.g. running on Linux
+        # from /apps/home/user/)
+        cwd = os.getcwd()
+        linux_prefix = linux_base.rstrip("/")
         if cwd == linux_prefix or cwd.startswith(linux_prefix + "/"):
             converted = linux_prefix + "/" + file_path.lstrip("/\\")
             print(f"  Path conversion (mapped CWD): {file_path} -> {converted}")
             return converted
 
-    # --- 3. Relative path, CWD not on mapped drive — resolve locally ---
-    return os.path.abspath(file_path)
+    # --- 3. No mapping found — return locally resolved path ---
+    return abs_path
 
 
 # ---------------------------------------------------------------------------
@@ -686,48 +701,11 @@ def _apply_path_conversion(
         "JH_SCRIPT_FILE",
     }
 
-    def _convert_one(part: str) -> str:
-        """Convert a single path segment.
-
-        Drive-letter paths are checked first — on Linux ``os.path.isabs()``
-        returns ``False`` for ``S:\\...`` so without this the code would
-        fall through to ``os.path.abspath()`` and corrupt the path.
-        """
-        # 1. Windows drive-letter path (X:\\ or X:/) — convert before any
-        #    os.path.isabs()/abspath() call because those on Linux would
-        #    mangle Windows paths (S:\foo → /cwd/S:\foo).
-        if len(part) >= 3 and part[1] == ":" and part[2:3] in ("\\", "/"):
-            drive = part[:2].upper()
-            if drive in disk_mapping:
-                linux_base = disk_mapping[drive]
-                after_drive = part[2:].lstrip("\\/")
-                relative = after_drive.replace("\\", "/")
-                linux_path = (
-                    linux_base.rstrip("/") + "/" + relative if relative else linux_base
-                )
-                print(f"  Path conversion: {part} -> {linux_path}")
-                return linux_path
-
-        # 2. Absolute Linux path — return as-is
-        if os.path.isabs(part):
-            return part
-
-        # 3. Relative path — resolve relative to CWD if it's under a mapped
-        #    Linux prefix, otherwise resolve locally
-        cwd = os.getcwd()
-        for drive, linux_path in disk_mapping.items():
-            linux_prefix = linux_path.rstrip("/")
-            if cwd == linux_prefix or cwd.startswith(linux_prefix + "/"):
-                converted = linux_prefix + "/" + part.lstrip("/\\")
-                print(f"  Path conversion (mapped CWD): {part} -> {converted}")
-                return converted
-        return os.path.abspath(part)
-
     result = {}
     for key, value in overrides.items():
         if key in upload_params and value:
             parts = [p.strip() for p in value.split(",")]
-            result[key] = ",".join(_convert_one(p) for p in parts)
+            result[key] = ",".join(convert_windows_path(p, disk_mapping) for p in parts)
         else:
             result[key] = value
 
