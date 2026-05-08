@@ -448,7 +448,7 @@ def compute_cat(
 # ---------------------------------------------------------------------------
 
 # Characters/patterns that would allow command injection in shell commands
-_DANGEROUS_PATH_CHARS = re.compile(r"[;&|`(){}$\\><]")
+_DANGEROUS_PATH_CHARS = re.compile(r"""[;&|`(){}$\\><'" ]""")
 
 
 def _validate_path(path: str) -> str:
@@ -456,7 +456,7 @@ def _validate_path(path: str) -> str:
 
     Allows glob patterns (* ? [...]) but rejects characters that could
     be used for command injection (semicolons, pipes, redirects,
-    subshells, variable expansion, backslashes).
+    subshells, variable expansion, backslashes, quotes, spaces).
 
     Returns the unchanged path if safe. Raises ComputeError if dangerous.
     """
@@ -465,9 +465,10 @@ def _validate_path(path: str) -> str:
     if _DANGEROUS_PATH_CHARS.search(path):
         raise ComputeError(
             f"Invalid characters in path: {path!r}. "
-            "Paths must not contain shell metacharacters (; & | ( ) `{ } $ \\)."
+            "Paths must not contain shell metacharacters or spaces "
+            "(; & | ( ) `{ } $ \\ ' \" space)."
         )
-    if path.startswith("\n") or "\n" in path:
+    if "\n" in path:
         raise ComputeError(f"Newline not allowed in path: {path!r}")
     return path
 

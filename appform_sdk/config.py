@@ -348,8 +348,12 @@ class Config:
         else:
             config_path = cls.get_default_config_path()
 
-        # Create directory if it doesn't exist
+        # Create directory with restricted permissions (owner-only)
         config_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            config_path.parent.chmod(0o700)
+        except OSError:
+            pass
 
         # Load existing config to preserve unset fields
         existing = {}
@@ -409,6 +413,10 @@ class Config:
 
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
+        try:
+            config_path.chmod(0o600)
+        except OSError:
+            pass
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""

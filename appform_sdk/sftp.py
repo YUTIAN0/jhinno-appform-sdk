@@ -30,7 +30,7 @@ def _require_paramiko():
 from .exceptions import SFTPError
 
 # Characters/patterns that would allow command injection in shell commands
-_DANGEROUS_PATH_CHARS = re.compile(r"[;&|`(){}$\\><]")
+_DANGEROUS_PATH_CHARS = re.compile(r"""[;&|`(){}$\\><'" ]""")
 
 
 def _validate_path(path: str) -> str:
@@ -38,7 +38,7 @@ def _validate_path(path: str) -> str:
 
     Allows glob patterns (* ? [...]) but rejects characters that could
     be used for command injection (semicolons, pipes, redirects,
-    subshells, variable expansion, backslashes).
+    subshells, variable expansion, backslashes, quotes, spaces).
 
     Returns the unchanged path if safe. Raises SFTPError if dangerous.
     """
@@ -47,7 +47,8 @@ def _validate_path(path: str) -> str:
     if _DANGEROUS_PATH_CHARS.search(path):
         raise SFTPError(
             f"Invalid characters in path: {path!r}. "
-            "Paths must not contain shell metacharacters (; & | ( ) `{ } $ \\)."
+            "Paths must not contain shell metacharacters or spaces "
+            "(; & | ( ) `{ } $ \\ ' \" space)."
         )
     if "\n" in path:
         raise SFTPError(f"Newline not allowed in path: {path!r}")
@@ -324,7 +325,7 @@ class SFTPAPI:
         local_path: Optional[str] = None,
         on_progress: Optional[Callable] = None,
         chunk_size: int = 104857600,
-    ) -> bytes:
+    ) -> Optional[bytes]:
         sftp = self._get_manager().sftp
         fname = Path(remote_path).name
 
@@ -1031,7 +1032,7 @@ def _read_tail(
         chunk = buf.getvalue()
         lines = chunk.decode(encoding, errors="replace").splitlines()
         if read_start > 0:
-            lines[0] = ""
+            lines.pop(0)  # discard partial first line
         collected = lines + collected
         pos = read_start
 
