@@ -115,6 +115,8 @@ export APPFORM_TIMEOUT="30"  # Optional, default 30
 export APPFORM_VERIFY_SSL="false"  # Optional, default true
 export APPFORM_EXTENSIONS_DIR="/path/to/extensions"  # Optional
 export APPFORM_AUTO_ADD_HOST_KEY="true"  # Optional, auto-accept SSH host keys (see below)
+export APPFORM_HTTP_PROXY="http://proxy:8080"  # Optional, proxy for API requests
+export APPFORM_SFTP_PROXY="socks5://proxy:1080"  # Optional, proxy for SFTP/SSH connections
 ```
 
 > **Security**: The config file `~/.appform/config.json` is automatically created with `0600` permissions (owner-only read/write). If SSH host key verification is needed, see the [SSH Host Key Verification](#ssh-host-key-verification) section.

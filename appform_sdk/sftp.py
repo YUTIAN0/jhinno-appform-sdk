@@ -70,6 +70,7 @@ def _open_proxy_socket(proxy_url: str, target_host: str, target_port: int):
         proxy_auth = None
         if parsed.username:
             import base64
+
             proxy_auth = base64.b64encode(
                 f"{parsed.username}:{parsed.password or ''}".encode()
             ).decode()

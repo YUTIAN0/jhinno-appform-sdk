@@ -181,12 +181,8 @@ class Config:
             "auto_add_host_key",
             default=False,
         )
-        self.http_proxy = self._get_value(
-            http_proxy, self.ENV_HTTP_PROXY, "http_proxy"
-        )
-        self.sftp_proxy = self._get_value(
-            sftp_proxy, self.ENV_SFTP_PROXY, "sftp_proxy"
-        )
+        self.http_proxy = self._get_value(http_proxy, self.ENV_HTTP_PROXY, "http_proxy")
+        self.sftp_proxy = self._get_value(sftp_proxy, self.ENV_SFTP_PROXY, "sftp_proxy")
 
     def _get_value(
         self,
