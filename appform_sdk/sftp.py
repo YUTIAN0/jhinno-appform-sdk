@@ -27,7 +27,7 @@ def _require_paramiko():
     return paramiko
 
 
-from .exceptions import SFTPError
+from .exceptions import SFTPError  # noqa: E402
 
 # Characters/patterns that would allow command injection in shell commands
 _DANGEROUS_PATH_CHARS = re.compile(r"""[;&|`(){}$\\><'" ]""")
@@ -221,7 +221,7 @@ class SFTPAPI:
 
         try:
             if on_progress:
-                file_size = file_path.stat().st_size
+                sftp.stat(remote_path)  # verify exists
 
                 def callback(transferred, total, _fname=fname):
                     on_progress(_fname, transferred, total)
@@ -288,7 +288,7 @@ class SFTPAPI:
                 remote_full = f"{target_dir}/{fname}"
                 try:
                     if on_progress:
-                        file_size = file_path.stat().st_size
+                        sftp.stat(str(file_path))  # verify exists
 
                         def cb(transferred, total_b, _fname=fname):
                             on_progress(_fname, transferred, total_b)
@@ -331,7 +331,7 @@ class SFTPAPI:
 
         # Get remote file size for progress
         try:
-            remote_size = sftp.stat(remote_path).st_size
+            sftp.stat(remote_path)
         except IOError:
             raise FileNotFoundError(f"Remote file not found: {remote_path}")
 
@@ -491,7 +491,7 @@ class SFTPAPI:
 
         # Verify source exists
         try:
-            src_attr = sftp.stat(src_path)
+            sftp.stat(src_path)
         except IOError:
             raise FileNotFoundError(f"Source not found: {src_path}")
 
@@ -693,7 +693,6 @@ class SFTPAPI:
             Tuple of (tail_pid, channel) for caller to clean up.
             tail_pid may be None if command failed.
         """
-        import time
 
         _validate_path(remote_path)
 
@@ -749,7 +748,6 @@ class SFTPAPI:
         Args:
             tail_pid: PID returned by tailf()
         """
-        import time
 
         # Validate PID is numeric to prevent command injection
         if not tail_pid or not str(tail_pid).isdigit():

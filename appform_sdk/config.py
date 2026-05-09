@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import urlparse
 
 
 class Config:

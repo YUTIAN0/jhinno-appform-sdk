@@ -5,7 +5,6 @@ Tests for appform_sdk.jobs — JobsAPI.
 import json
 from unittest.mock import MagicMock
 
-import pytest
 
 from appform_sdk.jobs import JobsAPI
 

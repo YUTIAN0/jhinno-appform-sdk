@@ -3,7 +3,6 @@
 import argparse
 
 from appform_sdk import __version__
-from appform_sdk.cli.common import SubmitHelpFormatter
 
 
 def create_parser() -> argparse.ArgumentParser:

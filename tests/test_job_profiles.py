@@ -4,7 +4,6 @@ Tests for job profile management
 
 import os
 import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest

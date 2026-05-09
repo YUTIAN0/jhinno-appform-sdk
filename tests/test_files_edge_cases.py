@@ -1,6 +1,6 @@
 """Tests for files.py edge cases - move/copy cross-directory operations."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -98,7 +98,7 @@ class TestCrossDirectoryMove:
         api.rename = MagicMock(return_value={"result": True})
         api.delete = MagicMock(return_value={"result": True})
 
-        result = api.move("/a/b.txt", "/x/y/z/b.txt")
+        api.move("/a/b.txt", "/x/y/z/b.txt")
         # dest_parts = ["x", "y", "z", "b.txt"]
         # dest_name = "b.txt", dest_parent = "/x/y/z"
         # src_name = "b.txt", so no rename needed
@@ -126,7 +126,7 @@ class TestCopy:
         """Test HTTP API copy."""
         api = _make_files_api()
 
-        result = api.copy("/src/f.txt", "/dst/")
+        api.copy("/src/f.txt", "/dst/")
         api._client.put.assert_called_once()
         call_kwargs = api._client.put.call_args
         assert call_kwargs[1]["json"]["sourceFileName"] == "/src/f.txt"
@@ -137,7 +137,7 @@ class TestCopy:
         api = _make_files_api()
         api._client.sftp.copy = MagicMock(return_value={"result": True})
 
-        result = api.copy("/src/f.txt", "/dst/", transfer_method="sftp")
+        api.copy("/src/f.txt", "/dst/", transfer_method="sftp")
         api._client.sftp.copy.assert_called_once()
 
 
@@ -158,7 +158,7 @@ class TestDelete:
         api = _make_files_api()
         api._client.sftp.delete = MagicMock(return_value={"result": True})
 
-        result = api.delete("/f.txt", transfer_method="sftp")
+        api.delete("/f.txt", transfer_method="sftp")
         api._client.sftp.delete.assert_called_once()
 
 
@@ -180,7 +180,7 @@ class TestMkdir:
         api = _make_files_api()
         api._client.sftp.mkdir = MagicMock(return_value={"result": True})
 
-        result = api.mkdir("/new/dir", transfer_method="sftp")
+        api.mkdir("/new/dir", transfer_method="sftp")
         api._client.sftp.mkdir.assert_called_once()
 
 
@@ -203,7 +203,7 @@ class TestList:
         api = _make_files_api()
         api._client.sftp.list = MagicMock(return_value={"data": []})
 
-        result = api.list("/path", transfer_method="sftp")
+        api.list("/path", transfer_method="sftp")
         api._client.sftp.list.assert_called_once()
 
     def test_list_all_http_empty(self):
@@ -242,7 +242,7 @@ class TestList:
         api = _make_files_api()
         api._client.sftp.list_all = MagicMock(return_value=[{"id": 1}])
 
-        result = api.list_all("/path", transfer_method="sftp")
+        api.list_all("/path", transfer_method="sftp")
         api._client.sftp.list_all.assert_called_once_with(path="/path", hidden=False)
 
 
@@ -254,7 +254,7 @@ class TestUploadDownload:
         api = _make_files_api()
         api._client.sftp.upload = MagicMock(return_value={"result": True})
 
-        result = api.upload(
+        api.upload(
             "/local/f.txt",
             "/remote/",
             on_progress=lambda *a: None,
@@ -274,7 +274,7 @@ class TestUploadDownload:
         api = _make_files_api()
         api._client.sftp.download = MagicMock(return_value=b"data")
 
-        result = api.download("/remote/f.txt", transfer_method="sftp")
+        api.download("/remote/f.txt", transfer_method="sftp")
         api._client.sftp.download.assert_called_once()
 
     def test_download_directory_sftp(self):
@@ -282,7 +282,7 @@ class TestUploadDownload:
         api = _make_files_api()
         api._client.sftp.download_directory = MagicMock(return_value=[])
 
-        result = api.download_directory(
+        api.download_directory(
             "/remote/dir", "/local/dir", transfer_method="sftp"
         )
         api._client.sftp.download_directory.assert_called_once()

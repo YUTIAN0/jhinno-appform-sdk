@@ -5,10 +5,9 @@ Covers: common.py, auth.py, config.py, sftp.py, compute.py,
         utils.py, client.py, exceptions.py.
 """
 
-import json
 import os
 import tempfile
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -57,7 +56,7 @@ class TestRemoteFileExists:
         client.files.list_all.side_effect = FileNotFoundError("no such dir")
         assert remote_file_exists(client, "/remote/dir", "target.txt") is False
 
-    def test_returns_false_when_list_all_raises(self):
+    def test_returns_false_when_list_all_raises_same_dir(self):
         from appform_sdk.cli.common import remote_file_exists
 
         client = MagicMock()
@@ -103,7 +102,7 @@ class TestCheckIsDirectory:
         client.files.list.return_value = {"data": "just-a-string"}
         assert check_is_directory(client, "http", "/remote/dir") is False
 
-    def test_http_with_exception_returns_false(self):
+    def test_http_with_scalar_data_again(self):
         from appform_sdk.cli.common import check_is_directory
 
         client = MagicMock()
@@ -676,11 +675,11 @@ class TestAPIErrorStr:
 
     def test_str_includes_status_code(self):
         err = APIError("Not found", status_code=404)
-        assert str(err) == "[400] Not found"
-
-    def test_str_includes_status_code(self):
-        err = APIError("Not found", status_code=404)
         assert str(err) == "[404] Not found"
+
+    def test_str_includes_status_code_400(self):
+        err = APIError("Bad request", status_code=400)
+        assert str(err) == "[400] Bad request"
 
     def test_str_without_status_code(self):
         err = APIError("Server error", status_code=None)

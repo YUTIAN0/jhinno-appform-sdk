@@ -22,7 +22,6 @@
 import argparse
 import json
 import os
-import platform
 import subprocess
 import sys
 import textwrap
@@ -641,7 +640,6 @@ def _build_parser(
 
 def _add_params(group, params):
     """Add ParameterDef objects as argparse arguments."""
-    from .job_profiles import ParameterDef
 
     for pd in params:
         arg_options = []
@@ -899,13 +897,13 @@ def main(args=None):
     if not app_id and not show_help:
         supported = [a["app_id"] for a in pm.list_apps()]
         print(f"Supported applications: {', '.join(supported)}")
-        print(f"\nUsage:")
-        print(f"  job_submit -a <app> [options]           # Submit a job")
+        print("\nUsage:")
+        print("  job_submit -a <app> [options]           # Submit a job")
         print(
-            f"  job_submit -a <app> [options] --wait    # Submit and wait for completion"
+            "  job_submit -a <app> [options] --wait    # Submit and wait for completion"
         )
-        print(f"  job_submit -l                           # List applications")
-        print(f"  job_submit -a <app> -h                  # Show app-specific help")
+        print("  job_submit -l                           # List applications")
+        print("  job_submit -a <app> -h                  # Show app-specific help")
         return
 
     # --- Pass 2: build full parser with app-specific args ---
@@ -1086,7 +1084,7 @@ def main(args=None):
             if code == 200:
                 job_data = result.get("data", [{}])
                 job_id = job_data[0].get("jobid", "Unknown") if job_data else "Unknown"
-                print(f"Job submitted successfully!")
+                print("Job submitted successfully!")
                 print(f"  Application: {app_id}")
                 print(f"  Job ID: {job_id}")
                 print(f"  Parameters: {params_str}")

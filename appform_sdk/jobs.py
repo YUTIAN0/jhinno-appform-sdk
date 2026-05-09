@@ -4,7 +4,6 @@ Jobs API module for Appform SDK
 
 import json
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote
 
 
 class JobsAPI:

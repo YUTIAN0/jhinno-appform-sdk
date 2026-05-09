@@ -6,7 +6,6 @@ Loads application parameter definitions from YAML configuration files
 payloads compatible with the Appform API.
 """
 
-import json
 import os
 import re
 from pathlib import Path

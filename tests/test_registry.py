@@ -141,7 +141,10 @@ class TestAPIRegistry:
 
     def test_register_handler(self):
         reg = APIRegistry()
-        handler = lambda: "result"
+
+        def handler():
+            return "result"
+
         reg.register_handler("custom", handler)
         assert reg.get_handler("custom") is handler
 

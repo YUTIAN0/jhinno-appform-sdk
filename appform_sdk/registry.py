@@ -4,7 +4,7 @@ API Registry for managing and extending API endpoints
 
 import copy
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional
 
 from .utils import compare_versions as _compare_versions
 

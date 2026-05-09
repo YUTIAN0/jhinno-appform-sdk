@@ -3,7 +3,7 @@
 Example usage of Appform SDK
 """
 
-from appform_sdk import AppformClient, Config, FileInfo, Job, PaginatedResult, Session
+from appform_sdk import AppformClient, Config, Job, PaginatedResult
 
 
 def config_example():

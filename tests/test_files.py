@@ -5,8 +5,6 @@ parse_size, _is_remote_path, _resolve_remote_path, _ProgressTracker.
 
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 

@@ -2,10 +2,8 @@
 
 import argparse
 import sys
-from pathlib import Path
 from typing import Optional
 
-from appform_sdk import __version__
 from appform_sdk.client import AppformClient
 from appform_sdk.config import Config
 from appform_sdk.formatters import format_output

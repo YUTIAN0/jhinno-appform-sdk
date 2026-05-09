@@ -2,7 +2,6 @@
 Tests for appform_sdk.models — all data model classes.
 """
 
-import pytest
 
 from appform_sdk.models import (
     ApiResponse,

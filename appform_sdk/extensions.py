@@ -11,9 +11,9 @@ Supports:
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
-from .registry import APIRegistry, EndpointDefinition, get_registry
+from .registry import APIRegistry, get_registry
 from .utils import compare_versions as _compare_versions
 
 

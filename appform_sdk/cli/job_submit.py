@@ -36,7 +36,7 @@ def build_submit_parser(pm, app_id, profile, supported):
     """Build a full argparse parser with app-specific parameters."""
     p = argparse.ArgumentParser(
         prog=f"appform jobs submit -a {app_id}",
-        description=f"Universal job submission tool for Appform SDK.",
+        description="Universal job submission tool for Appform SDK.",
         formatter_class=SubmitHelpFormatter,
         epilog=_build_epilog(pm, app_id, profile, supported),
     )
@@ -137,7 +137,7 @@ def _build_epilog(pm, app_id, profile, supported):
     )
     lines.append(f"  appform jobs submit -a {app_id} --dry-run -i /path/to/file.sim")
     lines.append(
-        f"  appform jobs submit -l                                     # list apps"
+        "  appform jobs submit -l                                     # list apps"
     )
     lines.append(
         f"  appform jobs submit -a {app_id} --help                     # this help"
@@ -210,12 +210,12 @@ def handle_jobs_submit(pm, raw_args, output_format):
     if not app_id:
         # No -a given: show generic submit help
         print(f"Supported applications: {', '.join(supported)}")
-        print(f"\nUsage:")
+        print("\nUsage:")
         print(
-            f"  appform jobs submit -a <app> [options]   # Submit with app-specific args"
+            "  appform jobs submit -a <app> [options]   # Submit with app-specific args"
         )
-        print(f"  appform jobs submit -l                   # List all applications")
-        print(f"  appform jobs submit -a <app> --help      # Show app-specific help")
+        print("  appform jobs submit -l                   # List all applications")
+        print("  appform jobs submit -a <app> --help      # Show app-specific help")
         if disk_mapping:
             print("\nWindows path mapping:")
             for drive, path in disk_mapping.items():
@@ -300,7 +300,7 @@ def handle_jobs_submit(pm, raw_args, output_format):
     # --- Dry run ---
     if parsed.dry_run:
         print(f"Application: {app_id} ({profile.name})")
-        print(f"Parameters:")
+        print("Parameters:")
         print(json.dumps(params, indent=2, ensure_ascii=False))
         return
 
@@ -349,7 +349,7 @@ def print_app_params(profile):
             else:
                 name = p.name.lower().replace("jh_", "").replace("_", "-")
                 example_parts.append(f"--{name} VALUE")
-        print(f"\nUsage example:")
+        print("\nUsage example:")
         print(f"  appform jobs submit -a {profile.app_id} {' '.join(example_parts)}")
         print(
             f"  appform jobs submit -a {profile.app_id} --set JH_CAS=/path/to/file --set JH_NCPU=8"

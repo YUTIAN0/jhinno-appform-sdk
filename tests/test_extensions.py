@@ -3,8 +3,7 @@ Tests for extensions system
 """
 
 import json
-import tempfile
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
 

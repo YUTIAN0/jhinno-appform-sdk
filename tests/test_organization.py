@@ -4,7 +4,6 @@ Tests for appform_sdk.organization — OrganizationAPI.
 
 from unittest.mock import MagicMock
 
-import pytest
 
 from appform_sdk.organization import OrganizationAPI
 

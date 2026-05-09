@@ -4,10 +4,7 @@ Tests for appform_sdk.xml2table — XML parsing and export.
 
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pytest
 
 from appform_sdk.xml2table import (
     _KNOWN_CLI_ARGS,

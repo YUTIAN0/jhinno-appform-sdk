@@ -1,6 +1,5 @@
 """Config command handler."""
 
-import sys
 
 from appform_sdk.cli.common import output_result
 from appform_sdk.config import Config

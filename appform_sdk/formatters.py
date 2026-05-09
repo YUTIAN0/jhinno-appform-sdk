@@ -8,7 +8,7 @@ Supports customizable output templates via YAML/JSON configuration.
 import json
 import os
 import re
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 try:
     import yaml
@@ -288,7 +288,7 @@ def get_template(command: str, api_version: str = None) -> Optional[dict]:
     return t
 
 
-from .utils import compare_versions as _compare_versions
+from .utils import compare_versions as _compare_versions  # noqa: E402
 
 
 def list_templates() -> Dict[str, str]:
@@ -1032,7 +1032,6 @@ def _extract_template_fields(command: str, response: dict) -> dict:
         if not isinstance(items, list):
             return response
 
-        field_keys = [f["key"] for f in fields]
         filtered_items = []
         for item in items:
             filtered = {}

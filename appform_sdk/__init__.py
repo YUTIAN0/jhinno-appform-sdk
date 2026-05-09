@@ -111,5 +111,9 @@ __all__ = [
     "VERSION_6_5",
     "VERSION_6_6",
     "SUPPORTED_VERSIONS",
+    # SFTP
+    "SFTPClientManager",
     # XML Parser (lazy import, no top-level import to avoid optional deps)
+    # Cluster utilities
+    "check_cluster_environment",
 ]

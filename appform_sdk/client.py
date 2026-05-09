@@ -20,7 +20,7 @@ from .extensions import DynamicAPI, ExtensionManager, init_default_registry
 from .files import FilesAPI
 from .jobs import JobsAPI
 from .organization import OrganizationAPI
-from .registry import APIRegistry, get_registry
+from .registry import APIRegistry
 from .sessions import SessionsAPI
 from .sftp import SFTPAPI
 from .utils import SignatureGenerator

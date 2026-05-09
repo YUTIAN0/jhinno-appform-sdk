@@ -4,7 +4,6 @@ Tests for appform_sdk.sessions — SessionsAPI and helper functions.
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from appform_sdk.sessions import (
     SessionsAPI,
@@ -352,7 +351,7 @@ class TestConnectAndLaunch:
     def test_no_jhapp_url(self, capsys):
         api, client = _make_api()
         client.get.return_value = {"data": [{"desktopId": "d-001", "jhappUrl": ""}]}
-        result = api.connect_and_launch("s-001")
+        api.connect_and_launch("s-001")
         assert "Error" in capsys.readouterr().out
 
     def test_launch_success(self, capsys):
@@ -361,7 +360,7 @@ class TestConnectAndLaunch:
             "data": [{"desktopId": "d-001", "jhappUrl": "jhclient://server/app"}]
         }
         with patch("appform_sdk.sessions.try_launch_jhapp_client", return_value=True):
-            result = api.connect_and_launch("s-001")
+            api.connect_and_launch("s-001")
         assert "launched" in capsys.readouterr().out.lower()
 
     def test_launch_fallback(self, capsys):
@@ -370,7 +369,7 @@ class TestConnectAndLaunch:
             "data": [{"desktopId": "d-001", "jhappUrl": "jhclient://server/app"}]
         }
         with patch("appform_sdk.sessions.try_launch_jhapp_client", return_value=False):
-            result = api.connect_and_launch("s-001")
+            api.connect_and_launch("s-001")
         assert "falling back" in capsys.readouterr().out.lower()
 
     def test_list_data_format(self):

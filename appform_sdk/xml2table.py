@@ -549,7 +549,6 @@ def create_markdown_table(
         return
 
     if _has_pandas():
-        import pandas as pd
 
         df = _build_dataframe(all_data)
         columns = list(df.columns)
@@ -560,15 +559,15 @@ def create_markdown_table(
         for row in all_data:
             rows.append([row.get(c, "") for c in columns])
 
-    md = f"# 表单配置汇总文档\n\n"
+    md = "# 表单配置汇总文档\n\n"
     md += f"**生成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  \n"
     md += f"**记录数**: {len(all_data)}  \n"
     if source_files:
         md += f"**应用数**: {len(source_files)}\n\n"
-        md += f"## 源文件列表\n\n"
+        md += "## 源文件列表\n\n"
         for src in source_files:
             md += f"- `{src}`\n"
-    md += f"\n## 配置详情\n\n"
+    md += "\n## 配置详情\n\n"
 
     md += "| " + " | ".join(columns) + " |\n"
     md += "| " + " | ".join(["---"] * len(columns)) + " |\n"
@@ -686,7 +685,7 @@ def export(
     for fmt in output_formats:
         generators[fmt]()
 
-    print(f"\nDone!")
+    print("\nDone!")
 
 
 def main() -> None:

@@ -1,11 +1,10 @@
 """Tests for SFTP file transfer operations."""
 
-import io
 import os
 import stat as stat_module
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

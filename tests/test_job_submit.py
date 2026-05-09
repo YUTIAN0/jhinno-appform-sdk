@@ -9,10 +9,8 @@ Covers:
 - _apply_uploaded_paths: post-upload path replacement
 """
 
-import os
 from unittest.mock import patch
 
-import pytest
 
 from appform_sdk.job_submit import (
     _apply_path_conversion,

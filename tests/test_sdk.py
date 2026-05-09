@@ -5,13 +5,12 @@ Tests for Appform SDK
 import json
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from appform_sdk import AESEncryptor, AppformClient, Config, SignatureGenerator
-from appform_sdk.exceptions import APIError, AppformError, AuthenticationError
+from appform_sdk.exceptions import APIError, AuthenticationError
 
 
 class TestConfig:
@@ -441,7 +440,7 @@ class TestJobsAPI:
             access_key_secret="test_secret",
             username="test_user",
         )
-        result = client.jobs.list_jobs(page=1, page_size=20)
+        client.jobs.list_jobs(page=1, page_size=20)
 
         # Verify AccessKey headers were sent
         call_args = mock_session.return_value.request.call_args
