@@ -158,9 +158,7 @@ class APIRegistry:
                 # Check if endpoint is not deprecated in target version
                 if (
                     endpoint.version_deprecated is None
-                    or _compare_versions(
-                        endpoint.version_deprecated, target_version
-                    )
+                    or _compare_versions(endpoint.version_deprecated, target_version)
                     > 0
                 ):
                     result[name] = endpoint

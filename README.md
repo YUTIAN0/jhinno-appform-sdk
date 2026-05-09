@@ -114,7 +114,10 @@ export APPFORM_API_VERSION="6.6"  # Optional, default: 6.5
 export APPFORM_TIMEOUT="30"  # Optional, default 30
 export APPFORM_VERIFY_SSL="false"  # Optional, default true
 export APPFORM_EXTENSIONS_DIR="/path/to/extensions"  # Optional
+export APPFORM_AUTO_ADD_HOST_KEY="true"  # Optional, auto-accept SSH host keys (see below)
 ```
+
+> **Security**: The config file `~/.appform/config.json` is automatically created with `0600` permissions (owner-only read/write). If SSH host key verification is needed, see the [SSH Host Key Verification](#ssh-host-key-verification) section.
 
 ### Configuration File
 
@@ -819,11 +822,11 @@ client = AppformClient(base_url="https://your-server.com")
 try:
     client.auth.login(username="your_username", password="your_password")
 except AuthenticationError as e:
-    print(f"Authentication failed: {e.message}")
+    print(f"Authentication failed: {e}")  # includes status code if available
 except APIError as e:
-    print(f"API error (status {e.status_code}): {e.message}")
+    print(f"API error (status {e.status_code}): {e}")
 except AppformError as e:
-    print(f"General error: {e.message}")
+    print(f"General error: {e}")
 ```
 
 ## Context Manager
@@ -836,6 +839,32 @@ with AppformClient(base_url="https://your-server.com") as client:
     jobs = client.jobs.list_jobs()
     # Session automatically closed on exit
 ```
+
+## SSH Host Key Verification
+
+When connecting to compute nodes via SSH (e.g., `appform jobs files <id> custom ls`), the SDK verifies SSH host keys by default. Unknown host keys will prompt you interactively:
+
+```
+The authenticity of host 'compute01' can't be established.
+ED25519 key fingerprint is SHA256:abc123...
+Are you sure you want to continue connecting (yes/no)?
+```
+
+### Auto-accept Host Keys
+
+For automated environments (CI/CD, scripts), you can skip host key verification by setting the `APPFORM_AUTO_ADD_HOST_KEY` environment variable:
+
+```bash
+export APPFORM_AUTO_ADD_HOST_KEY="true"
+```
+
+Or programmatically:
+
+```python
+os.environ["APPFORM_AUTO_ADD_HOST_KEY"] = "true"
+```
+
+> **Warning**: Auto-accepting host keys makes connections vulnerable to man-in-the-middle attacks. Only use this in trusted environments.
 
 ## API Reference
 

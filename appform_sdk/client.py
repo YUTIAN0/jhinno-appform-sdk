@@ -114,7 +114,11 @@ class AppformClient:
             base_url = base_url if base_url is not None else config.base_url
             token = token if token is not None else config.token
             access_key = access_key if access_key is not None else config.access_key
-            access_key_secret = access_key_secret if access_key_secret is not None else config.access_key_secret
+            access_key_secret = (
+                access_key_secret
+                if access_key_secret is not None
+                else config.access_key_secret
+            )
             username = username if username is not None else config.username
             aes_key = aes_key if aes_key is not None else config.aes_key
             timeout = timeout if timeout is not None else config.timeout

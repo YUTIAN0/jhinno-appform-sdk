@@ -271,6 +271,7 @@ class Config:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
             import warnings
+
             warnings.warn(f"Failed to load config file '{config_path}': {e}")
             return {}
 

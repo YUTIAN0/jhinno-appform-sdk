@@ -132,6 +132,7 @@ class TestAPIRegistry:
 
     def test_compare_versions(self):
         from appform_sdk.registry import _compare_versions
+
         assert _compare_versions("1.0", "1.0") == 0
         assert _compare_versions("1.0", "2.0") == -1
         assert _compare_versions("2.0", "1.0") == 1

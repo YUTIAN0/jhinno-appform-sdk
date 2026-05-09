@@ -639,7 +639,9 @@ class SFTPAPI:
         # --all or small file: read all into memory
         # If all_lines is set but head/tail/start/end are also specified,
         # skip the all_lines path to avoid reading the entire file unnecessarily.
-        has_slice = head is not None or tail is not None or start is not None or end is not None
+        has_slice = (
+            head is not None or tail is not None or start is not None or end is not None
+        )
         read_all = (all_lines and not has_slice) or file_size < small_threshold
         if read_all:
             buf = io.BytesIO()
@@ -1088,7 +1090,9 @@ def _read_range(
         if not chunk:
             if remainder:
                 if line_num >= start:
-                    lines.append(remainder.decode(encoding, errors="replace").rstrip("\r"))
+                    lines.append(
+                        remainder.decode(encoding, errors="replace").rstrip("\r")
+                    )
             break
 
         data = remainder + chunk
@@ -1126,7 +1130,9 @@ def _read_from(sftp, remote_path: str, start: int, encoding: str) -> List[str]:
         if not chunk:
             if remainder:
                 if line_num >= start:
-                    lines.append(remainder.decode(encoding, errors="replace").rstrip("\r"))
+                    lines.append(
+                        remainder.decode(encoding, errors="replace").rstrip("\r")
+                    )
             break
 
         data = remainder + chunk
