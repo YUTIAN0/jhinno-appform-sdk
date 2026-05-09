@@ -5,7 +5,6 @@ Tests for appform_sdk.xml2table — XML parsing and export.
 import os
 import tempfile
 
-
 from appform_sdk.xml2table import (
     _KNOWN_CLI_ARGS,
     _SIGN_TO_TYPE,

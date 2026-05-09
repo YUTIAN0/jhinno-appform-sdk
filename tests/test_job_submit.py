@@ -11,7 +11,6 @@ Covers:
 
 from unittest.mock import patch
 
-
 from appform_sdk.job_submit import (
     _apply_path_conversion,
     _apply_uploaded_paths,

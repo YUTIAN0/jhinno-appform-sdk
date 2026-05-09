@@ -282,9 +282,7 @@ class TestUploadDownload:
         api = _make_files_api()
         api._client.sftp.download_directory = MagicMock(return_value=[])
 
-        api.download_directory(
-            "/remote/dir", "/local/dir", transfer_method="sftp"
-        )
+        api.download_directory("/remote/dir", "/local/dir", transfer_method="sftp")
         api._client.sftp.download_directory.assert_called_once()
 
     def test_upload_directory_missing(self):

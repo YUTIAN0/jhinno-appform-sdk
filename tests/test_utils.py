@@ -7,7 +7,6 @@ Note: SignatureGenerator and AESEncryptor are tested in test_sdk.py.
 
 from unittest.mock import MagicMock, patch
 
-
 from appform_sdk.utils import (
     build_filter_condition,
     build_filter_group,

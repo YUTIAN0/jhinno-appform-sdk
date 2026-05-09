@@ -221,7 +221,6 @@ class SFTPAPI:
 
         try:
             if on_progress:
-                sftp.stat(remote_path)  # verify exists
 
                 def callback(transferred, total, _fname=fname):
                     on_progress(_fname, transferred, total)
@@ -288,7 +287,6 @@ class SFTPAPI:
                 remote_full = f"{target_dir}/{fname}"
                 try:
                     if on_progress:
-                        sftp.stat(str(file_path))  # verify exists
 
                         def cb(transferred, total_b, _fname=fname):
                             on_progress(_fname, transferred, total_b)
@@ -1009,7 +1007,9 @@ def _read_chunked_lines(sftp, remote_path: str, encoding: str, chunk_size: int =
         chunk = buf.getvalue()
         if not chunk:
             if remainder:
-                yield line_num, remainder.decode(encoding, errors="replace").rstrip("\r")
+                yield line_num, remainder.decode(encoding, errors="replace").rstrip(
+                    "\r"
+                )
             break
 
         data = remainder + chunk

@@ -4,7 +4,6 @@ Tests for appform_sdk.sessions — SessionsAPI and helper functions.
 
 from unittest.mock import MagicMock, patch
 
-
 from appform_sdk.sessions import (
     SessionsAPI,
     _check_port,
