@@ -189,8 +189,9 @@ class TestLoginWithToken:
         client = MagicMock()
         client._aes_key = None
         auth = AuthAPI(client)
-        with pytest.raises(ValueError, match="AES key is required"):
-            auth.login_with_token()
+        with patch.dict("os.environ", {"APPFORM_AES_KEY": ""}, clear=False):
+            with pytest.raises(ValueError, match="AES key is required"):
+                auth.login_with_token()
 
     @patch("appform_sdk.auth.check_cluster_environment")
     def test_raises_when_getpass_fails(self, mock_check):
