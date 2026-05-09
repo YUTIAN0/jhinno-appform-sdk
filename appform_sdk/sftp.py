@@ -989,25 +989,16 @@ def _remove_recursive(sftp, path: str):
 # ---------------------------------------------------------------------------
 
 
-def _get_remote_file_buf(sftp, remote_path: str) -> io.BytesIO:
-    """Download a remote file into a BytesIO buffer and seek to start."""
-    buf = io.BytesIO()
-    try:
-        sftp.getfo(remote_path, buf)
-    except IOError as e:
-        raise SFTPError(f"Failed to read remote file '{remote_path}': {e}")
-    buf.seek(0)
-    return buf
+def _read_chunked_lines(sftp, remote_path: str, encoding: str, chunk_size: int = 65536):
+    """Yield (line_number, line_text) from a remote file using chunked reads.
 
-
-def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
-    """Read first n lines from a remote file using chunked reads."""
-    chunk_size = 65536
+    Line numbers are 1-based. Handles partial lines across chunk boundaries.
+    """
     offset = 0
-    lines = []
+    line_num = 1
     remainder = b""
 
-    while len(lines) < n:
+    while True:
         buf = io.BytesIO()
         try:
             sftp.getfo(remote_path, buf, offset, chunk_size)
@@ -1017,21 +1008,27 @@ def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
             )
         chunk = buf.getvalue()
         if not chunk:
-            # EOF — flush remaining partial line
             if remainder:
-                lines.append(remainder.decode(encoding, errors="replace").rstrip("\r"))
+                yield line_num, remainder.decode(encoding, errors="replace").rstrip("\r")
             break
 
         data = remainder + chunk
         parts = data.split(b"\n")
-        remainder = parts[-1]  # may be a partial line
+        remainder = parts[-1]
         for raw_line in parts[:-1]:
-            if len(lines) >= n:
-                break
-            lines.append(raw_line.decode(encoding, errors="replace").rstrip("\r"))
+            yield line_num, raw_line.decode(encoding, errors="replace").rstrip("\r")
+            line_num += 1
 
         offset += len(chunk)
 
+
+def _read_head(sftp, remote_path: str, n: int, encoding: str) -> List[str]:
+    """Read first n lines from a remote file using chunked reads."""
+    lines = []
+    for _, text in _read_chunked_lines(sftp, remote_path, encoding):
+        lines.append(text)
+        if len(lines) >= n:
+            break
     return lines
 
 
@@ -1070,77 +1067,19 @@ def _read_range(
     sftp, remote_path: str, start: int, end: int, encoding: str
 ) -> List[str]:
     """Read lines start..end (1-based inclusive) using chunked reads."""
-    chunk_size = 65536
-    offset = 0
-    line_num = 1
     lines = []
-    remainder = b""
-
-    while line_num <= end:
-        buf = io.BytesIO()
-        try:
-            sftp.getfo(remote_path, buf, offset, chunk_size)
-        except IOError as e:
-            raise SFTPError(
-                f"Failed to read remote file '{remote_path}' at offset {offset}: {e}"
-            )
-        chunk = buf.getvalue()
-        if not chunk:
-            if remainder:
-                if line_num >= start:
-                    lines.append(
-                        remainder.decode(encoding, errors="replace").rstrip("\r")
-                    )
+    for line_num, text in _read_chunked_lines(sftp, remote_path, encoding):
+        if line_num > end:
             break
-
-        data = remainder + chunk
-        parts = data.split(b"\n")
-        remainder = parts[-1]
-        for raw_line in parts[:-1]:
-            if line_num > end:
-                break
-            if line_num >= start:
-                lines.append(raw_line.decode(encoding, errors="replace").rstrip("\r"))
-            line_num += 1
-
-        offset += len(chunk)
-
+        if line_num >= start:
+            lines.append(text)
     return lines
 
 
 def _read_from(sftp, remote_path: str, start: int, encoding: str) -> List[str]:
     """Read from line start to EOF (1-based) using chunked reads."""
-    chunk_size = 65536
-    offset = 0
-    line_num = 1
     lines = []
-    remainder = b""
-
-    while True:
-        buf = io.BytesIO()
-        try:
-            sftp.getfo(remote_path, buf, offset, chunk_size)
-        except IOError as e:
-            raise SFTPError(
-                f"Failed to read remote file '{remote_path}' at offset {offset}: {e}"
-            )
-        chunk = buf.getvalue()
-        if not chunk:
-            if remainder:
-                if line_num >= start:
-                    lines.append(
-                        remainder.decode(encoding, errors="replace").rstrip("\r")
-                    )
-            break
-
-        data = remainder + chunk
-        parts = data.split(b"\n")
-        remainder = parts[-1]
-        for raw_line in parts[:-1]:
-            if line_num >= start:
-                lines.append(raw_line.decode(encoding, errors="replace").rstrip("\r"))
-            line_num += 1
-
-        offset += len(chunk)
-
+    for line_num, text in _read_chunked_lines(sftp, remote_path, encoding):
+        if line_num >= start:
+            lines.append(text)
     return lines
