@@ -118,6 +118,7 @@ export APPFORM_EXTENSIONS_DIR="/path/to/extensions"  # Optional
 export APPFORM_AUTO_ADD_HOST_KEY="true"  # Optional, auto-accept SSH host keys (see below)
 export APPFORM_HTTP_PROXY="http://proxy:8080"  # Optional, proxy for API requests
 export APPFORM_SFTP_PROXY="socks5://proxy:1080"  # Optional, proxy for SFTP/SSH connections
+export APPFORM_ENV="prod"  # Optional, target environment from config file
 ```
 
 > **Security**: The config file `~/.appform/config.json` is automatically created with `0600` permissions (owner-only read/write). If SSH host key verification is needed, see the [SSH Host Key Verification](#ssh-host-key-verification) section.
@@ -137,6 +138,36 @@ Create `~/.appform/config.json`:
   "verify_ssl": false
 }
 ```
+
+**Multi-Environment Configuration:**
+
+You can define multiple environments in a single config file:
+
+```json
+{
+  "default_environment": "prod",
+  "environments": {
+    "prod": {
+      "base_url": "https://prod.jhinno.com",
+      "api_version": "6.6"
+    },
+    "dev": {
+      "base_url": "https://dev.jhinno.com",
+      "api_version": "6.6"
+    },
+    "test": {
+      "base_url": "https://test.jhinno.com",
+      "api_version": "6.5"
+    }
+  }
+}
+```
+
+Select the target environment via (in priority order):
+1. Constructor parameter: `Config(env="prod")` or `--env prod`
+2. Environment variable: `export APPFORM_ENV=prod`
+3. Config file's `default_environment` field
+4. Fallback to root-level configuration (backward compatible)
 
 ### Using Config Class
 
@@ -190,7 +221,16 @@ appform config set \
     --api-version "6.6" \
     --verify-ssl false
 
-# Show current configuration
+# Configure a named environment
+appform config set --environment prod \
+    --base-url "https://prod.jhinno.com" \
+    --api-version "6.6"
+
+appform config set --environment dev \
+    --base-url "https://dev.jhinno.com" \
+    --api-version "6.6"
+
+# Show current configuration (including active environment)
 appform config show
 
 # Authentication

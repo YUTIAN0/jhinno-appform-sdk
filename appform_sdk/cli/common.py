@@ -132,7 +132,10 @@ def resolve_output_format(args: argparse.Namespace) -> str:
     output = getattr(args, "output", None)
     if output:
         return output
-    cfg = Config(config_file=getattr(args, "config_file", None))
+    cfg = Config(
+        config_file=getattr(args, "config_file", None),
+        env=getattr(args, "env", None),
+    )
     return cfg.output_format or "table"
 
 

@@ -650,8 +650,8 @@ client.files.download(
 .nf
 from appform_sdk import AppformClient, Config
 
-# 从配置文件加载
-config = Config(config_file="~/.appform/config.json")
+# 从配置文件加载（指定环境）
+config = Config(config_file="~/.appform/config.json", env="prod")
 client = AppformClient(config=config)
 
 # 或使用环境变量

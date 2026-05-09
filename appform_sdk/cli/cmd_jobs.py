@@ -153,7 +153,10 @@ def handle_jobs_files_command(args, client=None):
     own_client = client is None
     if client is None:
         client = create_client(args)
-    config = Config(config_file=getattr(args, "config_file", None))
+    config = Config(
+        config_file=getattr(args, "config_file", None),
+        env=getattr(args, "env", None),
+    )
 
     # Get job's working directory
     job_info = client.jobs.get_job(args.job_id)
@@ -429,7 +432,10 @@ def handle_jobs_files_custom(args, job_info, client):
         subcommand_args = [args.path]
 
     # Get SSH credentials
-    config = Config(config_file=getattr(args, "config_file", None))
+    config = Config(
+        config_file=getattr(args, "config_file", None),
+        env=getattr(args, "env", None),
+    )
     ssh_user = config.sftp_username or config.username
     ssh_pass = config.sftp_password or config.password
     ssh_key = config.sftp_key_file

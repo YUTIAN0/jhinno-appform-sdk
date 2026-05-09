@@ -17,7 +17,10 @@ from appform_sdk.files import _ProgressTracker, parse_size
 
 def handle_files_command(args):
     client = create_client(args)
-    config = Config(config_file=getattr(args, "config_file", None))
+    config = Config(
+        config_file=getattr(args, "config_file", None),
+        env=getattr(args, "env", None),
+    )
 
     try:
         method = (

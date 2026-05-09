@@ -42,5 +42,8 @@ def handle_config_command(args):
         config_path = config_file or Config.get_default_config_path()
         print(f"Configuration saved to {config_path}")
     elif args.config_command == "show":
-        config = Config(config_file=getattr(args, "config_file", None))
+        config = Config(
+            config_file=getattr(args, "config_file", None),
+            env=getattr(args, "env", None),
+        )
         output_result({"data": config.to_dict()}, args.output, "config.show")

@@ -18,7 +18,10 @@ def resolve_profile_config(args):
     if not profile_config:
         from appform_sdk.config import Config
 
-        cfg = Config(config_file=getattr(args, "config_file", None))
+        cfg = Config(
+            config_file=getattr(args, "config_file", None),
+            env=getattr(args, "env", None),
+        )
         profile_config = cfg.job_profile_config
     return profile_config
 

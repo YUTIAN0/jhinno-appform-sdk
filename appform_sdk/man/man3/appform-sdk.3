@@ -654,8 +654,8 @@ client.files.download(
 .nf
 from appform_sdk import AppformClient, Config
 
-# Load from config file
-config = Config(config_file="~/.appform/config.json")
+# Load from config file (with environment)
+config = Config(config_file="~/.appform/config.json", env="prod")
 client = AppformClient(config=config)
 
 # Or use environment variables
