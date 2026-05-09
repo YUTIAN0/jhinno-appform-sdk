@@ -118,6 +118,158 @@ class TestConfig:
         assert d["access_key"] == "***"
         assert d["username"] == "user"
 
+    def test_config_env_from_param(self):
+        """Test loading from environment via constructor parameter."""
+        config_data = {
+            "default_environment": "dev",
+            "environments": {
+                "prod": {
+                    "base_url": "https://prod-server.com",
+                    "username": "prod_user",
+                },
+                "dev": {
+                    "base_url": "https://dev-server.com",
+                    "username": "dev_user",
+                },
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = Config(config_file=config_path, env="prod")
+            assert config.base_url == "https://prod-server.com"
+            assert config.username == "prod_user"
+            assert config._current_environment == "prod"
+        finally:
+            os.unlink(config_path)
+
+    def test_config_env_from_env_var(self, monkeypatch):
+        """Test loading from environment via APPFORM_ENV."""
+        monkeypatch.setenv("APPFORM_ENV", "dev")
+        config_data = {
+            "environments": {
+                "dev": {
+                    "base_url": "https://dev-server.com",
+                    "username": "dev_user",
+                },
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = Config(config_file=config_path)
+            assert config.base_url == "https://dev-server.com"
+            assert config.username == "dev_user"
+            assert config._current_environment == "dev"
+        finally:
+            os.unlink(config_path)
+
+    def test_config_env_root_fallback(self):
+        """Test fallback to root config when env not found."""
+        config_data = {
+            "base_url": "https://root-server.com",
+            "username": "root_user",
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = Config(config_file=config_path, env="nonexistent")
+            assert config.base_url == "https://root-server.com"
+            assert config.username == "root_user"
+            assert config._current_environment == "nonexistent"
+        finally:
+            os.unlink(config_path)
+
+    def test_config_priority_with_env(self, monkeypatch):
+        """Test priority with environment: direct > env var > merged file."""
+        monkeypatch.setenv("APPFORM_BASE_URL", "https://env-server.com")
+        config_data = {
+            "base_url": "https://root-server.com",
+            "default_environment": "prod",
+            "environments": {
+                "prod": {
+                    "base_url": "https://prod-server.com",
+                },
+            },
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            # direct param > env var > merged file
+            config = Config(
+                base_url="https://direct-server.com", config_file=config_path
+            )
+            assert config.base_url == "https://direct-server.com"
+
+            # env var > merged file
+            config2 = Config(config_file=config_path)
+            assert config2.base_url == "https://env-server.com"
+
+            # merged file (env config) when no env var and no direct param
+            monkeypatch.delenv("APPFORM_BASE_URL")
+            config3 = Config(config_file=config_path)
+            assert config3.base_url == "https://prod-server.com"
+        finally:
+            os.unlink(config_path)
+
+    def test_config_save_to_environment(self):
+        """Test saving configuration to a named environment."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+
+            Config.save_config_file(
+                base_url="https://prod-server.com",
+                username="prod_user",
+                config_file=config_path,
+                environment="prod",
+            )
+
+            assert os.path.exists(config_path)
+
+            with open(config_path, "r") as f:
+                data = json.load(f)
+
+            assert "environments" in data
+            assert "prod" in data["environments"]
+            assert data["environments"]["prod"]["base_url"] == "https://prod-server.com"
+            assert data["environments"]["prod"]["username"] == "prod_user"
+
+        # now save another env
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+            # first save root + prod env
+            Config.save_config_file(
+                base_url="https://root.com",
+                config_file=config_path,
+                environment="prod",
+                api_version="6.5",
+            )
+            # now add dev env only with base_url
+            Config.save_config_file(
+                base_url="https://dev-server.com",
+                config_file=config_path,
+                environment="dev",
+            )
+
+            with open(config_path, "r") as f:
+                data = json.load(f)
+
+            assert data["environments"]["prod"]["base_url"] == "https://root.com"
+            assert data["environments"]["dev"]["base_url"] == "https://dev-server.com"
+            assert data["environments"]["prod"]["api_version"] == "6.5"
+
 
 class TestAESEncryptor:
     """Tests for AES encryption utility."""

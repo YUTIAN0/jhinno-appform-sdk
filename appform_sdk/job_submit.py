@@ -615,6 +615,13 @@ def _build_parser(
         help="Wait for job to complete after submit (default: poll every 10 min)",
     )
     parser.add_argument(
+        "-e",
+        "--env",
+        dest="env",
+        metavar="ENV",
+        help="Target environment to load from config (or set APPFORM_ENV env var)",
+    )
+    parser.add_argument(
         "--upload-path",
         dest="upload_path",
         default=None,
@@ -769,7 +776,7 @@ def _apply_path_conversion(
 # ---------------------------------------------------------------------------
 
 
-def _resolve_base_url(pm) -> str:
+def _resolve_base_url(pm, env=None) -> str:
     """Resolve the Appform base URL from config or defaults.
 
     Priority: SDK config (env vars / config.json) > profile config (job_submit.yaml) > default
@@ -779,7 +786,7 @@ def _resolve_base_url(pm) -> str:
     # 1. SDK config has highest priority (matches appform CLI behavior)
     from .config import Config
 
-    cfg = Config()
+    cfg = Config(env=env)
     base_url = cfg.base_url
 
     # 2. Fall back to profile config's appform_base_url
@@ -844,7 +851,12 @@ def main(args=None):
     from .config import Config
     from .job_profiles import JobProfileManager
 
-    sdk_config = Config()
+    # Extract --env early (before Config)
+    env_pre = argparse.ArgumentParser(add_help=False)
+    env_pre.add_argument("-e", "--env", dest="_env", default=None)
+    env_pre_args, _ = env_pre.parse_known_args(args)
+
+    sdk_config = Config(env=env_pre_args._env)
     profile_config = sdk_config.job_profile_config
 
     try:
@@ -858,7 +870,7 @@ def main(args=None):
         sys.exit(1)
 
     disk_mapping = _resolve_disk_mapping(pm)
-    base_url = _resolve_base_url(pm)
+    base_url = _resolve_base_url(pm, env=env_pre_args._env)
 
     # --- Pass 1: find -a / -l / -u / -p / --wait / --upload-path ---
     pre = argparse.ArgumentParser(add_help=False)
@@ -866,6 +878,7 @@ def main(args=None):
     pre.add_argument("-l", "--list-apps", action="store_true", dest="_list_apps")
     pre.add_argument("-u", "--username", dest="_username", default=None)
     pre.add_argument("-p", "--password", dest="_password", default=None)
+    pre.add_argument("-e", "--env", dest="_env", default=None)
     pre.add_argument(
         "--wait", nargs="?", const=10, type=int, dest="_wait", default=None
     )

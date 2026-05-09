@@ -65,6 +65,7 @@ def create_client(args: argparse.Namespace) -> AppformClient:
         api_version=args.api_version,
         extensions_dir=args.extensions_dir,
         config_file=args.config_file,
+        env=getattr(args, "env", None),
     )
 
     if not config.base_url:

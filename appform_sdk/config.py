@@ -44,6 +44,7 @@ class Config:
     ENV_AUTO_ADD_HOST_KEY = "APPFORM_AUTO_ADD_HOST_KEY"
     ENV_HTTP_PROXY = "APPFORM_HTTP_PROXY"
     ENV_SFTP_PROXY = "APPFORM_SFTP_PROXY"
+    ENV_ENV = "APPFORM_ENV"
 
     # Default config file paths
     DEFAULT_CONFIG_DIR = ".appform"
@@ -76,6 +77,7 @@ class Config:
         auto_add_host_key: Optional[bool] = None,
         http_proxy: Optional[str] = None,
         sftp_proxy: Optional[str] = None,
+        env: Optional[str] = None,
     ):
         """
         Initialize configuration.
@@ -105,6 +107,7 @@ class Config:
             auto_add_host_key: Automatically accept SSH host keys without prompting (default: False)
             http_proxy: Proxy URL for HTTP/HTTPS API requests (e.g., http://proxy:8080 or socks5://proxy:1080)
             sftp_proxy: Proxy URL for SFTP/SSH connections (e.g., socks5://proxy:1080 or http://proxy:8080)
+            env: Target environment name to load from config file
         """
         # Determine config file path - use default if not specified
         if config_file:
@@ -115,7 +118,27 @@ class Config:
 
         self._file_config = self._load_config_file() if self._config_file else {}
 
+        # Resolve target environment: direct > env var > default_environment
+        target_env = env
+        if target_env is None:
+            target_env = os.environ.get(self.ENV_ENV)
+        if target_env is None:
+            target_env = self._file_config.get("default_environment")
+
+        # Merge root config with environment-specific config (env overrides root)
+        merged_config = dict(self._file_config)
+        environments = self._file_config.get("environments") or {}
+        if target_env and isinstance(environments, dict) and target_env in environments:
+            # Environment-specific values override root-level values
+            env_config = environments[target_env]
+            if isinstance(env_config, dict):
+                merged_config.update(env_config)
+
+        self._merged_file_config = merged_config
+        self._current_environment = target_env or None
+
         # Set values with priority: direct params > env vars > config file
+        self._file_config = self._merged_file_config
         self.base_url = self._get_value(base_url, self.ENV_BASE_URL, "base_url")
         self.access_key = self._get_value(access_key, self.ENV_ACCESS_KEY, "access_key")
         self.access_key_secret = self._get_value(
@@ -341,6 +364,7 @@ class Config:
         auto_add_host_key: Optional[bool] = None,
         http_proxy: Optional[str] = None,
         sftp_proxy: Optional[str] = None,
+        environment: Optional[str] = None,
     ) -> None:
         """
         Save configuration to file.
@@ -362,6 +386,7 @@ class Config:
             output_template: Output template file path
             default_remote_path: Default remote path for file operations
             config_file: Path to configuration file (defaults to ~/.appform/config.json)
+            environment: Target environment name. If specified, save to environments[environment].
         """
         if config_file:
             config_path = Path(config_file)
@@ -439,6 +464,69 @@ class Config:
         if sftp_proxy is not None:
             existing["sftp_proxy"] = sftp_proxy
 
+        if environment is not None:
+            if "environments" not in existing or not isinstance(
+                existing["environments"], dict
+            ):
+                existing["environments"] = {}
+            if environment not in existing["environments"] or not isinstance(
+                existing["environments"][environment], dict
+            ):
+                existing["environments"][environment] = {}
+            env_target = existing["environments"][environment]
+            if base_url is not None:
+                env_target["base_url"] = base_url
+            if access_key is not None:
+                env_target["access_key"] = access_key
+            if access_key_secret is not None:
+                env_target["access_key_secret"] = access_key_secret
+            if username is not None:
+                env_target["username"] = username
+            if password is not None:
+                env_target["password"] = password
+            if token is not None:
+                env_target["token"] = token
+            if aes_key is not None:
+                env_target["aes_key"] = aes_key
+            if timeout is not None:
+                env_target["timeout"] = timeout
+            if verify_ssl is not None:
+                env_target["verify_ssl"] = verify_ssl
+            if api_version is not None:
+                env_target["api_version"] = api_version
+            if extensions_dir is not None:
+                env_target["extensions_dir"] = extensions_dir
+            if job_profile_config is not None:
+                env_target["job_profile_config"] = job_profile_config
+            if output_format is not None:
+                env_target["output_format"] = output_format
+            if output_template is not None:
+                env_target["output_template"] = output_template
+            if default_remote_path is not None:
+                env_target["default_remote_path"] = default_remote_path
+            if chunk_size is not None:
+                env_target["chunk_size"] = chunk_size
+            if default_method is not None:
+                env_target["default_method"] = default_method
+            if sftp_host is not None:
+                env_target["sftp_host"] = sftp_host
+            if sftp_port is not None:
+                env_target["sftp_port"] = sftp_port
+            if sftp_username is not None:
+                env_target["sftp_username"] = sftp_username
+            if sftp_password is not None:
+                env_target["sftp_password"] = sftp_password
+            if sftp_key_file is not None:
+                env_target["sftp_key_file"] = sftp_key_file
+            if sftp_key_password is not None:
+                env_target["sftp_key_password"] = sftp_key_password
+            if auto_add_host_key is not None:
+                env_target["auto_add_host_key"] = auto_add_host_key
+            if http_proxy is not None:
+                env_target["http_proxy"] = http_proxy
+            if sftp_proxy is not None:
+                env_target["sftp_proxy"] = sftp_proxy
+
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
         try:
@@ -474,6 +562,13 @@ class Config:
             "sftp_key_password": "***" if self.sftp_key_password else None,
             "http_proxy": self.http_proxy,
             "sftp_proxy": self.sftp_proxy,
+            "current_environment": self._current_environment,
+            "environments": (
+                list(self._file_config.get("environments", {}).keys())
+                if self._file_config
+                and isinstance(self._file_config.get("environments"), dict)
+                else []
+            ),
         }
 
     def __repr__(self) -> str:

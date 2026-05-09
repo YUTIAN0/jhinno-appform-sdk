@@ -67,6 +67,11 @@ def create_parser() -> argparse.ArgumentParser:
         help="Path to configuration file (default: ~/.appform/config.json)",
     )
     parser.add_argument(
+        "--env",
+        dest="env",
+        help="Target environment to load from config (or set APPFORM_ENV env var)",
+    )
+    parser.add_argument(
         "--output",
         "-o",
         choices=["json", "raw", "table", "text"],
@@ -114,6 +119,11 @@ def _add_config_parser(subparsers):
     )
     config_set_parser = config_subparsers.add_parser(
         "set", help="Set configuration values"
+    )
+    config_set_parser.add_argument(
+        "--environment",
+        dest="environment",
+        help="Save config to a named environment instead of root",
     )
     config_set_parser.add_argument("--base-url", help="API base URL")
     config_set_parser.add_argument("--access-key", help="Access key")
