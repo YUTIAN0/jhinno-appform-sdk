@@ -111,13 +111,13 @@ class AppformClient:
         """
         # Support initialization from Config object
         if config:
-            base_url = base_url or config.base_url
-            token = token or config.token
-            access_key = access_key or config.access_key
-            access_key_secret = access_key_secret or config.access_key_secret
-            username = username or config.username
-            aes_key = aes_key or config.aes_key
-            timeout = timeout or config.timeout
+            base_url = base_url if base_url is not None else config.base_url
+            token = token if token is not None else config.token
+            access_key = access_key if access_key is not None else config.access_key
+            access_key_secret = access_key_secret if access_key_secret is not None else config.access_key_secret
+            username = username if username is not None else config.username
+            aes_key = aes_key if aes_key is not None else config.aes_key
+            timeout = timeout if timeout is not None else config.timeout
             if verify_ssl is None:
                 verify_ssl = config.verify_ssl
             api_version = api_version or config.api_version
@@ -167,6 +167,7 @@ class AppformClient:
             total=max_retries,
             backoff_factor=0.5,
             status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET", "HEAD", "OPTIONS"],
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)

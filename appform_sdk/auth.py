@@ -24,14 +24,11 @@ class AuthAPI:
             client: AppformClient instance
         """
         self._client = client
-        self._encryptor = None  # Lazy init, only when AES key is available
 
     def _get_encryptor(self) -> AESEncryptor:
-        """Get or create AESEncryptor with key from config."""
-        if self._encryptor is None:
-            aes_key = getattr(self._client, "_aes_key", None)
-            self._encryptor = AESEncryptor(key=aes_key)
-        return self._encryptor
+        """Create AESEncryptor with key from config."""
+        aes_key = getattr(self._client, "_aes_key", None)
+        return AESEncryptor(key=aes_key)
 
     def login(self, username: str, password: str) -> Dict[str, Any]:
         """
@@ -92,7 +89,7 @@ class AuthAPI:
         try:
             current_user = getpass.getuser()
         except Exception:
-            current_user = username
+            current_user = None
 
         if not current_user:
             raise AuthenticationError("Cannot determine current username for AES login")

@@ -172,14 +172,7 @@ def resolve_home_in_path(client, path: str, transfer_method: str) -> str:
 def remote_file_exists(client, remote_dir: str, filename: str) -> bool:
     """Check if a file already exists in the remote directory."""
     try:
-        result = client.files.list(path=remote_dir, page=1, page_size=1000)
-        data = result.get("data", [])
-        if isinstance(data, dict):
-            items = data.get("files", data.get("records", []))
-        elif isinstance(data, list):
-            items = data
-        else:
-            items = []
+        items = client.files.list_all(path=remote_dir)
         for item in items:
             if item.get("fileName") == filename:
                 return True
@@ -203,14 +196,24 @@ def check_is_directory(client, cmd_method, remote):
         try:
             items = client.files.list(path=remote, page=1, page_size=1)
             data = items.get("data", [])
-            if isinstance(data, dict):
-                file_list = data.get("files", data.get("records", []))
-            elif isinstance(data, list):
-                file_list = data
-            else:
-                file_list = []
-            return len(file_list) > 0 and file_list[0].get("fileType") == "directory"
+            # Directory listing returns a dict with files/records key,
+            # or a list of entries. A single file returns differently.
+            if isinstance(data, dict) and ("files" in data or "records" in data):
+                return True
+            if isinstance(data, list):
+                return True
+            return False
         except Exception:
             return False
     else:
-        return remote.endswith("/")
+        # SFTP: try listing the path; if it works, it's a directory
+        try:
+            result = client.sftp.list(path=remote, page=1, page_size=1)
+            data = result.get("data", [])
+            if isinstance(data, dict) and "files" in data:
+                return True
+            if isinstance(data, list):
+                return True
+            return remote.endswith("/")
+        except Exception:
+            return remote.endswith("/")

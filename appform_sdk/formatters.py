@@ -534,7 +534,7 @@ def _format_detail_template(template: dict, response: dict) -> str:
     pairs = []
     for f in fields:
         value = _get_field_value(item, f)
-        if value and value != "0" and value != "[]":
+        if value is not None and value != "":
             label = f.get("label", f["key"])
             pairs.append((label, value))
 

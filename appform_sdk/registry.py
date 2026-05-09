@@ -6,6 +6,8 @@ import copy
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Type
 
+from .utils import compare_versions as _compare_versions
+
 
 @dataclass
 class EndpointDefinition:
@@ -41,7 +43,7 @@ class APIRegistry:
             version: Current API version
         """
         self._version = version
-        self._endpoints: Dict[str, Dict[str, EndpointDefinition]] = {}
+        self._endpoints: Dict[str, EndpointDefinition] = {}
         self._custom_handlers: Dict[str, Callable] = {}
         self._extensions: List[str] = []
 
@@ -152,11 +154,11 @@ class APIRegistry:
 
         for name, endpoint in self._endpoints.items():
             # Check if endpoint was added before or at target version
-            if self._compare_versions(endpoint.version_added, target_version) <= 0:
+            if _compare_versions(endpoint.version_added, target_version) <= 0:
                 # Check if endpoint is not deprecated in target version
                 if (
                     endpoint.version_deprecated is None
-                    or self._compare_versions(
+                    or _compare_versions(
                         endpoint.version_deprecated, target_version
                     )
                     > 0
@@ -164,23 +166,6 @@ class APIRegistry:
                     result[name] = endpoint
 
         return result
-
-    def _compare_versions(self, v1: str, v2: str) -> int:
-        """Compare two version strings. Returns -1, 0, or 1."""
-        parts1 = [int(x) for x in v1.split(".")]
-        parts2 = [int(x) for x in v2.split(".")]
-
-        for p1, p2 in zip(parts1, parts2):
-            if p1 < p2:
-                return -1
-            if p1 > p2:
-                return 1
-
-        if len(parts1) < len(parts2):
-            return -1
-        if len(parts1) > len(parts2):
-            return 1
-        return 0
 
     def register_handler(self, name: str, handler: Callable) -> "APIRegistry":
         """

@@ -131,12 +131,12 @@ class TestAPIRegistry:
         assert "soon" in eps  # not yet deprecated
 
     def test_compare_versions(self):
-        reg = APIRegistry()
-        assert reg._compare_versions("1.0", "1.0") == 0
-        assert reg._compare_versions("1.0", "2.0") == -1
-        assert reg._compare_versions("2.0", "1.0") == 1
-        assert reg._compare_versions("1.0.0", "1.0") == 1  # longer
-        assert reg._compare_versions("1.0", "1.0.0") == -1  # shorter
+        from appform_sdk.registry import _compare_versions
+        assert _compare_versions("1.0", "1.0") == 0
+        assert _compare_versions("1.0", "2.0") == -1
+        assert _compare_versions("2.0", "1.0") == 1
+        assert _compare_versions("1.0.0", "1.0") == 1  # longer
+        assert _compare_versions("1.0", "1.0.0") == -1  # shorter
 
     def test_register_handler(self):
         reg = APIRegistry()

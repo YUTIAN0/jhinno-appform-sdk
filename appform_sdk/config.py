@@ -269,7 +269,9 @@ class Config:
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, IOError) as e:
+            import warnings
+            warnings.warn(f"Failed to load config file '{config_path}': {e}")
             return {}
 
     @classmethod
@@ -422,8 +424,8 @@ class Config:
         """Convert configuration to dictionary."""
         return {
             "base_url": self.base_url,
-            "access_key": self.access_key,
-            "access_key_secret": self.access_key_secret,
+            "access_key": "***" if self.access_key else None,
+            "access_key_secret": "***" if self.access_key_secret else None,
             "username": self.username,
             "password": "***" if self.password else None,
             "token": "***" if self.token else None,

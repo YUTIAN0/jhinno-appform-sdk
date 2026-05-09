@@ -116,6 +116,11 @@ class AESEncryptor:
             )
 
         self.key = key.encode("utf-8")
+        if len(self.key) not in (16, 24, 32):
+            raise ValueError(
+                f"AES key must be 16, 24, or 32 bytes, got {len(self.key)}. "
+                "Check APPFORM_AES_KEY or config 'aes_key'."
+            )
 
     def encrypt(self, plaintext: str) -> str:
         """

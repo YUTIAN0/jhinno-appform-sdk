@@ -116,7 +116,7 @@ class TestConfig:
         )
         d = config.to_dict()
         assert d["base_url"] == "https://test.com"
-        assert d["access_key"] == "key"
+        assert d["access_key"] == "***"
         assert d["username"] == "user"
 
 

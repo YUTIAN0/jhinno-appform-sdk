@@ -23,6 +23,38 @@ from .exceptions import ComputeError
 
 DEFAULT_COMPUTE_CONFIG_PATH = os.path.expanduser("~/.appform/compute.yaml")
 ENV_COMPUTE_CONFIG = "APPFORM_COMPUTE_CONFIG"
+ENV_AUTO_ADD_HOST_KEY = "APPFORM_AUTO_ADD_HOST_KEY"
+
+
+def _get_host_key_policy():
+    """Return the host key policy based on APPFORM_AUTO_ADD_HOST_KEY env var.
+
+    If the env var is set (to any truthy value), accept any host key automatically.
+    Otherwise, prompt the user to confirm unknown host keys.
+    """
+    if os.environ.get(ENV_AUTO_ADD_HOST_KEY):
+        return paramiko.AutoAddPolicy()
+
+    class _PromptPolicy(paramiko.MissingHostKeyPolicy):
+        def missing_host_key(self, client, hostname, key):
+            key_type = key.get_name()
+            fingerprint = ":".join(f"{b:02x}" for b in key.get_fingerprint())
+            try:
+                answer = input(
+                    f"The authenticity of host '{hostname}' can't be established.\n"
+                    f"{key_type} key fingerprint is {fingerprint}.\n"
+                    f"Are you sure you want to continue connecting (yes/no)? "
+                )
+            except (EOFError, KeyboardInterrupt):
+                answer = "no"
+            if answer.strip().lower() in ("yes", "y"):
+                client.get_host_keys().add(hostname, key.get_name(), key)
+            else:
+                raise paramiko.SSHException(
+                    f"Host key verification failed for {hostname}"
+                )
+
+    return _PromptPolicy()
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +147,8 @@ def connect_direct(
         )
 
     client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.load_system_host_keys()
+    client.set_missing_host_key_policy(_get_host_key_policy())
     client.connect(
         hostname=node,
         port=22,
@@ -157,7 +190,8 @@ def connect_via_gateway(
 
     # Step 1: Connect to gateway (login node)
     gateway_client = paramiko.SSHClient()
-    gateway_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    gateway_client.load_system_host_keys()
+    gateway_client.set_missing_host_key_policy(_get_host_key_policy())
     gateway_client.connect(
         hostname=gateway_host,
         port=gateway_port,
@@ -252,7 +286,7 @@ def query_work_path(
 
     We match the specific work_path_var (not old_work_path).
     """
-    remote_cmd = f"source {shlex.quote(source_script)} && {env_cmd} -env {job_id}"
+    remote_cmd = f"source {shlex.quote(source_script)} && {shlex.quote(env_cmd)} -env {shlex.quote(job_id)}"
     print(f"Querying work_path on {node}...")
 
     stdin, stdout, stderr = client.exec_command(remote_cmd, timeout=120)

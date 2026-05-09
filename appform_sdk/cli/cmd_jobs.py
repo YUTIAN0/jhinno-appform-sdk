@@ -120,7 +120,7 @@ def handle_jobs_command(args, submit_extra_args=None):
         elif args.jobs_command == "files":
             jobs_files_cmd = getattr(args, "jobs_files_command", None)
             if jobs_files_cmd:
-                handle_jobs_files_command(args)
+                handle_jobs_files_command(args, client=client)
             else:
                 result = client.jobs.get_files(args.job_id)
                 output_result(result, args.output, "jobs.files")
@@ -148,9 +148,11 @@ def handle_jobs_command(args, submit_extra_args=None):
 # ---------------------------------------------------------------------------
 
 
-def handle_jobs_files_command(args):
+def handle_jobs_files_command(args, client=None):
     """Handle file operations within a job's working directory."""
-    client = create_client(args)
+    own_client = client is None
+    if client is None:
+        client = create_client(args)
     config = Config(config_file=getattr(args, "config_file", None))
 
     # Get job's working directory
@@ -329,7 +331,6 @@ def handle_jobs_files_command(args):
                 handle_jobs_files_custom(args, job_info, client)
             else:
                 print(f"Error: Unknown files command: {cmd}", file=sys.stderr)
-                client.close()
                 sys.exit(1)
 
         except FileNotFoundError as e:
@@ -340,7 +341,8 @@ def handle_jobs_files_command(args):
             print(f"Error: {msg}", file=sys.stderr)
             sys.exit(1)
     finally:
-        client.close()
+        if own_client:
+            client.close()
 
 
 # ---------------------------------------------------------------------------

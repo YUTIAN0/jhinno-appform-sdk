@@ -32,6 +32,11 @@ class APIError(AppformError):
         self.response = response
         super().__init__(message)
 
+    def __str__(self):
+        if self.status_code:
+            return f"[{self.status_code}] {self.message}"
+        return self.message
+
 
 class ValidationError(AppformError):
     """Raised when validation fails."""
