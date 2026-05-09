@@ -12,6 +12,7 @@ Python SDK for Appform 6.0, 6.3, 6.5, and 6.6 APIs.
 - Extensible endpoint registry
 - Version-specific endpoint support
 - Configuration via environment variables or config file
+- Proxy support for HTTP/HTTPS and SOCKS (API requests and SFTP/SSH)
 
 ## Supported Versions
 
@@ -841,6 +842,73 @@ with AppformClient(base_url="https://your-server.com") as client:
     jobs = client.jobs.list_jobs()
     # Session automatically closed on exit
 ```
+
+## Proxy Configuration
+
+The SDK supports HTTP and SOCKS proxies for both API requests and SFTP/SSH connections. This is useful when connecting through corporate firewalls or restricted networks.
+
+### Configuration Methods
+
+**1. Environment variables:**
+```bash
+export APPFORM_HTTP_PROXY="http://proxy.example.com:8080"
+export APPFORM_SFTP_PROXY="socks5://proxy.example.com:1080"
+```
+
+**2. Configuration file** (`~/.appform/config.json`):
+```json
+{
+  "http_proxy": "http://proxy.example.com:8080",
+  "sftp_proxy": "socks5://proxy.example.com:1080"
+}
+```
+
+### Supported Proxy Types
+
+| Type | Format | Notes |
+|------|--------|-------|
+| HTTP proxy | `http://host:port` | For API requests, works out of the box |
+| HTTPS proxy | `https://host:port` | For API requests, works out of the box |
+| SOCKS5 proxy | `socks5://host:port` | Requires `pip install jhinno-appform-sdk[proxy]` |
+| SOCKS4 proxy | `socks4://host:port` | Requires `pip install jhinno-appform-sdk[proxy]` |
+
+### Proxy with Authentication
+
+Include credentials in the URL:
+
+```bash
+export APPFORM_HTTP_PROXY="http://user:password@proxy.example.com:8080"
+export APPFORM_SFTP_PROXY="socks5://user:password@proxy.example.com:1080"
+```
+
+Or in `~/.appform/config.json`:
+```json
+{
+  "http_proxy": "http://user:password@proxy.example.com:8080",
+  "sftp_proxy": "socks5://user:password@proxy.example.com:1080"
+}
+```
+
+### Installing SOCKS Proxy Support
+
+SOCKS proxy requires the optional `PySocks` dependency:
+
+```bash
+pip install jhinno-appform-sdk[proxy]
+```
+
+Or install `PySocks` directly:
+
+```bash
+pip install PySocks>=1.7.1
+```
+
+### How It Works
+
+- **`http_proxy`**: Applied to all HTTP/HTTPS API requests via `requests.Session.proxies`. Supports HTTP CONNECT tunnel and SOCKS proxies.
+- **`sftp_proxy`**: Applied to SFTP file transfers and SSH compute node connections. The proxy creates a tunnel socket that is passed to paramiko's `Transport`. Supports both SOCKS proxies (via PySocks) and HTTP CONNECT tunnels (stdlib only).
+
+> **Note**: `http_proxy` and `sftp_proxy` can point to different proxies. For example, API traffic may go through an HTTP proxy while SFTP/SSH traffic goes through a SOCKS proxy.
 
 ## SSH Host Key Verification
 
