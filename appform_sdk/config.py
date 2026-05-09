@@ -42,6 +42,7 @@ class Config:
     ENV_SFTP_KEY_FILE = "APPFORM_SFTP_KEY_FILE"
     ENV_SFTP_KEY_PASSWORD = "APPFORM_SFTP_KEY_PASSWORD"
     ENV_COMPUTE_CONFIG = "APPFORM_COMPUTE_CONFIG"
+    ENV_AUTO_ADD_HOST_KEY = "APPFORM_AUTO_ADD_HOST_KEY"
 
     # Default config file paths
     DEFAULT_CONFIG_DIR = ".appform"
@@ -71,6 +72,7 @@ class Config:
         sftp_password: Optional[str] = None,
         sftp_key_file: Optional[str] = None,
         sftp_key_password: Optional[str] = None,
+        auto_add_host_key: Optional[bool] = None,
     ):
         """
         Initialize configuration.
@@ -97,6 +99,7 @@ class Config:
             sftp_password: SFTP password (defaults to password)
             sftp_key_file: SSH private key file path
             sftp_key_password: SSH key passphrase
+            auto_add_host_key: Automatically accept SSH host keys without prompting (default: False)
         """
         # Determine config file path - use default if not specified
         if config_file:
@@ -166,6 +169,12 @@ class Config:
         )
         self.sftp_key_password = self._get_value(
             sftp_key_password, self.ENV_SFTP_KEY_PASSWORD, "sftp_key_password"
+        )
+        self.auto_add_host_key = self._get_bool_value(
+            auto_add_host_key,
+            self.ENV_AUTO_ADD_HOST_KEY,
+            "auto_add_host_key",
+            default=False,
         )
 
     def _get_value(
@@ -322,6 +331,7 @@ class Config:
         sftp_password: Optional[str] = None,
         sftp_key_file: Optional[str] = None,
         sftp_key_password: Optional[str] = None,
+        auto_add_host_key: Optional[bool] = None,
     ) -> None:
         """
         Save configuration to file.
@@ -413,6 +423,8 @@ class Config:
             existing["sftp_key_file"] = sftp_key_file
         if sftp_key_password is not None:
             existing["sftp_key_password"] = sftp_key_password
+        if auto_add_host_key is not None:
+            existing["auto_add_host_key"] = auto_add_host_key
 
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)

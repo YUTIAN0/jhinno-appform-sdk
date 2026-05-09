@@ -194,6 +194,19 @@ def _add_config_parser(subparsers):
         dest="sftp_key_password",
         help="SSH key passphrase for SFTP",
     )
+    config_set_parser.add_argument(
+        "--auto-add-host-key",
+        dest="auto_add_host_key",
+        action="store_true",
+        default=None,
+        help="Automatically accept SSH host keys without prompting",
+    )
+    config_set_parser.add_argument(
+        "--no-auto-add-host-key",
+        dest="auto_add_host_key",
+        action="store_false",
+        help="Disable automatic SSH host key acceptance (default)",
+    )
     config_show_parser = config_subparsers.add_parser(
         "show", help="Show current configuration"
     )

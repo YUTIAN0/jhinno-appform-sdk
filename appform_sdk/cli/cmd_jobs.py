@@ -440,6 +440,7 @@ def handle_jobs_files_custom(args, job_info, client):
         "password": ssh_pass,
         "key_filename": ssh_key,
         "key_password": ssh_key_pass,
+        "config": config,
     }
 
     ssh_kwargs = {"connect_kwargs": connect_kwargs}

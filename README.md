@@ -852,10 +852,28 @@ Are you sure you want to continue connecting (yes/no)?
 
 ### Auto-accept Host Keys
 
-For automated environments (CI/CD, scripts), you can skip host key verification by setting the `APPFORM_AUTO_ADD_HOST_KEY` environment variable:
+For automated environments (CI/CD, scripts), you can skip host key verification in three ways (in order of priority):
 
+**1. CLI flag:**
+```bash
+appform config set --auto-add-host-key
+```
+
+**2. Configuration file** (`~/.appform/config.json`):
+```json
+{
+  "auto_add_host_key": true
+}
+```
+
+**3. Environment variable:**
 ```bash
 export APPFORM_AUTO_ADD_HOST_KEY="true"
+```
+
+To disable auto-accept (the default):
+```bash
+appform config set --no-auto-add-host-key
 ```
 
 Or programmatically:

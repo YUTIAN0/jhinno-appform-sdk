@@ -26,13 +26,20 @@ ENV_COMPUTE_CONFIG = "APPFORM_COMPUTE_CONFIG"
 ENV_AUTO_ADD_HOST_KEY = "APPFORM_AUTO_ADD_HOST_KEY"
 
 
-def _get_host_key_policy():
-    """Return the host key policy based on APPFORM_AUTO_ADD_HOST_KEY env var.
+def _get_host_key_policy(config=None):
+    """Return the host key policy based on config and env var.
 
-    If the env var is set (to any truthy value), accept any host key automatically.
+    Priority: config.auto_add_host_key > APPFORM_AUTO_ADD_HOST_KEY env var > prompt.
+    If auto-accept is enabled, use AutoAddPolicy.
     Otherwise, prompt the user to confirm unknown host keys.
     """
-    if os.environ.get(ENV_AUTO_ADD_HOST_KEY):
+    auto_add = False
+    if config is not None:
+        auto_add = bool(getattr(config, "auto_add_host_key", False))
+    if not auto_add:
+        auto_add = bool(os.environ.get(ENV_AUTO_ADD_HOST_KEY))
+
+    if auto_add:
         return paramiko.AutoAddPolicy()
 
     class _PromptPolicy(paramiko.MissingHostKeyPolicy):
@@ -139,6 +146,7 @@ def connect_direct(
     key_filename: str = None,
     key_password: str = None,
     timeout: int = 30,
+    config=None,
 ) -> paramiko.SSHClient:
     """SSH directly to a compute node."""
     if not paramiko:
@@ -148,7 +156,7 @@ def connect_direct(
 
     client = paramiko.SSHClient()
     client.load_system_host_keys()
-    client.set_missing_host_key_policy(_get_host_key_policy())
+    client.set_missing_host_key_policy(_get_host_key_policy(config))
     client.connect(
         hostname=node,
         port=22,
@@ -172,6 +180,7 @@ def connect_via_gateway(
     key_filename: str = None,
     key_password: str = None,
     timeout: int = 30,
+    config=None,
 ) -> paramiko.SSHClient:
     """SSH to compute node via login node gateway (ssh -J style).
 
@@ -191,7 +200,7 @@ def connect_via_gateway(
     # Step 1: Connect to gateway (login node)
     gateway_client = paramiko.SSHClient()
     gateway_client.load_system_host_keys()
-    gateway_client.set_missing_host_key_policy(_get_host_key_policy())
+    gateway_client.set_missing_host_key_policy(_get_host_key_policy(config))
     gateway_client.connect(
         hostname=gateway_host,
         port=gateway_port,
