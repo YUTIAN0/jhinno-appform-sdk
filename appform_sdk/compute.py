@@ -154,6 +154,13 @@ def connect_direct(
             "paramiko is required. Install: pip install jhinno-appform-sdk[sftp]"
         )
 
+    proxy_url = getattr(config, "sftp_proxy", None) if config else None
+    sock = None
+    if proxy_url:
+        from .sftp import _open_proxy_socket
+
+        sock = _open_proxy_socket(proxy_url, node, 22)
+
     client = paramiko.SSHClient()
     client.load_system_host_keys()
     client.set_missing_host_key_policy(_get_host_key_policy(config))
@@ -167,6 +174,7 @@ def connect_direct(
         timeout=timeout,
         allow_agent=False,
         look_for_keys=False,
+        sock=sock,
     )
     return client
 
@@ -197,6 +205,13 @@ def connect_via_gateway(
             "paramiko is required. Install: pip install jhinno-appform-sdk[sftp]"
         )
 
+    proxy_url = getattr(config, "sftp_proxy", None) if config else None
+    sock = None
+    if proxy_url:
+        from .sftp import _open_proxy_socket
+
+        sock = _open_proxy_socket(proxy_url, gateway_host, gateway_port)
+
     # Step 1: Connect to gateway (login node)
     gateway_client = paramiko.SSHClient()
     gateway_client.load_system_host_keys()
@@ -211,6 +226,7 @@ def connect_via_gateway(
         timeout=timeout,
         allow_agent=False,
         look_for_keys=False,
+        sock=sock,
     )
 
     # Step 2: Open TCP tunnel from gateway to compute node

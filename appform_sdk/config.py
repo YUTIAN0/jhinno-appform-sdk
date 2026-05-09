@@ -42,6 +42,8 @@ class Config:
     ENV_SFTP_KEY_PASSWORD = "APPFORM_SFTP_KEY_PASSWORD"
     ENV_COMPUTE_CONFIG = "APPFORM_COMPUTE_CONFIG"
     ENV_AUTO_ADD_HOST_KEY = "APPFORM_AUTO_ADD_HOST_KEY"
+    ENV_HTTP_PROXY = "APPFORM_HTTP_PROXY"
+    ENV_SFTP_PROXY = "APPFORM_SFTP_PROXY"
 
     # Default config file paths
     DEFAULT_CONFIG_DIR = ".appform"
@@ -72,6 +74,8 @@ class Config:
         sftp_key_file: Optional[str] = None,
         sftp_key_password: Optional[str] = None,
         auto_add_host_key: Optional[bool] = None,
+        http_proxy: Optional[str] = None,
+        sftp_proxy: Optional[str] = None,
     ):
         """
         Initialize configuration.
@@ -99,6 +103,8 @@ class Config:
             sftp_key_file: SSH private key file path
             sftp_key_password: SSH key passphrase
             auto_add_host_key: Automatically accept SSH host keys without prompting (default: False)
+            http_proxy: Proxy URL for HTTP/HTTPS API requests (e.g., http://proxy:8080 or socks5://proxy:1080)
+            sftp_proxy: Proxy URL for SFTP/SSH connections (e.g., socks5://proxy:1080 or http://proxy:8080)
         """
         # Determine config file path - use default if not specified
         if config_file:
@@ -174,6 +180,12 @@ class Config:
             self.ENV_AUTO_ADD_HOST_KEY,
             "auto_add_host_key",
             default=False,
+        )
+        self.http_proxy = self._get_value(
+            http_proxy, self.ENV_HTTP_PROXY, "http_proxy"
+        )
+        self.sftp_proxy = self._get_value(
+            sftp_proxy, self.ENV_SFTP_PROXY, "sftp_proxy"
         )
 
     def _get_value(
@@ -331,6 +343,8 @@ class Config:
         sftp_key_file: Optional[str] = None,
         sftp_key_password: Optional[str] = None,
         auto_add_host_key: Optional[bool] = None,
+        http_proxy: Optional[str] = None,
+        sftp_proxy: Optional[str] = None,
     ) -> None:
         """
         Save configuration to file.
@@ -424,6 +438,10 @@ class Config:
             existing["sftp_key_password"] = sftp_key_password
         if auto_add_host_key is not None:
             existing["auto_add_host_key"] = auto_add_host_key
+        if http_proxy is not None:
+            existing["http_proxy"] = http_proxy
+        if sftp_proxy is not None:
+            existing["sftp_proxy"] = sftp_proxy
 
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
@@ -458,6 +476,8 @@ class Config:
             "sftp_password": "***" if self.sftp_password else None,
             "sftp_key_file": self.sftp_key_file,
             "sftp_key_password": "***" if self.sftp_key_password else None,
+            "http_proxy": self.http_proxy,
+            "sftp_proxy": self.sftp_proxy,
         }
 
     def __repr__(self) -> str:

@@ -146,6 +146,8 @@ class AppformClient:
         self._sftp_password = None
         self._sftp_key_file = None
         self._sftp_key_password = None
+        self._http_proxy = None
+        self._sftp_proxy = None
         if config:
             self._sftp_host = config.sftp_host
             self._sftp_port = config.sftp_port
@@ -153,6 +155,8 @@ class AppformClient:
             self._sftp_password = config.sftp_password or config.password
             self._sftp_key_file = config.sftp_key_file
             self._sftp_key_password = config.sftp_key_password
+            self._http_proxy = config.http_proxy
+            self._sftp_proxy = config.sftp_proxy
             # Auto-extract host from base_url if sftp_host not set
             if not self._sftp_host and self.base_url:
                 from urllib.parse import urlparse
@@ -176,6 +180,13 @@ class AppformClient:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
+
+        # Apply HTTP proxy if configured
+        if self._http_proxy:
+            self.session.proxies = {
+                "http": self._http_proxy,
+                "https": self._http_proxy,
+            }
 
         # Initialize API registry and extension manager
         self._registry = init_default_registry(self._api_version)

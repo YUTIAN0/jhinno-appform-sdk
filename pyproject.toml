@@ -45,6 +45,9 @@ dev = [
 sftp = [
     "paramiko>=3.0.0,<4.0.0",
 ]
+proxy = [
+    "PySocks>=1.7.1",
+]
 
 [project.scripts]
 appform = "appform_sdk.cli:main"

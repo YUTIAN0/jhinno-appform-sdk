@@ -33,6 +33,66 @@ from .exceptions import SFTPError  # noqa: E402
 _DANGEROUS_PATH_CHARS = re.compile(r"""[;&|`(){}$\\><'" ]""")
 
 
+def _open_proxy_socket(proxy_url: str, target_host: str, target_port: int):
+    """Create a socket through a proxy to a target host.
+
+    Supports:
+    - SOCKS  (socks5://, socks4://)  — requires PySocks
+    - HTTP CONNECT tunnel (http://, https://) — stdlib only
+
+    Returns a connected socket.
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(proxy_url)
+
+    if parsed.scheme in ("socks5", "socks4"):
+        try:
+            import socks
+        except ImportError:
+            raise ImportError(
+                "PySocks is required for SOCKS proxy support. "
+                "Install with: pip install jhinno-appform-sdk[proxy]"
+            )
+        sock = socks.socksocket()
+        proxy_type = socks.SOCKS5 if parsed.scheme == "socks5" else socks.SOCKS4
+        sock.set_proxy(
+            proxy_type,
+            parsed.hostname,
+            parsed.port,
+            username=parsed.username,
+            password=parsed.password,
+        )
+        sock.connect((target_host, target_port))
+        return sock
+
+    if parsed.scheme in ("http", "https"):
+        proxy_auth = None
+        if parsed.username:
+            import base64
+            proxy_auth = base64.b64encode(
+                f"{parsed.username}:{parsed.password or ''}".encode()
+            ).decode()
+
+        conn_cls = (
+            __import__("http.client", fromlist=["HTTPSConnection"]).HTTPSConnection
+            if parsed.scheme == "https"
+            else __import__("http.client", fromlist=["HTTPConnection"]).HTTPConnection
+        )
+        conn = conn_cls(parsed.hostname, parsed.port, timeout=30)
+        headers = {}
+        if proxy_auth:
+            headers["Proxy-Authorization"] = f"Basic {proxy_auth}"
+        conn.set_tunnel(target_host, target_port, headers=headers)
+        conn.connect()
+        return conn.sock
+
+    raise ValueError(
+        f"Unsupported proxy scheme: '{parsed.scheme}'. "
+        "Use http://, https://, socks5://, or socks4://"
+    )
+
+
 def _validate_path(path: str) -> str:
     """Validate a file/directory path for use in shell commands.
 
@@ -67,6 +127,7 @@ class SFTPClientManager:
         key_filename: Optional[str] = None,
         key_password: Optional[str] = None,
         timeout: int = 30,
+        proxy_url: Optional[str] = None,
     ):
         self._host = host
         self._port = port
@@ -75,6 +136,7 @@ class SFTPClientManager:
         self._key_filename = key_filename
         self._key_password = key_password
         self._timeout = timeout
+        self._proxy_url = proxy_url
 
         self._transport = None
         self._sftp = None
@@ -89,7 +151,11 @@ class SFTPClientManager:
     def _connect(self):
         paramiko = _require_paramiko()
 
-        self._transport = paramiko.Transport((self._host, self._port))
+        sock = None
+        if self._proxy_url:
+            sock = _open_proxy_socket(self._proxy_url, self._host, self._port)
+
+        self._transport = paramiko.Transport((self._host, self._port), sock=sock)
         try:
             if self._key_filename:
                 self._transport.connect(
@@ -178,6 +244,7 @@ class SFTPAPI:
                 key_filename=getattr(c, "_sftp_key_file", None),
                 key_password=getattr(c, "_sftp_key_password", None),
                 timeout=getattr(c, "timeout", 30) or 30,
+                proxy_url=getattr(c, "_sftp_proxy", None),
             )
         return self._manager
 
