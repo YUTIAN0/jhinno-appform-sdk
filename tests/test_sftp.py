@@ -170,9 +170,9 @@ class TestSFTPClientManager:
             from appform_sdk.sftp import SFTPClientManager
 
             mgr = SFTPClientManager(host="test.host", username="user", password="pass")
-            s1 = mgr.sftp
+            _ = mgr.sftp
             s2 = mgr.sftp
-            assert s1 is s2
+            assert _ is s2
             assert mock_paramiko.SSHClient.call_count == 1
 
     def test_reconnect_on_inactive_transport(self):
@@ -196,7 +196,7 @@ class TestSFTPClientManager:
             from appform_sdk.sftp import SFTPClientManager
 
             mgr = SFTPClientManager(host="test.host", username="user", password="pass")
-            s1 = mgr.sftp
+            _ = mgr.sftp
             s2 = mgr.sftp
             assert s2 is mock_sftp2
             assert mock_paramiko.SSHClient.call_count == 2
