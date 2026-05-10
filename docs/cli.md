@@ -131,9 +131,34 @@ appform config set --sftp-host mycluster.example.com
 appform config set --sftp-port 22
 appform config set --sftp-key-file ~/.ssh/id_rsa
 
+# Proxy 配置
+appform config set --http-proxy http://proxy:8080
+appform config set --sftp-proxy socks5://proxy:1080
+
 # 查看当前配置
 appform config show
 ```
+
+### 代理配置
+
+SDK 支持 HTTP/HTTPS 和 SFTP/SSH 连接的代理：
+
+| 配置项 | 说明 | 示例 |
+|--------|------|------|
+| `http_proxy` | HTTP API 请求代理 | `http://proxy:8080` 或 `socks5://proxy:1080` |
+| `sftp_proxy` | SFTP/SSH 连接代理 | `socks5://proxy:1080` 或 `http://proxy:8080` |
+
+设置方式（优先级从高到低）：
+1. 环境变量：`APPFORM_HTTP_PROXY`、`APPFORM_SFTP_PROXY`
+2. 配置文件：`~/.appform/config.json` 中的 `http_proxy`、`sftp_proxy`
+3. CLI：`appform config set --http-proxy URL --sftp-proxy URL`
+
+HTTP/SOCKS 代理依赖 `PySocks`，安装方式：
+```bash
+pip install jhinno-appform-sdk[sftp]
+```
+
+当使用 HTTP 代理进行 SFTP 连接时，SDK 会通过 HTTP CONNECT 隧道建立 SSH 连接。
 
 ## auth - 认证
 

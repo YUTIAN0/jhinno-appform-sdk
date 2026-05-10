@@ -118,6 +118,104 @@ class TestConfig:
         assert d["access_key"] == "***"
         assert d["username"] == "user"
 
+    def test_config_proxy_from_env(self, monkeypatch):
+        """Test loading proxy configuration from environment variables."""
+        monkeypatch.setenv("APPFORM_HTTP_PROXY", "http://proxy:8080")
+        monkeypatch.setenv("APPFORM_SFTP_PROXY", "socks5://proxy:1080")
+
+        config = Config()
+        assert config.http_proxy == "http://proxy:8080"
+        assert config.sftp_proxy == "socks5://proxy:1080"
+
+    def test_config_proxy_from_file(self):
+        """Test loading proxy configuration from file."""
+        config_data = {
+            "base_url": "https://file-server.com",
+            "http_proxy": "http://proxy.local:8080",
+            "sftp_proxy": "http://proxy.local:8080",
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = Config(config_file=config_path)
+            assert config.http_proxy == "http://proxy.local:8080"
+            assert config.sftp_proxy == "http://proxy.local:8080"
+        finally:
+            os.unlink(config_path)
+
+    def test_config_proxy_priority(self, monkeypatch):
+        """Test proxy configuration priority: direct > env > file."""
+        monkeypatch.setenv("APPFORM_HTTP_PROXY", "http://env-proxy:8080")
+        config_data = {"base_url": "https://file-server.com", "http_proxy": "http://file-proxy:8080"}
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(config_data, f)
+            config_path = f.name
+
+        try:
+            config = Config(
+                http_proxy="http://direct-proxy:8080", config_file=config_path
+            )
+            assert config.http_proxy == "http://direct-proxy:8080"
+
+            config2 = Config(config_file=config_path)
+            assert config2.http_proxy == "http://env-proxy:8080"
+
+            monkeypatch.delenv("APPFORM_HTTP_PROXY")
+            config3 = Config(config_file=config_path)
+            assert config3.http_proxy == "http://file-proxy:8080"
+        finally:
+            os.unlink(config_path)
+
+    def test_config_save_proxy(self):
+        """Test saving proxy configuration to file."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+
+            Config.save_config_file(
+                base_url="https://saved-server.com",
+                http_proxy="http://proxy:8080",
+                sftp_proxy="socks5://proxy:1080",
+                config_file=config_path,
+            )
+
+            assert os.path.exists(config_path)
+
+            with open(config_path, "r") as f:
+                data = json.load(f)
+
+            assert data["http_proxy"] == "http://proxy:8080"
+            assert data["sftp_proxy"] == "socks5://proxy:1080"
+
+    def test_config_save_proxy_to_environment(self):
+        """Test saving proxy configuration to a named environment."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = os.path.join(tmpdir, "config.json")
+
+            Config.save_config_file(
+                base_url="https://prod-server.com",
+                http_proxy="http://prod-proxy:8080",
+                config_file=config_path,
+                environment="prod",
+            )
+
+            with open(config_path, "r") as f:
+                data = json.load(f)
+
+            assert data["environments"]["prod"]["http_proxy"] == "http://prod-proxy:8080"
+
+    def test_config_to_dict_includes_proxy(self):
+        """Test that to_dict includes proxy fields."""
+        config = Config(
+            base_url="https://test.com",
+            http_proxy="http://proxy:8080",
+        )
+        d = config.to_dict()
+        assert d["http_proxy"] == "http://proxy:8080"
+
     def test_config_env_from_param(self):
         """Test loading from environment via constructor parameter."""
         config_data = {

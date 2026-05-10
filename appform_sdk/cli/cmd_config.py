@@ -37,6 +37,8 @@ def handle_config_command(args):
             sftp_key_file=getattr(args, "sftp_key_file", None),
             sftp_key_password=getattr(args, "sftp_key_password", None),
             auto_add_host_key=getattr(args, "auto_add_host_key", None),
+            http_proxy=getattr(args, "http_proxy", None),
+            sftp_proxy=getattr(args, "sftp_proxy", None),
             environment=getattr(args, "environment", None),
         )
         config_path = config_file or Config.get_default_config_path()

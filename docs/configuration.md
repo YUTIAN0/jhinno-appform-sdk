@@ -126,6 +126,10 @@ appform config set --sftp-host mycluster.example.com
 appform config set --sftp-port 22
 appform config set --sftp-key-file ~/.ssh/id_rsa
 
+# 代理配置
+appform config set --http-proxy http://proxy:8080
+appform config set --sftp-proxy socks5://proxy:1080
+
 # 查看当前配置
 appform config show
 ```

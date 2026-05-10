@@ -142,6 +142,18 @@ job_submit_config:
 | 4 | Token | 配置文件或环境变量中的 Token |
 | 5 | AES Token | 集群环境自动认证 |
 
+## 代理配置
+
+`job_submit` 跟随 SDK 全局代理配置：
+
+- HTTP API 代理：`APPFORM_HTTP_PROXY` 环境变量或配置文件中 `http_proxy`
+- SFTP/SSH 代理：`APPFORM_SFTP_PROXY` 环境变量或配置文件中 `sftp_proxy`
+
+配置示例：
+```bash
+appform config set --http-proxy http://proxy:8080 --sftp-proxy socks5://proxy:1080
+```
+
 ## 完整示例
 
 ### 示例 1：远程文件直接提交

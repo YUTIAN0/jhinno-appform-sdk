@@ -34,6 +34,8 @@ _appform() {
         '-o[Output format: json/raw/table/text]: :json raw table text'
         '--output-template[Output template file (.yaml/.yml/.json)]'
         '--profile-config[Job profile config file]'
+        '--http-proxy[Proxy URL for HTTP/HTTPS API requests]'
+        '--sftp-proxy[Proxy URL for SFTP/SSH connections]'
         '--version[Show version]'
     )
 

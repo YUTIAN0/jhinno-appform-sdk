@@ -134,6 +134,7 @@ _appform_global_options() {
         "--username" "--password" "--token"
         "--api-version" "--extensions-dir" "--config"
         "--env" "--output" "--output-template" "--profile-config"
+        "--http-proxy" "--sftp-proxy"
         "--version"
         "-o"
     )

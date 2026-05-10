@@ -39,6 +39,7 @@ setup(
     entry_points={
         "console_scripts": [
             "appform=appform_sdk.cli.main:main",
+            "job_submit=appform_sdk.job_submit:main",
         ],
     },
     classifiers=[

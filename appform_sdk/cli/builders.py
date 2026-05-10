@@ -216,6 +216,16 @@ def _add_config_parser(subparsers):
         action="store_false",
         help="Disable automatic SSH host key acceptance (default)",
     )
+    config_set_parser.add_argument(
+        "--http-proxy",
+        dest="http_proxy",
+        help="Proxy URL for HTTP/HTTPS API requests (e.g., http://proxy:8080 or socks5://proxy:1080)",
+    )
+    config_set_parser.add_argument(
+        "--sftp-proxy",
+        dest="sftp_proxy",
+        help="Proxy URL for SFTP/SSH connections (e.g., socks5://proxy:1080 or http://proxy:8080)",
+    )
     config_show_parser = config_subparsers.add_parser(
         "show", help="Show current configuration"
     )

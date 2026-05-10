@@ -15,6 +15,9 @@ complete -c appform -n "__fish_appform_needs_command" -l config -r -d 'Configura
 complete -c appform -n "__fish_appform_needs_command" -s o -l output -x -a '{json\ "JSON format",raw\ "Raw API response",table\ "Table format",text\ "Plain text"}' -d 'Output format'
 complete -c appform -n "__fish_appform_needs_command" -l output-template -r -d 'Output template file'
 complete -c appform -n "__fish_appform_needs_command" -l profile-config -r -d 'Job profile config'
+complete -c appform -n "__fish_appform_needs_command" -l env -r -d 'Target environment'
+complete -c appform -n "__fish_appform_needs_command" -l http-proxy -r -d 'HTTP/HTTPS proxy URL'
+complete -c appform -n "__fish_appform_needs_command" -l sftp-proxy -r -d 'SFTP/SSH proxy URL'
 complete -c appform -n "__fish_appform_needs_command" -l version -d 'Show version'
 
 # Main commands

@@ -96,6 +96,15 @@ SFTP SSH 私钥文件路径
 .TP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH 私钥密码
+.TP
+.B APPFORM_HTTP_PROXY
+HTTP/HTTPS API 代理 URL（如 http://proxy:8080 或 socks5://proxy:1080）
+.TP
+.B APPFORM_SFTP_PROXY
+SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
+.TP
+.B APPFORM_ENV
+目标环境名称，从配置文件加载
 .RE
 .SH 模块
 .SS AppformClient
