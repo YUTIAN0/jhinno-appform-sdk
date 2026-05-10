@@ -53,6 +53,14 @@ Path to output template file (.yaml/.yml/.json)
 .B \-\-profile\-config FILE
 Job profile configuration file path
 .TP
+.B \-\-http\-proxy URL
+Proxy URL for HTTP/HTTPS API requests (e.g., http://proxy:8080 or
+socks5://proxy:1080)
+.TP
+.B \-\-sftp\-proxy URL
+Proxy URL for SFTP/SSH connections (e.g., socks5://proxy:1080 or
+http://proxy:8080)
+.TP
 .B \-\-generate\-completion SHELL
 Generate shell completion script (bash | zsh | fish)
 .TP
@@ -93,8 +101,8 @@ List all configured applications
 .B jobs submit\-raw \-\-app\-id APP \-\-params JSON
 Submit a job with raw JSON parameters
 .TP
-.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N] [\-\-all]
-List jobs with optional filters; \-\-all shows jobs for all users (default: current user only)
+.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N]
+List jobs with optional filters (default: current user only)
 .TP
 .B jobs status [RUN|PEND|DONE|EXIT|all]
 List jobs by status
@@ -367,6 +375,12 @@ SSH private key file path for SFTP
 .TP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH key passphrase for SFTP
+.TP
+.B APPFORM_HTTP_PROXY
+Proxy URL for HTTP/HTTPS API requests (e.g., http://proxy:8080 or socks5://proxy:1080)
+.TP
+.B APPFORM_SFTP_PROXY
+Proxy URL for SFTP/SSH connections (e.g., socks5://proxy:1080 or http://proxy:8080)
 .TP
 .B APPFORM_COMPUTE_CONFIG
 Path to compute node configuration file (default: ~/.appform/compute.yaml)

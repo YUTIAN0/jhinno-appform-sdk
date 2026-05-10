@@ -14,8 +14,7 @@ and organization administration.
 .RS
 .nf
 client = AppformClient(
-    base_url="https://your-server.com",
-    verify_ssl=False
+    base_url="https://your-server.com"
 )
 client.auth.login(username="user", password="pass")
 jobs = client.jobs.list_jobs()

@@ -12,10 +12,9 @@ appform-sdk \- Appform 6.0-6.6 API 的 Python SDK
 .RS
 .nf
 client = AppformClient(
-    base_url="https://your-server.com",
-    verify_ssl=False
+    base_url="https://your-server.com"
 )
-client.auth.login(username="your_username", password="your_password")
+client.auth.login(username="user", password="pass")
 jobs = client.jobs.list_jobs()
 .fi
 .RE
@@ -96,6 +95,15 @@ SFTP SSH 私钥文件路径
 .TP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH 私钥密码
+.TP
+.B APPFORM_HTTP_PROXY
+HTTP/HTTPS API 代理 URL（如 http://proxy:8080 或 socks5://proxy:1080）
+.TP
+.B APPFORM_SFTP_PROXY
+SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
+.TP
+.B APPFORM_ENV
+目标环境名称，从配置文件加载
 .RE
 .SH 模块
 .SS AppformClient
@@ -603,7 +611,7 @@ client.jobs.stop("494825")
 .RS
 .nf
 client = AppformClient(base_url="https://your-server.com")
-client.auth.login("your_username", "your_password")
+client.auth.login("user", "pass")
 
 # 启动会话
 result = client.sessions.start(
@@ -625,7 +633,7 @@ client.sessions.connect_and_launch(
 .RS
 .nf
 client = AppformClient(base_url="https://your-server.com")
-client.auth.login("your_username", "your_password")
+client.auth.login("user", "pass")
 
 # 列出目录
 files = client.files.list(path="/home/user")
@@ -650,8 +658,8 @@ client.files.download(
 .nf
 from appform_sdk import AppformClient, Config
 
-# 从配置文件加载
-config = Config(config_file="~/.appform/config.json")
+# 从配置文件加载（指定环境）
+config = Config(config_file="~/.appform/config.json", env="prod")
 client = AppformClient(config=config)
 
 # 或使用环境变量

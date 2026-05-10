@@ -49,6 +49,12 @@ API 版本（默认 6.5）
 .B \-\-profile\-config FILE
 作业配置文件路径
 .TP
+.B \-\-http\-proxy URL
+HTTP/HTTPS API 代理 URL（如 http://proxy:8080 或 socks5://proxy:1080）
+.TP
+.B \-\-sftp\-proxy URL
+SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
+.TP
 .B \-\-generate\-completion SHELL
 生成 Shell 补全脚本 (bash | zsh | fish)
 .TP
@@ -89,8 +95,8 @@ API 版本（默认 6.5）
 .B jobs submit\-raw \-\-app\-id APP \-\-params JSON
 使用原始 JSON 参数提交作业
 .TP
-.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N] [\-\-all]
-列出作业（可按状态/名称/作业号过滤）；\-\-all 显示所有用户作业（默认：仅当前用户）
+.B jobs list [\-\-status ST] [\-\-name NAME] [\-\-job\-id ID] [\-\-page N] [\-\-page\-size N]
+列出作业（可按状态/名称/作业号过滤；默认仅当前用户）
 .TP
 .B jobs status [RUN|PEND|DONE|EXIT|all]
 按状态查看作业
@@ -363,6 +369,12 @@ SFTP SSH 私钥文件路径
 .TP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH 私钥密码
+.TP
+.B APPFORM_HTTP_PROXY
+HTTP/HTTPS API 代理 URL（如 http://proxy:8080 或 socks5://proxy:1080）
+.TP
+.B APPFORM_SFTP_PROXY
+SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
 .TP
 .B APPFORM_COMPUTE_CONFIG
 计算节点配置文件路径（默认 ~/.appform/compute.yaml）

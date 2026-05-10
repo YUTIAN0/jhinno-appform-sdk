@@ -14,10 +14,9 @@ and organization administration.
 .RS
 .nf
 client = AppformClient(
-    base_url="https://your-server.com",
-    verify_ssl=False
+    base_url="https://your-server.com"
 )
-client.auth.login(username="your_username", password="your_password")
+client.auth.login(username="user", password="pass")
 jobs = client.jobs.list_jobs()
 .fi
 .RE
@@ -98,6 +97,15 @@ SSH private key file for SFTP
 .TP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH key passphrase
+.TP
+.B APPFORM_HTTP_PROXY
+Proxy URL for HTTP/HTTPS API requests (e.g., http://proxy:8080 or socks5://proxy:1080)
+.TP
+.B APPFORM_SFTP_PROXY
+Proxy URL for SFTP/SSH connections (e.g., socks5://proxy:1080 or http://proxy:8080)
+.TP
+.B APPFORM_ENV
+Target environment name to load from config file
 .RE
 .SH INSTALLED MODULES
 .SS AppformClient
@@ -609,7 +617,7 @@ client.jobs.stop("494825")
 .RS
 .nf
 client = AppformClient(base_url="https://your-server.com")
-client.auth.login("your_username", "your_password")
+client.auth.login("user", "pass")
 
 # Start a session
 result = client.sessions.start(
@@ -629,7 +637,7 @@ client.sessions.connect_and_launch(sessions["data"][0]["sessionId"])
 .RS
 .nf
 client = AppformClient(base_url="https://your-server.com")
-client.auth.login("your_username", "your_password")
+client.auth.login("user", "pass")
 
 # List directory
 files = client.files.list(path="/home/user")
@@ -654,8 +662,8 @@ client.files.download(
 .nf
 from appform_sdk import AppformClient, Config
 
-# Load from config file
-config = Config(config_file="~/.appform/config.json")
+# Load from config file (with environment)
+config = Config(config_file="~/.appform/config.json", env="prod")
 client = AppformClient(config=config)
 
 # Or use environment variables

@@ -38,7 +38,7 @@ client.auth.login(username="user", password="pass")
 client = AppformClient(config=Config())
 ```
 
-配置优先级：直接参数 > 环境变量(`APPFORM_*`) > 配置文件。`verify_ssl=False` 可关闭 SSL 校验。
+配置优先级：直接参数 > 环境变量(`APPFORM_*`) > 配置文件。默认启用 SSL 验证；如需关闭（如使用自签名证书），可传 `verify_ssl=False`。
 
 **禁止直接读取 `~/.appform/config.json` 文件。如果需要查看配置内容，使用 `appform -o json config show` 命令获取。**
 
