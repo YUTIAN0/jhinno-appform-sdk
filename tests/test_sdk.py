@@ -149,7 +149,10 @@ class TestConfig:
     def test_config_proxy_priority(self, monkeypatch):
         """Test proxy configuration priority: direct > env > file."""
         monkeypatch.setenv("APPFORM_HTTP_PROXY", "http://env-proxy:8080")
-        config_data = {"base_url": "https://file-server.com", "http_proxy": "http://file-proxy:8080"}
+        config_data = {
+            "base_url": "https://file-server.com",
+            "http_proxy": "http://file-proxy:8080",
+        }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_data, f)
@@ -205,7 +208,9 @@ class TestConfig:
             with open(config_path, "r") as f:
                 data = json.load(f)
 
-            assert data["environments"]["prod"]["http_proxy"] == "http://prod-proxy:8080"
+            assert (
+                data["environments"]["prod"]["http_proxy"] == "http://prod-proxy:8080"
+            )
 
     def test_config_to_dict_includes_proxy(self):
         """Test that to_dict includes proxy fields."""
