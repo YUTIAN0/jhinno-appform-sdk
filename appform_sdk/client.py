@@ -8,7 +8,6 @@ import warnings
 from typing import Any, Dict, Optional, Union
 
 import requests
-import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3.util.retry import Retry
