@@ -238,10 +238,12 @@ class TestSFTPClientManager:
         mock_ssh_client.get_transport.return_value = mock_transport
         mock_paramiko.SSHClient.return_value = mock_ssh_client
 
-        with (
-            patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko),
-            patch("appform_sdk.sftp.os.path.expanduser", return_value=known_hosts),
-            patch("builtins.input", return_value="yes"),
+        with patch(
+            "appform_sdk.sftp._require_paramiko", return_value=mock_paramiko
+        ), patch(
+            "appform_sdk.sftp.os.path.expanduser", return_value=known_hosts
+        ), patch(
+            "builtins.input", return_value="yes"
         ):
             from appform_sdk.sftp import SFTPClientManager
 
@@ -261,10 +263,9 @@ class TestSFTPClientManager:
         mock_ssh_client.connect.side_effect = Exception("Host key verification failed")
         mock_paramiko.SSHClient.return_value = mock_ssh_client
 
-        with (
-            patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko),
-            patch("builtins.input", return_value="no"),
-        ):
+        with patch(
+            "appform_sdk.sftp._require_paramiko", return_value=mock_paramiko
+        ), patch("builtins.input", return_value="no"):
             from appform_sdk.sftp import SFTPClientManager
 
             mgr = SFTPClientManager(host="test.host", username="user", password="pass")
@@ -283,10 +284,9 @@ class TestSFTPClientManager:
         mock_ssh_client.get_transport.return_value = mock_transport
         mock_paramiko.SSHClient.return_value = mock_ssh_client
 
-        with (
-            patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko),
-            patch("appform_sdk.sftp.os.path.expanduser", return_value=known_hosts),
-        ):
+        with patch(
+            "appform_sdk.sftp._require_paramiko", return_value=mock_paramiko
+        ), patch("appform_sdk.sftp.os.path.expanduser", return_value=known_hosts):
             from appform_sdk.sftp import SFTPClientManager
 
             mgr = SFTPClientManager(host="test.host", username="user", password="pass")
