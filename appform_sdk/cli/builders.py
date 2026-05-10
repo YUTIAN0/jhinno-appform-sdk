@@ -206,15 +206,19 @@ def _add_config_parser(subparsers):
     config_set_parser.add_argument(
         "--auto-add-host-key",
         dest="auto_add_host_key",
-        action="store_true",
+        nargs="?",
+        const=True,
         default=None,
-        help="Automatically accept SSH host keys without prompting",
+        type=lambda v: v.lower() in ("true", "1", "yes"),
+        metavar="true|false",
+        help="Automatically accept SSH host keys without prompting "
+        "(use --auto-add-host-key true/false, or --auto-add-host-key alone for true)",
     )
     config_set_parser.add_argument(
         "--no-auto-add-host-key",
         dest="auto_add_host_key",
         action="store_false",
-        help="Disable automatic SSH host key acceptance (default)",
+        help="Disable automatic SSH host key acceptance",
     )
     config_set_parser.add_argument(
         "--http-proxy",

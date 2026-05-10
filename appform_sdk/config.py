@@ -558,6 +558,7 @@ class Config:
             "sftp_password": "***" if self.sftp_password else None,
             "sftp_key_file": self.sftp_key_file,
             "sftp_key_password": "***" if self.sftp_key_password else None,
+            "auto_add_host_key": self.auto_add_host_key,
             "http_proxy": self.http_proxy,
             "sftp_proxy": self.sftp_proxy,
             "current_environment": self._current_environment,
