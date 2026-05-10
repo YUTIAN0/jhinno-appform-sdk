@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+# Maximum bytes to accumulate in memory when downloading without local_path
+_MAX_MEMORY_DOWNLOAD = 128 * 1024 * 1024  # 128 MB
+
 
 def parse_size(size_str) -> int:
     """Parse human-readable size string to bytes.
@@ -580,13 +583,11 @@ class FilesAPI:
         if not download_url:
             raise FileNotFoundError(f"Failed to get download URL for: {remote_path}")
 
-        # Streaming download
-        import requests as req
-
-        verify = self._client.verify_ssl
-        response = req.get(
-            download_url, verify=verify, timeout=self._client.timeout, stream=True
+        # Streaming download via client session for proxy/retry support
+        response = self._client.session.get(
+            download_url, timeout=self._client.timeout, stream=True
         )
+        response.raise_for_status()
 
         total_size = int(response.headers.get("content-length", 0))
         fname = Path(remote_path).name
@@ -611,6 +612,11 @@ class FilesAPI:
                 if chunk:
                     content.extend(chunk)
                     downloaded += len(chunk)
+                    if downloaded > _MAX_MEMORY_DOWNLOAD:
+                        raise MemoryError(
+                            f"Download exceeds {_MAX_MEMORY_DOWNLOAD / (1024 * 1024):.0f} MB limit. "
+                            "Use local_path to stream to disk."
+                        )
                     if on_progress:
                         on_progress(fname, downloaded, total_size)
             return bytes(content)

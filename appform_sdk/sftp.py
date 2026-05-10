@@ -129,6 +129,7 @@ class SFTPClientManager:
         key_password: Optional[str] = None,
         timeout: int = 30,
         proxy_url: Optional[str] = None,
+        auto_add_host_key: bool = False,
     ):
         self._host = host
         self._port = port
@@ -138,9 +139,11 @@ class SFTPClientManager:
         self._key_password = key_password
         self._timeout = timeout
         self._proxy_url = proxy_url
+        self._auto_add_host_key = auto_add_host_key
 
         self._transport = None
         self._sftp = None
+        self._ssh_client = None
 
     @property
     def sftp(self):
@@ -152,33 +155,45 @@ class SFTPClientManager:
     def _connect(self):
         paramiko = _require_paramiko()
 
+        if not self._key_filename and not self._password:
+            raise SFTPError(
+                "SFTP requires either password or sftp_key_file authentication."
+            )
+
         sock = None
         if self._proxy_url:
             sock = _open_proxy_socket(self._proxy_url, self._host, self._port)
 
-        self._transport = paramiko.Transport((self._host, self._port), sock=sock)
-        try:
-            if self._key_filename:
-                self._transport.connect(
-                    username=self._username,
-                    key_filename=self._key_filename,
-                    password=self._key_password,
-                )
-            elif self._password:
-                self._transport.connect(
-                    username=self._username,
-                    password=self._password,
-                )
-            else:
-                raise SFTPError(
-                    "SFTP requires either password or sftp_key_file authentication."
-                )
-            self._transport.set_keepalive(60)
-        except paramiko.SSHException as e:
-            self._transport.close()
-            self._transport = None
-            raise SFTPError(f"SFTP connection failed to {self._host}:{self._port}: {e}")
+        # Build SSHClient to handle host key verification / auto-add policy
+        ssh_client = paramiko.SSHClient()
+        if self._auto_add_host_key:
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        else:
+            ssh_client.load_system_host_keys()
 
+        try:
+            ssh_client.connect(
+                hostname=self._host,
+                port=self._port,
+                username=self._username,
+                password=self._password,
+                key_filename=self._key_filename,
+                passphrase=self._key_password,
+                timeout=self._timeout,
+                sock=sock,
+                look_for_keys=False,
+                allow_agent=False,
+            )
+        except Exception as e:
+            try:
+                ssh_client.close()
+            except Exception:
+                pass
+            raise SFTPError(
+                f"SFTP connection failed to {self._host}:{self._port}: {e}"
+            )
+        self._ssh_client = ssh_client
+        self._transport = ssh_client.get_transport()
         self._sftp = paramiko.SFTPClient.from_transport(self._transport)
 
     def close(self):
@@ -192,8 +207,14 @@ class SFTPClientManager:
                 self._transport.close()
             except Exception:
                 pass
+        if self._ssh_client:
+            try:
+                self._ssh_client.close()
+            except Exception:
+                pass
         self._sftp = None
         self._transport = None
+        self._ssh_client = None
 
 
 def _mkdir_recursive(sftp_client, path: str):
@@ -246,6 +267,7 @@ class SFTPAPI:
                 key_password=getattr(c, "_sftp_key_password", None),
                 timeout=getattr(c, "timeout", 30) or 30,
                 proxy_url=getattr(c, "_sftp_proxy", None),
+                auto_add_host_key=getattr(c, "auto_add_host_key", False),
             )
         return self._manager
 
@@ -1003,24 +1025,18 @@ def _copy_recursive(sftp, src: str, dest: str):
         if dest_parent:
             _mkdir_recursive(sftp, dest_parent)
 
-        # Use a temporary file for streaming copy:
-        # SpooledTemporaryFile buffers in memory then spills to disk,
-        # but putfo() re-reads the entire file. Using sftp.get()/sftp.put()
-        # with a real temp file lets paramiko stream in chunks directly.
-        import tempfile
-
-        tmp_fd, tmp_path = tempfile.mkstemp()
+        _copy_chunk_size = 65536
         try:
-            os.close(tmp_fd)
-            sftp.get(src, tmp_path)
-            sftp.put(tmp_path, dest)
+            with sftp.open(src, "rb") as src_f:
+                with sftp.open(dest, "wb") as dest_f:
+                    while True:
+                        chunk = src_f.read(_copy_chunk_size)
+                        if not chunk:
+                            break
+                        dest_f.write(chunk)
+                sftp.chmod(dest, attr.st_mode)
         except IOError as e:
             raise SFTPError(f"Failed to copy '{src}' to '{dest}': {e}")
-        finally:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
 
 
 def _remove_recursive(sftp, path: str):
@@ -1121,7 +1137,19 @@ def _read_tail(
         chunk = buf.getvalue()
         lines = chunk.decode(encoding, errors="replace").splitlines()
         if read_start > 0:
-            lines.pop(0)  # discard partial first line
+            # Check whether the byte immediately before this chunk is a newline.
+            # If so, the first line is complete (starts at a boundary);
+            # otherwise it is a continuation of the previous line and must be discarded.
+            prev_buf = io.BytesIO()
+            try:
+                sftp.getfo(remote_path, prev_buf, read_start - 1, 1)
+            except IOError:
+                # If we can't peek, assume partial to be safe.
+                lines.pop(0)
+            else:
+                prev_byte = prev_buf.getvalue()
+                if prev_byte not in (b"\n", b"\r"):
+                    lines.pop(0)
         collected = lines + collected
         pos = read_start
 

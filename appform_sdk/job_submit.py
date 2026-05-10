@@ -800,12 +800,21 @@ def _resolve_base_url(pm, env=None) -> str:
         except Exception:
             pass
 
-    # 3. Default fallback
+    # 3. No fallback — require explicit configuration
     if not base_url:
-        base_url = "https://10.241.219.230/appform"
+        print(
+            "Error: Appform base URL is not configured.",
+            file=sys.stderr,
+        )
+        print(
+            "Set it via: APPFORM_BASE_URL, ~/.appform/config.json (base_url), "
+            "or job_submit.yaml (appform_base_url).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    # SDK paths start with /appform/ws/api/..., so strip trailing /appform
-    # from base_url to avoid double path: https://server/appform/appform/ws/...
+    # Normalize trailing slash and strip /appform suffix to avoid double path
+    base_url = base_url.rstrip("/")
     if base_url.endswith("/appform"):
         base_url = base_url[: -len("/appform")]
 
@@ -937,7 +946,9 @@ def main(args=None):
 
     try:
         parsed = full_parser.parse_args(filtered)
-    except SystemExit:
+    except SystemExit as e:
+        if e.code != 0:
+            sys.exit(e.code)
         return
 
     if parsed.list_apps:
@@ -973,11 +984,13 @@ def main(args=None):
     # --- Create SDK client and authenticate ---
     from .client import AppformClient
 
-    client_kwargs = {"base_url": base_url, "verify_ssl": False, "config": sdk_config}
+    client_kwargs = {"base_url": base_url, "verify_ssl": sdk_config.verify_ssl, "config": sdk_config}
 
     # Determine authentication method
     username = pre_args._username
     password = pre_args._password
+
+    client = None
 
     try:
         if username and password:
@@ -1123,7 +1136,10 @@ def main(args=None):
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise SystemExit(1)
+    finally:
+        if client is not None:
+            client.close()
 
 
 if __name__ == "__main__":

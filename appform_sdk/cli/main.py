@@ -36,8 +36,19 @@ def main(args: Optional[list] = None):
     parser = create_parser()
 
     if show_help:
-        parser.parse_args(raw)
-        return
+        # Peek at the command (without --help) to decide whether to forward
+        # --help to a subcommand handler or show the top-level help.
+        try:
+            peek, _ = parser.parse_known_args(filtered)
+        except SystemExit:
+            parser.parse_args(raw)
+            return
+        if not (
+            getattr(peek, "command", None) == "jobs"
+            and getattr(peek, "jobs_command", None) == "submit"
+        ):
+            parser.parse_args(raw)
+            return
 
     parsed_args, remaining = parser.parse_known_args(filtered)
 

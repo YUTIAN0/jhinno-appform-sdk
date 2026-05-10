@@ -207,7 +207,6 @@ appform jobs submit-raw --app-id fluent --params '{"JH_CAS":"/path/to/file.cas",
 
 ```bash
 appform jobs list                                    # 列出当前用户作业（表格）
-appform jobs list --all                              # 列出所有用户作业
 appform jobs list --status RUN --name test           # 带过滤
 appform jobs list --job-id 494825                    # 按作业号查询
 appform jobs list --job-id 494825,494824             # 多个作业号

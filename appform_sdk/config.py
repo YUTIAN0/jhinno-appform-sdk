@@ -222,9 +222,7 @@ class Config:
             return env_value
         file_value = self._file_config.get(config_key)
         if file_value is not None:
-            val = str(file_value)
-            # Normalize Windows backslashes to forward slashes
-            return val.replace("\\", "/")
+            return str(file_value)
         return default
 
     def _get_int_value(

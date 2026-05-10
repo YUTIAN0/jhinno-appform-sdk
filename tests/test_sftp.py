@@ -50,11 +50,9 @@ class TestSFTPClientManager:
         mock_transport = MagicMock()
         mock_sftp = MagicMock()
         mock_sftp.closed = False
-
-        def transport_side(*a, **kw):
-            return mock_transport
-
-        mock_paramiko.Transport = transport_side
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.get_transport.return_value = mock_transport
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
         mock_paramiko.SFTPClient.from_transport.return_value = mock_sftp
 
         with patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko):
@@ -65,7 +63,18 @@ class TestSFTPClientManager:
             )
             _ = mgr.sftp  # trigger lazy connect
 
-        mock_transport.connect.assert_called_once_with(username="user", password="pass")
+        mock_ssh_client.connect.assert_called_once_with(
+            hostname="test.host",
+            port=22,
+            username="user",
+            password="pass",
+            key_filename=None,
+            passphrase=None,
+            timeout=30,
+            sock=None,
+            look_for_keys=False,
+            allow_agent=False,
+        )
         assert mgr._sftp is mock_sftp
 
     def test_connect_with_key(self):
@@ -75,7 +84,9 @@ class TestSFTPClientManager:
         mock_transport = MagicMock()
         mock_sftp = MagicMock()
         mock_sftp.closed = False
-        mock_paramiko.Transport.return_value = mock_transport
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.get_transport.return_value = mock_transport
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
         mock_paramiko.SFTPClient.from_transport.return_value = mock_sftp
 
         with patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko):
@@ -89,10 +100,17 @@ class TestSFTPClientManager:
             )
             _ = mgr.sftp
 
-        mock_transport.connect.assert_called_once_with(
+        mock_ssh_client.connect.assert_called_once_with(
+            hostname="test.host",
+            port=22,
             username="user",
+            password=None,
             key_filename="/id_rsa",
-            password="keypass",
+            passphrase="keypass",
+            timeout=30,
+            sock=None,
+            look_for_keys=False,
+            allow_agent=False,
         )
 
     def test_connect_no_auth_raises(self):
@@ -114,9 +132,9 @@ class TestSFTPClientManager:
         """Test that SSH connection failure raises SFTPError."""
         mock_paramiko = MagicMock()
         mock_paramiko.SSHException = Exception
-        mock_transport = MagicMock()
-        mock_transport.connect.side_effect = Exception("conn refused")
-        mock_paramiko.Transport.return_value = mock_transport
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.connect.side_effect = mock_paramiko.SSHException("conn refused")
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
         mock_req_paramiko.return_value = mock_paramiko
 
         from appform_sdk.sftp import SFTPClientManager
@@ -124,7 +142,7 @@ class TestSFTPClientManager:
         mgr = SFTPClientManager(host="test.host", username="user", password="pass")
         with pytest.raises(SFTPError, match="connection failed"):
             _ = mgr.sftp
-        mock_transport.close.assert_called_once()
+        mock_ssh_client.close.assert_called_once()
 
     def test_close_idempotent(self):
         """Test close handles already-closed state gracefully."""
@@ -143,7 +161,9 @@ class TestSFTPClientManager:
         mock_transport = MagicMock()
         mock_sftp = MagicMock()
         mock_sftp.closed = False
-        mock_paramiko.Transport.return_value = mock_transport
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.get_transport.return_value = mock_transport
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
         mock_paramiko.SFTPClient.from_transport.return_value = mock_sftp
 
         with patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko):
@@ -153,7 +173,7 @@ class TestSFTPClientManager:
             s1 = mgr.sftp
             s2 = mgr.sftp
             assert s1 is s2
-            assert mock_paramiko.Transport.call_count == 1
+            assert mock_paramiko.SSHClient.call_count == 1
 
 
 class TestSFTPAPI:

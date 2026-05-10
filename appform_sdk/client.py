@@ -4,6 +4,7 @@ Appform API Client
 
 import getpass
 import os
+import warnings
 from typing import Any, Dict, Optional, Union
 
 import requests
@@ -157,6 +158,7 @@ class AppformClient:
             self._sftp_key_password = config.sftp_key_password
             self._http_proxy = config.http_proxy
             self._sftp_proxy = config.sftp_proxy
+            self.auto_add_host_key = config.auto_add_host_key
             # Auto-extract host from base_url if sftp_host not set
             if not self._sftp_host and self.base_url:
                 from urllib.parse import urlparse
@@ -164,10 +166,6 @@ class AppformClient:
                 parsed = urlparse(self.base_url)
                 if parsed.hostname:
                     self._sftp_host = parsed.hostname
-
-        # Suppress urllib3 InsecureRequestWarning when SSL verification is disabled
-        if not self.verify_ssl:
-            urllib3.disable_warnings(InsecureRequestWarning)
 
         # Setup session with retry strategy
         self.session = requests.Session()
@@ -391,17 +389,21 @@ class AppformClient:
             request_headers.pop("Content-Type", None)
 
         try:
-            response = self.session.request(
-                method=method,
-                url=url,
-                params=params,
-                data=data,
-                json=json,
-                files=files,
-                headers=request_headers,
-                timeout=self.timeout,
-                verify=self.verify_ssl,
-            )
+            # Filter urllib3 InsecureRequestWarning when SSL verification is disabled
+            with warnings.catch_warnings():
+                if not self.verify_ssl:
+                    warnings.simplefilter("ignore", InsecureRequestWarning)
+                response = self.session.request(
+                    method=method,
+                    url=url,
+                    params=params,
+                    data=data,
+                    json=json,
+                    files=files,
+                    headers=request_headers,
+                    timeout=self.timeout,
+                    verify=self.verify_ssl,
+                )
 
             if raw_response:
                 return response
@@ -410,7 +412,11 @@ class AppformClient:
             try:
                 result = response.json()
             except ValueError:
-                result = {"code": response.status_code, "message": response.text}
+                text = response.text
+                max_len = 4096
+                if len(text) > max_len:
+                    text = text[:max_len] + "... [truncated]"
+                result = {"code": response.status_code, "message": text}
 
             # Check for API errors
             if response.status_code >= 400:
