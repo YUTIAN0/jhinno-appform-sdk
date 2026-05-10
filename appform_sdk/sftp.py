@@ -164,12 +164,43 @@ class SFTPClientManager:
         if self._proxy_url:
             sock = _open_proxy_socket(self._proxy_url, self._host, self._port)
 
-        # Build SSHClient to handle host key verification / auto-add policy
         ssh_client = paramiko.SSHClient()
         if self._auto_add_host_key:
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         else:
-            ssh_client.load_system_host_keys()
+            known_hosts = os.path.expanduser("~/.ssh/known_hosts")
+            try:
+                ssh_client.load_host_keys(known_hosts)
+            except (FileNotFoundError, paramiko.hostkeys.SSHException):
+                pass
+
+            class _PromptAndSavePolicy(paramiko.MissingHostKeyPolicy):
+                def missing_host_key(self, client, hostname, key):
+                    key_type = key.get_name()
+                    fingerprint = ":".join(
+                        f"{b:02x}" for b in key.get_fingerprint()
+                    )
+                    try:
+                        answer = input(
+                            f"The authenticity of host '{hostname}' can't be established.\n"
+                            f"{key_type} key fingerprint is {fingerprint}.\n"
+                            f"Are you sure you want to continue connecting (yes/no)? "
+                        )
+                    except (EOFError, KeyboardInterrupt):
+                        answer = "no"
+                    if answer.strip().lower() in ("yes", "y"):
+                        client.get_host_keys().add(hostname, key.get_name(), key)
+                        try:
+                            os.makedirs(os.path.dirname(known_hosts), exist_ok=True)
+                            client.save_host_keys(known_hosts)
+                        except OSError:
+                            pass
+                    else:
+                        raise paramiko.SSHException(
+                            f"Host key verification failed for {hostname}"
+                        )
+
+            ssh_client.set_missing_host_key_policy(_PromptAndSavePolicy())
 
         try:
             ssh_client.connect(
