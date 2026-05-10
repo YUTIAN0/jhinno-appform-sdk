@@ -376,6 +376,22 @@ class TestSFTPAPI:
         sftp_mock = MagicMock()
         src_stat = _make_sftp_attr("f", 100)
         sftp_mock.stat.return_value = src_stat
+
+        mock_src = MagicMock()
+        mock_src.read.side_effect = [b"data", b""]
+        mock_src.__enter__ = MagicMock(return_value=mock_src)
+        mock_src.__exit__ = MagicMock(return_value=False)
+
+        mock_dst = MagicMock()
+        mock_dst.__enter__ = MagicMock(return_value=mock_dst)
+        mock_dst.__exit__ = MagicMock(return_value=False)
+
+        def open_side(path, mode="r"):
+            if "rb" in mode:
+                return mock_src
+            return mock_dst
+
+        sftp_mock.open.side_effect = open_side
         api = self._make_client(sftp_mock)
 
         result = api.copy("/src/file.txt", "/dest/")
@@ -757,20 +773,34 @@ class TestCopyRemoveRecursive:
     """Tests for _copy_recursive and _remove_recursive helpers."""
 
     def test_copy_file(self):
-        """Test _copy_recursive for a single file."""
+        """Test _copy_recursive for a single file using sftp.open streaming."""
         from appform_sdk.sftp import _copy_recursive
 
         sftp = MagicMock()
         sftp.stat.return_value = _make_sftp_attr("f", 100)
-        sftp.get.return_value = None
-        sftp.put.return_value = None
+
+        mock_src = MagicMock()
+        mock_src.read.side_effect = [b"data", b""]
+        mock_src.__enter__ = MagicMock(return_value=mock_src)
+        mock_src.__exit__ = MagicMock(return_value=False)
+
+        mock_dst = MagicMock()
+        mock_dst.__enter__ = MagicMock(return_value=mock_dst)
+        mock_dst.__exit__ = MagicMock(return_value=False)
+
+        def open_side(path, mode="r"):
+            if "rb" in mode:
+                return mock_src
+            return mock_dst
+
+        sftp.open.side_effect = open_side
 
         _copy_recursive(sftp, "/src/f.txt", "/dst/f.txt")
-        sftp.get.assert_called()
-        sftp.put.assert_called()
+        sftp.open.assert_called()
+        mock_dst.write.assert_called_once_with(b"data")
 
     def test_copy_directory(self):
-        """Test _copy_recursive for a directory."""
+        """Test _copy_recursive for a directory using sftp.open streaming."""
         from appform_sdk.sftp import _copy_recursive
 
         sftp = MagicMock()
@@ -790,14 +820,26 @@ class TestCopyRemoveRecursive:
 
         sftp.stat.side_effect = stat_side
         sftp.listdir_attr.return_value = [child]
-        # get/put copy via temp file - let them pass through
-        sftp.get.return_value = None
-        sftp.put.return_value = None
+
+        mock_src = MagicMock()
+        mock_src.read.side_effect = [b"data", b""]
+        mock_src.__enter__ = MagicMock(return_value=mock_src)
+        mock_src.__exit__ = MagicMock(return_value=False)
+
+        mock_dst = MagicMock()
+        mock_dst.__enter__ = MagicMock(return_value=mock_dst)
+        mock_dst.__exit__ = MagicMock(return_value=False)
+
+        def open_side(path, mode="r"):
+            if "rb" in mode:
+                return mock_src
+            return mock_dst
+
+        sftp.open.side_effect = open_side
 
         _copy_recursive(sftp, "/src/", "/dst/")
         sftp.mkdir.assert_called()
-        assert sftp.get.called
-        assert sftp.put.called
+        assert sftp.open.called
 
     def test_remove_missing(self):
         """Test _remove_recursive is a no-op for missing paths."""
