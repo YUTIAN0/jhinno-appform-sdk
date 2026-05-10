@@ -168,7 +168,7 @@ class SFTPClientManager:
         if self._auto_add_host_key:
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         else:
-            known_hosts = os.path.expanduser("~/.ssh/known_hosts")
+            known_hosts = os.path.expanduser("~/.appform/known_hosts")
             try:
                 ssh_client.load_host_keys(known_hosts)
             except (FileNotFoundError, paramiko.hostkeys.SSHException):
