@@ -48,8 +48,8 @@ class TestSFTPClientManager:
         mock_paramiko = MagicMock()
         mock_paramiko.SSHException = Exception
         mock_transport = MagicMock()
+        mock_transport.is_active.return_value = True
         mock_sftp = MagicMock()
-        mock_sftp.closed = False
         mock_ssh_client = MagicMock()
         mock_ssh_client.get_transport.return_value = mock_transport
         mock_paramiko.SSHClient.return_value = mock_ssh_client
@@ -159,8 +159,8 @@ class TestSFTPClientManager:
         mock_paramiko = MagicMock()
         mock_paramiko.SSHException = Exception
         mock_transport = MagicMock()
+        mock_transport.is_active.return_value = True
         mock_sftp = MagicMock()
-        mock_sftp.closed = False
         mock_ssh_client = MagicMock()
         mock_ssh_client.get_transport.return_value = mock_transport
         mock_paramiko.SSHClient.return_value = mock_ssh_client
@@ -174,6 +174,129 @@ class TestSFTPClientManager:
             s2 = mgr.sftp
             assert s1 is s2
             assert mock_paramiko.SSHClient.call_count == 1
+
+    def test_reconnect_on_inactive_transport(self):
+        """Test that sftp property reconnects when transport is inactive."""
+        mock_paramiko = MagicMock()
+        mock_paramiko.SSHException = Exception
+        mock_transport1 = MagicMock()
+        mock_transport1.is_active.return_value = False
+        mock_transport2 = MagicMock()
+        mock_transport2.is_active.return_value = True
+        mock_sftp1 = MagicMock()
+        mock_sftp2 = MagicMock()
+        mock_ssh_client1 = MagicMock()
+        mock_ssh_client1.get_transport.return_value = mock_transport1
+        mock_ssh_client2 = MagicMock()
+        mock_ssh_client2.get_transport.return_value = mock_transport2
+        mock_paramiko.SSHClient.side_effect = [mock_ssh_client1, mock_ssh_client2]
+        mock_paramiko.SFTPClient.from_transport.side_effect = [mock_sftp1, mock_sftp2]
+
+        with patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko):
+            from appform_sdk.sftp import SFTPClientManager
+
+            mgr = SFTPClientManager(host="test.host", username="user", password="pass")
+            s1 = mgr.sftp
+            s2 = mgr.sftp
+            assert s2 is mock_sftp2
+            assert mock_paramiko.SSHClient.call_count == 2
+
+    def test_auto_add_host_key_policy(self):
+        """Test that auto_add_host_key=True uses AutoAddPolicy."""
+        mock_paramiko = MagicMock()
+        mock_paramiko.SSHException = Exception
+        mock_transport = MagicMock()
+        mock_transport.is_active.return_value = True
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.get_transport.return_value = mock_transport
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
+
+        with patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko):
+            from appform_sdk.sftp import SFTPClientManager
+
+            mgr = SFTPClientManager(
+                host="test.host",
+                username="user",
+                password="pass",
+                auto_add_host_key=True,
+            )
+            _ = mgr.sftp
+
+        mock_ssh_client.set_missing_host_key_policy.assert_called_once()
+        policy = mock_ssh_client.set_missing_host_key_policy.call_args[0][0]
+        assert policy is mock_paramiko.AutoAddPolicy.return_value
+
+    def test_prompt_policy_accept_saves_key(self, tmp_path):
+        """Test that accepting host key prompt saves to known_hosts file."""
+        known_hosts = str(tmp_path / "known_hosts")
+
+        mock_paramiko = MagicMock()
+        mock_paramiko.SSHException = Exception
+        mock_transport = MagicMock()
+        mock_transport.is_active.return_value = True
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.get_transport.return_value = mock_transport
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
+
+        with (
+            patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko),
+            patch("appform_sdk.sftp.os.path.expanduser", return_value=known_hosts),
+            patch("builtins.input", return_value="yes"),
+        ):
+            from appform_sdk.sftp import SFTPClientManager
+
+            mgr = SFTPClientManager(host="test.host", username="user", password="pass")
+            _ = mgr.sftp
+
+        # Verify policy was set (not AutoAddPolicy)
+        mock_ssh_client.set_missing_host_key_policy.assert_called_once()
+        policy = mock_ssh_client.set_missing_host_key_policy.call_args[0][0]
+        assert policy is not mock_paramiko.AutoAddPolicy
+
+    def test_prompt_policy_reject_raises(self):
+        """Test that rejecting host key prompt raises SSHException."""
+        mock_paramiko = MagicMock()
+        mock_paramiko.SSHException = Exception
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.connect.side_effect = Exception("Host key verification failed")
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
+
+        with (
+            patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko),
+            patch("builtins.input", return_value="no"),
+        ):
+            from appform_sdk.sftp import SFTPClientManager
+
+            mgr = SFTPClientManager(host="test.host", username="user", password="pass")
+            with pytest.raises(SFTPError, match="connection failed"):
+                _ = mgr.sftp
+
+    def test_known_hosts_file_created(self, tmp_path):
+        """Test that ~/.appform/known_hosts file is created before load_host_keys."""
+        known_hosts = str(tmp_path / "appform" / "known_hosts")
+
+        mock_paramiko = MagicMock()
+        mock_paramiko.SSHException = Exception
+        mock_transport = MagicMock()
+        mock_transport.is_active.return_value = True
+        mock_ssh_client = MagicMock()
+        mock_ssh_client.get_transport.return_value = mock_transport
+        mock_paramiko.SSHClient.return_value = mock_ssh_client
+
+        with (
+            patch("appform_sdk.sftp._require_paramiko", return_value=mock_paramiko),
+            patch("appform_sdk.sftp.os.path.expanduser", return_value=known_hosts),
+        ):
+            from appform_sdk.sftp import SFTPClientManager
+
+            mgr = SFTPClientManager(host="test.host", username="user", password="pass")
+            _ = mgr.sftp
+
+        # Directory and file should have been created
+        assert os.path.isdir(os.path.dirname(known_hosts))
+        assert os.path.isfile(known_hosts)
+        # load_host_keys should have been called with the path
+        mock_ssh_client.load_host_keys.assert_called_once_with(known_hosts)
 
 
 class TestSFTPAPI:

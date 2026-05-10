@@ -529,6 +529,18 @@ config.show:
       label: SFTP Username
     - key: sftp_key_file
       label: SFTP Key File
+    - key: sftp_key_password
+      label: SFTP Key Password
+    - key: auto_add_host_key
+      label: Auto Add Host Key
+    - key: http_proxy
+      label: HTTP Proxy
+    - key: sftp_proxy
+      label: SFTP Proxy
+    - key: current_environment
+      label: Current Environment
+    - key: environments
+      label: Environments
 
 # ===========================================================================
 # Users (mutations)

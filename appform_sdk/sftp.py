@@ -148,7 +148,9 @@ class SFTPClientManager:
     @property
     def sftp(self):
         """Lazy-init SFTP client, reusing if already connected."""
-        if self._sftp is None or getattr(self._sftp, "closed", True):
+        if self._sftp is None or (
+            self._transport is not None and not self._transport.is_active()
+        ):
             self._connect()
         return self._sftp
 
@@ -169,6 +171,15 @@ class SFTPClientManager:
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         else:
             known_hosts = os.path.expanduser("~/.appform/known_hosts")
+            os.makedirs(os.path.dirname(known_hosts), exist_ok=True)
+            # Ensure the file exists so load_host_keys succeeds and
+            # save_host_keys can refresh from it later.
+            if not os.path.exists(known_hosts):
+                try:
+                    with open(known_hosts, "w") as f:
+                        f.write("")
+                except OSError:
+                    pass
             try:
                 ssh_client.load_host_keys(known_hosts)
             except (FileNotFoundError, paramiko.hostkeys.SSHException):
@@ -177,9 +188,7 @@ class SFTPClientManager:
             class _PromptAndSavePolicy(paramiko.MissingHostKeyPolicy):
                 def missing_host_key(self, client, hostname, key):
                     key_type = key.get_name()
-                    fingerprint = ":".join(
-                        f"{b:02x}" for b in key.get_fingerprint()
-                    )
+                    fingerprint = ":".join(f"{b:02x}" for b in key.get_fingerprint())
                     try:
                         answer = input(
                             f"The authenticity of host '{hostname}' can't be established.\n"
@@ -191,7 +200,6 @@ class SFTPClientManager:
                     if answer.strip().lower() in ("yes", "y"):
                         client.get_host_keys().add(hostname, key.get_name(), key)
                         try:
-                            os.makedirs(os.path.dirname(known_hosts), exist_ok=True)
                             client.save_host_keys(known_hosts)
                         except OSError:
                             pass
