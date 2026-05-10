@@ -984,7 +984,11 @@ def main(args=None):
     # --- Create SDK client and authenticate ---
     from .client import AppformClient
 
-    client_kwargs = {"base_url": base_url, "verify_ssl": sdk_config.verify_ssl, "config": sdk_config}
+    client_kwargs = {
+        "base_url": base_url,
+        "verify_ssl": sdk_config.verify_ssl,
+        "config": sdk_config,
+    }
 
     # Determine authentication method
     username = pre_args._username

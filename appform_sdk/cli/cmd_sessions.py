@@ -63,7 +63,9 @@ def handle_sessions_command(args):
             output_result(result, args.output, "sessions.close")
         elif args.sessions_command == "share":
             usernames = args.usernames.split(",")
-            result = client.sessions.share(session_id=args.session_id, usernames=usernames)
+            result = client.sessions.share(
+                session_id=args.session_id, usernames=usernames
+            )
             output_result(result, args.output, "sessions.share")
     finally:
         client.close()

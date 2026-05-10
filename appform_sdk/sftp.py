@@ -189,9 +189,7 @@ class SFTPClientManager:
                 ssh_client.close()
             except Exception:
                 pass
-            raise SFTPError(
-                f"SFTP connection failed to {self._host}:{self._port}: {e}"
-            )
+            raise SFTPError(f"SFTP connection failed to {self._host}:{self._port}: {e}")
         self._ssh_client = ssh_client
         self._transport = ssh_client.get_transport()
         self._sftp = paramiko.SFTPClient.from_transport(self._transport)
