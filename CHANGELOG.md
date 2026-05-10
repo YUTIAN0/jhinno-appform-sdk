@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Multi-environment configuration support**
+  - `config.json` supports `environments` and `default_environment` fields
+  - Select environment via: `Config(env="prod")`, `--env ENV`, or `APPFORM_ENV`
+  - `Config.save_config_file(environment="prod")` saves to named environment
+  - `to_dict()` reports `current_environment` and available environments list
+  - Full backward compatibility with root-level config
+
+- **`-e/--env` flag** for `appform` and `job_submit` CLI commands
+
+- **`--environment` option** for `appform config set` to save config per environment
+
+### Changed
+- CLI handlers now propagate `env` to all `Config()` instantiations
+
 ## [0.0.6] - 2026-05-03
 
 ### Added

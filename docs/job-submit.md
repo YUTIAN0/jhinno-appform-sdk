@@ -187,6 +187,7 @@ job_submit -a starccm -i /local/file.sim -n 8 --upload-path /shared/job_inputs
 | `-l, --list-apps` | 列出已配置应用 |
 | `-u, --username USER` | 用户名 |
 | `-p, --password PASS` | 密码 |
+| `-e, --env ENV` | 目标环境（或设置 APPFORM_ENV） |
 | `--upload-path PATH` | 本地文件上传到的远程目录 |
 | `--wait [MINUTES]` | 提交后等待作业完成（默认 10 分钟轮询） |
 | `-h, --help` | 显示帮助 |

@@ -15,6 +15,7 @@
 | `--token TOKEN` | 认证 Token |
 | `--api-version VER` | API 版本（默认 6.5） |
 | `--config FILE` | 配置文件路径 |
+| `--env ENV` | 目标环境（或设置 APPFORM_ENV） |
 | `--profile-config FILE` | 作业配置文件路径 |
 | `-o, --output FORMAT` | 输出格式：`raw`/`json`/`table`/`text`（默认 `table`） |
 | `--output-template FILE` | 自定义输出模板文件（`.yaml`/`.yml`/`.json`） |
