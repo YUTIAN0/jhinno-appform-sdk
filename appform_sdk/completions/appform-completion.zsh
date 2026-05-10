@@ -29,6 +29,7 @@ _appform() {
         '--api-version[API version (default: 6.5)]'
         '--extensions-dir[Extensions directory]'
         '--config[Path to configuration file]'
+        '--env[Target environment]:environment:'
         '--output[Output format: json/raw/table/text]: :(json raw table text)'
         '-o[Output format: json/raw/table/text]: :json raw table text'
         '--output-template[Output template file (.yaml/.yml/.json)]'

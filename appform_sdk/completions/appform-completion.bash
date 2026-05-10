@@ -133,7 +133,7 @@ _appform_global_options() {
         "--base-url" "--access-key" "--access-key-secret"
         "--username" "--password" "--token"
         "--api-version" "--extensions-dir" "--config"
-        "--output" "--output-template" "--profile-config"
+        "--env" "--output" "--output-template" "--profile-config"
         "--version"
         "-o"
     )
@@ -168,7 +168,7 @@ _appform() {
             _appform_output_formats; return
             ;;
         --base-url|--access-key|--access-key-secret|--username|--password|--token)
-        --api-version|--extensions-dir|--config|--output-template|--profile-config)
+        --api-version|--extensions-dir|--config|--env|--output-template|--profile-config)
             return 0
             ;;
         --status)

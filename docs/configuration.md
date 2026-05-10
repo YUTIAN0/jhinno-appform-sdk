@@ -31,6 +31,9 @@ Appform SDK 支持多种配置方式，按优先级从高到低：
 | `APPFORM_SFTP_PORT` | SFTP 服务器端口 | `22` |
 | `APPFORM_SFTP_KEY_FILE` | SSH 私钥文件路径 | — |
 | `APPFORM_SFTP_KEY_PASSWORD` | SSH 私钥密码 | — |
+| `APPFORM_HTTP_PROXY` | HTTP/HTTPS 代理 | — |
+| `APPFORM_SFTP_PROXY` | SFTP/SSH 代理 | — |
+| `APPFORM_ENV` | 目标环境名称 | — |
 
 ```bash
 # 密码认证（适用于所有版本）
@@ -64,12 +67,44 @@ export APPFORM_OUTPUT_FORMAT=json
 }
 ```
 
+**多环境配置**（在单个配置文件中管理多个环境）：
+
+```json
+{
+  "default_environment": "prod",
+  "environments": {
+    "prod": {
+      "base_url": "https://prod.jhinno.com",
+      "api_version": "6.6"
+    },
+    "dev": {
+      "base_url": "https://dev.jhinno.com",
+      "api_version": "6.6"
+    },
+    "test": {
+      "base_url": "https://test.jhinno.com",
+      "api_version": "6.5"
+    }
+  }
+}
+```
+
+环境选择优先级：
+1. 构造函数参数：`Config(env="prod")`、CLI `--env prod`
+2. 环境变量：`export APPFORM_ENV=prod`
+3. 配置文件的 `default_environment` 字段
+4. 未指定时回退到根级别配置（兼容旧格式）
+
 ### 通过 CLI 保存配置
 
 ```bash
 # 基础配置
 appform config set --base-url https://server
 appform config set --username your_username --password your_password
+
+# 保存到指定环境
+appform config set --environment prod --base-url https://prod.jhinno.com
+appform config set --environment dev --base-url https://dev.jhinno.com
 
 # AccessKey（需 6.4+）
 appform config set --access-key KEY --access-key-secret SECRET
@@ -115,6 +150,10 @@ config = Config(
     password="your_password",
 )
 
+# 使用环境配置
+config = Config(env="prod")
+# 等效于 Config(config_file="~/.appform/config.json", env="prod")
+
 # 查看配置（敏感字段自动脱敏）
 print(config.to_dict())
 
@@ -125,6 +164,12 @@ Config.save_config_file(
     password="your_password",
     job_profile_config="/path/to/job_submit.yaml",
     output_format="table",
+)
+
+# 保存到指定环境
+Config.save_config_file(
+    environment="prod",
+    base_url="https://prod.jhinno.com",
 )
 ```
 

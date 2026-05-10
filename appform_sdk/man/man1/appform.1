@@ -41,6 +41,9 @@ Directory containing extension configurations
 .B \-\-config FILE
 Path to configuration file (default: ~/.appform/config.json)
 .TP
+.BI \-e , \-\-env ENV
+Target environment to load from config (or set APPFORM_ENV env var)
+.TP
 .BI \-o , \-\-output FORMAT
 Output format: json | raw | table | text (default: table)
 .TP
@@ -58,7 +61,7 @@ Show version number
 .SH COMMANDS
 .SS config \- Manage configuration
 .TP
-.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file PATH] [\-\-default\-method {http,sftp}] ...
+.B config set [\-\-environment ENV] [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file PATH] [\-\-default\-method {http,sftp}] ...
 Set one or more configuration values
 .TP
 .B config show

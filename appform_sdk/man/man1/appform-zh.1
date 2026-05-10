@@ -37,6 +37,9 @@ API 版本（默认 6.5）
 .B \-\-config FILE
 配置文件路径（默认 ~/.appform/config.json）
 .TP
+.BI \-e , \-\-env ENV
+目标环境（或设置 APPFORM_ENV 环境变量）
+.TP
 .BI \-o , \-\-output FORMAT
 输出格式：json | raw | table | text（默认 table）
 .TP
@@ -54,7 +57,7 @@ API 版本（默认 6.5）
 .SH 命令
 .SS config \- 配置管理
 .TP
-.B config set [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file 路径] [\-\-default\-method {http,sftp}] ...
+.B config set [\-\-environment ENV] [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file 路径] [\-\-default\-method {http,sftp}] ...
 设置一个或多个配置项
 .TP
 .B config show
