@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-05-11
+
 ### Added
 - **Multi-environment configuration support**
   - `config.json` supports `environments` and `default_environment` fields
@@ -16,8 +18,30 @@ All notable changes to this project will be documented in this file.
 
 - **`--environment` option** for `appform config set` to save config per environment
 
+- **HTTP/SFTP proxy support**
+  - `http_proxy` and `sftp_proxy` configuration fields
+  - `--http-proxy` and `--sftp-proxy` CLI flags
+  - `APPFORM_HTTP_PROXY` and `APPFORM_SFTP_PROXY` environment variables
+
+- **SFTP host key management**
+  - First SFTP connection validates SSH host key with interactive prompt
+  - Accepted keys saved to `~/.appform/known_hosts`
+  - `auto_add_host_key=true` config to auto-accept all host keys (for automation)
+  - `--auto-add-host-key` CLI flag for `config set`
+
 ### Changed
 - CLI handlers now propagate `env` to all `Config()` instantiations
+- SFTP connection status check uses `Transport.is_active()` instead of `getattr(sftp, "closed")` (paramiko compatibility)
+- `~/.appform/known_hosts` file auto-created before `load_host_keys()` to prevent FileNotFoundError
+
+### Fixed
+- **`files mv` same-directory rename** — `/src/a.txt` → `/src/b.txt` now uses `rename` API directly instead of copy+delete
+- **`files mv` to directory** — `mv file.txt /dest/` now correctly uses copy+delete instead of renaming to directory name
+- **`files mv` cross-directory with rename** — properly copies to parent, renames, then deletes source; rolls back on rename failure
+- **SFTP double connection prompt** — `sftp` property no longer creates new connection on every access
+- **`config show` missing fields** — now displays `sftp_key_password`, `auto_add_host_key`, `http_proxy`, `sftp_proxy`, `current_environment`, `environments`
+- **Python 3.8 compatibility** — avoid parenthesized `with` statement in SFTP tests
+- **ruff F841** — unused variable in SFTP test
 
 ## [0.0.6] - 2026-05-03
 
