@@ -599,7 +599,10 @@ class FilesAPI:
 
         # Streaming download via client session for proxy/retry support
         response = self._client.session.get(
-            download_url, timeout=self._client.timeout, stream=True
+            download_url,
+            timeout=self._client.timeout,
+            stream=True,
+            verify=self._client.verify_ssl,
         )
         response.raise_for_status()
 

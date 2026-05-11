@@ -199,10 +199,11 @@ def check_is_directory(client, cmd_method, remote):
             items = client.files.list(path=remote, page=1, page_size=1)
             data = items.get("data", [])
             # Directory listing returns a dict with files/records key,
-            # or a list of entries. A single file returns differently.
+            # or a list of entries. An empty list means the path is a file
+            # (list on a file returns empty data), not a directory.
             if isinstance(data, dict) and ("files" in data or "records" in data):
                 return True
-            if isinstance(data, list):
+            if isinstance(data, list) and len(data) > 0:
                 return True
             return False
         except Exception:
@@ -214,7 +215,7 @@ def check_is_directory(client, cmd_method, remote):
             data = result.get("data", [])
             if isinstance(data, dict) and "files" in data:
                 return True
-            if isinstance(data, list):
+            if isinstance(data, list) and len(data) > 0:
                 return True
             return remote.endswith("/")
         except Exception:
