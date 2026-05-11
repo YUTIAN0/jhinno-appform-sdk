@@ -357,15 +357,21 @@ class FilesAPI:
         """
         if transfer_method == "sftp":
             return self._client.sftp.move(src_path=src_path, dest_dir=dest_dir)
-        if "/" not in dest_dir.rstrip("/"):
-            # Simple rename in same directory
-            return self.rename(src_path, dest_dir)
-        # Cross-directory move: copy, optional rename, then delete source.
-        # Delete only runs if all steps succeed to avoid data loss.
+        # Determine parent directories to decide rename vs copy+delete
         dest_parts = dest_dir.rstrip("/").split("/")
         dest_name = dest_parts[-1]
         dest_parent = "/".join(dest_parts[:-1]) or "/"
-        src_name = src_path.rstrip("/").split("/")[-1]
+
+        src_parts = src_path.rstrip("/").split("/")
+        src_name = src_parts[-1]
+        src_parent = "/".join(src_parts[:-1]) or "/"
+
+        # Same directory when: dest is a bare name (no /) or both parents match
+        if "/" not in dest_dir.rstrip("/") or src_parent.rstrip("/") == dest_parent.rstrip("/"):
+            # Same directory: just rename
+            return self.rename(src_path, dest_name)
+        # Cross-directory move: copy, optional rename, then delete source.
+        # Delete only runs if all steps succeed to avoid data loss.
 
         result = self.copy(src_path, dest_parent)
         final_path = f"{dest_parent.rstrip('/')}/{src_name}"

@@ -27,6 +27,18 @@ class TestCrossDirectoryMove:
         api.rename.assert_called_once_with("/src/file.txt", "newname.txt")
         api._client.delete.assert_not_called()
 
+    def test_same_dir_different_name_uses_rename(self):
+        """Test move with full path but same directory uses rename directly."""
+        api = _make_files_api()
+        api.rename = MagicMock(return_value={"result": True})
+
+        result = api.move("/src/file.txt", "/src/newname.txt")
+        assert result == {"result": True}
+        api.rename.assert_called_once_with("/src/file.txt", "newname.txt")
+        # Should NOT call copy or delete
+        api._client.put.assert_not_called()
+        api._client.delete.assert_not_called()
+
     def test_cross_dir_move_same_name(self):
         """Test cross-directory move preserving the filename."""
         api = _make_files_api()
