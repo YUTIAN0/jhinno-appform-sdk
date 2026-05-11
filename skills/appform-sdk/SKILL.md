@@ -42,6 +42,32 @@ client = AppformClient(config=Config())
 
 **禁止直接读取 `~/.appform/config.json` 文件。如果需要查看配置内容，使用 `appform -o json config show` 命令获取。**
 
+## 多环境配置
+
+在单个配置文件中管理多个环境，通过 `--env` 参数或 `APPFORM_ENV` 环境变量切换：
+
+```python
+# 使用指定环境配置
+config = Config(env="prod")
+client = AppformClient(config=config)
+
+# 环境选择优先级：--env 参数 > APPFORM_ENV 环境变量 > config.json default_environment > 根级别配置
+```
+
+```bash
+# CLI 方式
+appform --env prod jobs list
+appform config set --environment dev --base-url https://dev.jhinno.com
+```
+
+## SFTP 主机密钥
+
+首次 SFTP 连接时会验证 SSH 主机密钥。默认交互提示，设置 `auto_add_host_key=true` 可自动接受（适合自动化场景）。密钥保存在 `~/.appform/known_hosts`。
+
+```bash
+appform config set --auto-add-host-key true
+```
+
 ## 返回数据说明
 
 SDK 所有方法返回的是 API 原始 JSON（Python `dict`），需自行解析。典型响应结构：

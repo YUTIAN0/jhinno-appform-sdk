@@ -63,7 +63,7 @@ SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
 .SH 命令
 .SS config \- 配置管理
 .TP
-.B config set [\-\-environment ENV] [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file 路径] [\-\-default\-method {http,sftp}] ...
+.B config set [\-\-environment ENV] [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file 路径] [\-\-auto\-add\-host\-key {true,false}] [\-\-default\-method {http,sftp}] ...
 设置一个或多个配置项
 .TP
 .B config show
@@ -370,6 +370,9 @@ SFTP SSH 私钥文件路径
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH 私钥密码
 .TP
+.B APPFORM_AUTO_ADD_HOST_KEY
+自动接受 SSH 主机密钥（true/false）
+.TP
 .B APPFORM_HTTP_PROXY
 HTTP/HTTPS API 代理 URL（如 http://proxy:8080 或 socks5://proxy:1080）
 .TP
@@ -385,6 +388,9 @@ SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
 .TP
 .I ~/.appform/compute.yaml
 \fBjobs files custom\fR 计算节点 SSH 配置文件
+.TP
+.I ~/.appform/known_hosts
+SFTP 连接的 SSH 主机密钥文件
 .TP
 .I ~/.appform/extensions/
 默认扩展目录

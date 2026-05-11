@@ -37,6 +37,34 @@ appform -o json config show
 
 **禁止直接读取 `~/.appform/config.json` 文件。始终使用 `appform -o json config show` 命令获取配置内容。**
 
+## 多环境配置
+
+在单个配置文件中管理多个环境，通过 `--env` 参数或 `APPFORM_ENV` 环境变量切换：
+
+```bash
+# 切换环境
+appform --env prod jobs list
+appform --env dev jobs list
+
+# 保存配置到指定环境
+appform config set --environment prod --base-url https://prod.jhinno.com --api-version 6.6
+appform config set --environment dev --base-url https://dev.jhinno.com --api-version 6.6
+
+# 查看指定环境的配置
+appform --env prod -o json config show
+
+# 环境选择优先级：--env 参数 > APPFORM_ENV 环境变量 > config.json default_environment > 根级别配置
+```
+
+## SFTP 主机密钥
+
+首次 SFTP 连接时会验证 SSH 主机密钥。默认交互提示，设置 `auto_add_host_key=true` 可自动接受（适合自动化场景）。密钥保存在 `~/.appform/known_hosts`。
+
+```bash
+appform config set --auto-add-host-key true
+appform config set --auto-add-host-key false   # 恢复提示模式
+```
+
 ## 返回数据说明
 
 CLI 默认输出格式化的表格（table），便于直接阅读。与 SDK 不同，CLI 对原始 JSON 进行了列提取和排版处理。可通过 `-o` 参数切换格式，`-o` 必须放在 `appform` 之后、子命令之前：

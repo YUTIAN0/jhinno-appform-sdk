@@ -372,9 +372,8 @@ class FilesAPI:
         src_parent = "/".join(src_parts[:-1]) or "/"
 
         # Same parent directory with different name → rename
-        if (
-            not dest_dir.endswith("/")
-            and src_parent.rstrip("/") == dest_parent.rstrip("/")
+        if not dest_dir.endswith("/") and src_parent.rstrip("/") == dest_parent.rstrip(
+            "/"
         ):
             return self.rename(src_path, dest_name)
 

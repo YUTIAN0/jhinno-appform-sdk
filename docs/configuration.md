@@ -31,6 +31,7 @@ Appform SDK 支持多种配置方式，按优先级从高到低：
 | `APPFORM_SFTP_PORT` | SFTP 服务器端口 | `22` |
 | `APPFORM_SFTP_KEY_FILE` | SSH 私钥文件路径 | — |
 | `APPFORM_SFTP_KEY_PASSWORD` | SSH 私钥密码 | — |
+| `APPFORM_AUTO_ADD_HOST_KEY` | 自动接受 SSH 主机密钥 | `false` |
 | `APPFORM_HTTP_PROXY` | HTTP/HTTPS 代理 | — |
 | `APPFORM_SFTP_PROXY` | SFTP/SSH 代理 | — |
 | `APPFORM_ENV` | 目标环境名称 | — |
@@ -125,6 +126,7 @@ appform config set --default-method sftp
 appform config set --sftp-host mycluster.example.com
 appform config set --sftp-port 22
 appform config set --sftp-key-file ~/.ssh/id_rsa
+appform config set --auto-add-host-key true
 
 # 代理配置
 appform config set --http-proxy http://proxy:8080
@@ -217,7 +219,16 @@ client = AppformClient(base_url="https://other-server", config=config)
   "output_format": "table",
   "output_template": "/path/to/template.yaml",
   "default_remote_path": "/home/user/",
-  "chunk_size": "100M"
+  "chunk_size": "100M",
+  "default_method": "http",
+  "sftp_host": "mycluster.example.com",
+  "sftp_port": 22,
+  "sftp_username": "admin",
+  "sftp_key_file": "~/.ssh/id_rsa",
+  "sftp_key_password": "",
+  "auto_add_host_key": false,
+  "http_proxy": "http://proxy:8080",
+  "sftp_proxy": "socks5://proxy:1080"
 }
 ```
 
@@ -238,3 +249,30 @@ client = AppformClient(base_url="https://other-server", config=config)
 | `output_format` | 默认输出格式 | `table` |
 | `output_template` | 输出模板文件路径 | 内置模板 |
 | `default_remote_path` | 文件操作默认远程路径 | `/` |
+| `chunk_size` | 上传/下载分块大小 | `100M` |
+| `default_method` | 文件操作默认传输方式 | `http` |
+| `sftp_host` | SFTP 主机名 | 从 `base_url` 提取 |
+| `sftp_port` | SFTP 端口 | `22` |
+| `sftp_username` | SFTP 用户名 | 同 `username` |
+| `sftp_key_file` | SSH 私钥文件路径 | — |
+| `sftp_key_password` | SSH 私钥密码 | — |
+| `auto_add_host_key` | 自动接受 SSH 主机密钥 | `false` |
+| `http_proxy` | HTTP/HTTPS 代理 | — |
+| `sftp_proxy` | SFTP/SSH 代理 | — |
+
+### SFTP 主机密钥
+
+首次通过 SFTP 连接服务器时，SDK 需要验证 SSH 主机密钥。有两种策略：
+
+- **提示模式**（默认）— 交互式询问是否信任未知主机密钥，接受后保存到 `~/.appform/known_hosts`
+- **自动接受** — 设置 `auto_add_host_key=true` 自动信任所有主机密钥（适合自动化场景）
+
+```bash
+# 设置自动接受主机密钥
+appform config set --auto-add-host-key true
+
+# 关闭自动接受（恢复提示模式）
+appform config set --auto-add-host-key false
+```
+
+> **注意**：主机密钥保存在 `~/.appform/known_hosts`（非 `~/.ssh/known_hosts`）。

@@ -69,7 +69,7 @@ Show version number
 .SH COMMANDS
 .SS config \- Manage configuration
 .TP
-.B config set [\-\-environment ENV] [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file PATH] [\-\-default\-method {http,sftp}] ...
+.B config set [\-\-environment ENV] [\-\-base\-url URL] [\-\-access\-key KEY] [\-\-token TOKEN] [\-\-sftp\-host HOST] [\-\-sftp\-port PORT] [\-\-sftp\-key\-file PATH] [\-\-auto\-add\-host\-key {true,false}] [\-\-default\-method {http,sftp}] ...
 Set one or more configuration values
 .TP
 .B config show
@@ -376,6 +376,9 @@ SSH private key file path for SFTP
 .B APPFORM_SFTP_KEY_PASSWORD
 SSH key passphrase for SFTP
 .TP
+.B APPFORM_AUTO_ADD_HOST_KEY
+Automatically accept SSH host keys (true/false)
+.TP
 .B APPFORM_HTTP_PROXY
 Proxy URL for HTTP/HTTPS API requests (e.g., http://proxy:8080 or socks5://proxy:1080)
 .TP
@@ -391,6 +394,9 @@ Default configuration file
 .TP
 .I ~/.appform/compute.yaml
 Compute node SSH configuration for \fBjobs files custom\fR
+.TP
+.I ~/.appform/known_hosts
+SSH host keys file for SFTP connections
 .TP
 .I ~/.appform/extensions/
 Default extensions directory
