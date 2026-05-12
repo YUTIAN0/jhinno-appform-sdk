@@ -344,9 +344,15 @@ appform sessions share session_id --usernames user2,user3
 ## 文件操作（全局）
 
 ```bash
-# 列出远程目录（ls 输出自动显示解析后的绝对路径）
-appform files ls /home/user
-appform files ls '$HOME'                 # 自动显示为 /public3/homes/username
+# 列出远程目录
+# ls 输出第一行自动打印解析后的绝对路径（$HOME → /public3/homes/username）
+appform files ls '$HOME'
+# 输出示例：
+#   /public3/homes/username        ← 解析后的绝对路径
+# NAME              OWNER     SIZE      MODIFIED
+# [D] simulations   user      4.0KB     2026-05-10
+# [F] test.sim      user      1.9MB     2026-05-12
+
 appform files ls '$HOME' --all           # 自动分页列出所有
 appform files ls '$HOME' --method sftp   # SFTP 方式（SSH 端口开放时可用）
 appform files ls '$HOME' --method http   # HTTP 方式（默认，SSH 不可用时用此方式）
