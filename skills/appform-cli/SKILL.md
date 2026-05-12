@@ -85,10 +85,24 @@ appform -o json jobs list    # 结构化 JSON
 
 ### 查询作业提交参数
 
-提交前先查询需要哪些参数、是否必填、默认值是什么。两种方式：
+提交前先查询需要哪些参数、是否必填、默认值是什么。
+
+**先确认 API 版本**（影响参数查询方式）：
 
 ```bash
-# 方式 1 — 从 YAML 配置文件查询（基于本地 profile，推荐）
+appform -o json config show    # 查看 api_version 字段
+```
+
+**6.6+ 版本 —— 优先使用服务器 API 查询表单**（参数与服务端同步，最准确）：
+
+```bash
+appform jobs form starccm                      # 查看 starccm 的参数表
+appform -o json jobs form starccm              # JSON 格式，便于解析
+```
+
+**6.3 及以下版本 —— 使用 YAML 配置文件查询**：
+
+```bash
 appform jobs apps                             # 列出支持的应用
 appform jobs params starccm                   # 查看 starccm 的参数表
 # 输出示例：
@@ -99,13 +113,11 @@ appform jobs params starccm                   # 查看 starccm 的参数表
 # JH_RELEASE       select   No       16.02        release       -r     软件版本
 # STAR_POST_SWITCH switch   No       off          post          -post  是否启用后处理
 # ...（更多参数）
-
-# 方式 2 — 从服务器 API 查询表单（6.6+）
-appform jobs form starccm
-appform -o json jobs form starccm             # JSON 格式，便于解析
 ```
 
 YAML 配置文件路径：`~/.appform/config.json` 中的 `job_profile_config` 字段，或环境变量 `APPFORM_JOB_PROFILE_CONFIG`。
+
+> 两种方式均可用于提交，`appform jobs submit` 会自动读取 YAML profile 生成参数。区别在于：6.6+ 的 `jobs form` 返回的是服务端最新表单定义，YAML 配置可能与服务端不同步。
 
 ### 提交
 
