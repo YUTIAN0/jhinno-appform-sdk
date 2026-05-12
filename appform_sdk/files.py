@@ -222,6 +222,38 @@ class FilesAPI:
     def __init__(self, client):
         self._client = client
 
+    def get_home_dir(self, transfer_method: str = "http") -> str:
+        """Get the remote user's home directory path.
+
+        Args:
+            transfer_method: "http" uses files.list API to resolve $HOME;
+                             "sftp" uses SSH echo ~.
+
+        Returns:
+            Absolute path of the user's home directory.
+        """
+        if transfer_method == "sftp":
+            return self._client.sftp.get_home_dir()
+        # Use files.list with $HOME — server resolves $HOME to the actual path
+        try:
+            result = self.list(path="$HOME", page=1, page_size=1)
+            data = result.get("data", [])
+            if isinstance(data, list) and len(data) > 0:
+                first = data[0]
+                p = first.get("path") or first.get("absolutePath") or ""
+                if p:
+                    return p.rsplit("/", 1)[0] or "/"
+            # Fallback: try getRootDir (6.6+ internal API)
+            result = self._client.get("/appform/fm/getRootDir")
+            data = result.get("data", {})
+            root_path = data.get("rootPath", []) if isinstance(data, dict) else []
+            for entry in root_path:
+                if entry.get("type") == "home":
+                    return entry.get("canonicalPath", "/")
+        except Exception:
+            pass
+        return "/"
+
     def list(
         self,
         path: str = "/",

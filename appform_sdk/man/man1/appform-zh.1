@@ -208,6 +208,9 @@ SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
 .B files tailf 路径 [\-\-encoding 编码]
 通过 SSH 实时跟踪远程文件输出（仅 SFTP），Ctrl+C 停止
 .TP
+.B files home [\-\-method {http,sftp}]
+输出远程用户家目录路径
+.TP
 .B files compress 源 目标
 压缩远程目录
 .TP

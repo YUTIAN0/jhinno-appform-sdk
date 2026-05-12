@@ -150,6 +150,11 @@ def handle_files_command(args):
                     except Exception:
                         pass
 
+            elif args.files_command == "home":
+                cmd_method = getattr(args, "method", None) or method
+                home = client.files.get_home_dir(transfer_method=cmd_method)
+                print(home)
+
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
@@ -212,7 +217,10 @@ def _handle_put(client, config, args, method):
             )
         progress.finish()
         uploaded = [r for r in results if r.get("result")]
+        failed = [r for r in results if not r.get("result")]
         print(f"Uploaded {len(uploaded)} file(s) to {remote}")
+        if failed:
+            print(f"Failed: {len(failed)} file(s)", file=sys.stderr)
         if args.output == "json":
             output_result(
                 {
@@ -247,6 +255,19 @@ def _handle_put(client, config, args, method):
             transfer_method=cmd_method,
         )
         progress.finish()
+        # Check API result — HTTP 200 with non-success result field
+        api_result = result.get("result", "")
+        api_code = str(result.get("code", "200"))
+        if api_result and api_result != "success":
+            msg = result.get("message", "Upload failed")
+            print(f"Error: {msg}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
+        if api_code not in ("200", ""):
+            msg = result.get("message", f"Upload failed (code {api_code})")
+            print(f"Error: {msg}", file=sys.stderr)
+            client.close()
+            sys.exit(1)
         print(f"Uploaded to {saved}")
         if args.output == "json":
             output_result(result, args.output, "files.upload")

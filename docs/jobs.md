@@ -143,8 +143,11 @@ result = client.jobs.list_jobs_v2(page=1, page_size=20)
 ## 作业操作
 
 ```python
-# 停止
+# 停止（挂起，可 resume 恢复）
 client.jobs.stop("job_id")
+
+# 终止运行中的作业（不可恢复）
+client.jobs.kill("job_id")
 
 # 暂停
 client.jobs.suspend("job_id")
@@ -155,7 +158,7 @@ client.jobs.resume("job_id")
 # 重新排队
 client.jobs.requeue("job_id")
 
-# 删除（6.6+）
+# 删除作业记录（6.6+，低版本返回 405）
 client.jobs.delete_job("job_id")
 ```
 
@@ -163,6 +166,7 @@ client.jobs.delete_job("job_id")
 
 ```python
 client.jobs.batch_stop(["job_id_1", "job_id_2"])
+client.jobs.batch_kill(["job_id_1", "job_id_2"])
 client.jobs.batch_suspend(["job_id_1", "job_id_2"])
 client.jobs.batch_resume(["job_id_1", "job_id_2"])
 client.jobs.batch_requeue(["job_id_1", "job_id_2"])
@@ -237,6 +241,7 @@ appform jobs get <job_id>
 
 # 作业操作
 appform jobs stop <job_id>
+appform jobs kill <job_id>                           # 终止（不可恢复）
 appform jobs suspend <job_id>
 appform jobs resume <job_id>
 

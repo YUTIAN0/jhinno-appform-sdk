@@ -222,10 +222,11 @@ appform jobs history-page --page 1 --page-size 20    # 分页历史
 ### 作业操作
 
 ```bash
-appform jobs stop <job_id>                           # 停止作业
+appform jobs stop <job_id>                           # 停止作业（挂起，可恢复）
+appform jobs kill <job_id>                           # 终止运行中的作业（不可恢复）
 appform jobs suspend <job_id>                        # 暂停作业
 appform jobs resume <job_id>                         # 恢复作业
-appform jobs delete <job_id>                         # 删除作业（6.6+）
+appform jobs delete <job_id>                         # 删除作业记录（6.6+，低版本返回 405）
 appform jobs output <job_id>                         # 获取作业输出
 appform jobs files <job_id>                          # 获取作业文件列表
 appform jobs files <job_id> ls /path/to/dir          # 列出作业文件目录
@@ -261,8 +262,12 @@ appform sessions share <session_id> --usernames user1,user2  # 共享会话
 ```bash
 # 列出远程目录
 appform files ls /                          # 列出根目录
-appform files ls /home/user                 # 列出指定目录
+appform files ls '$HOME'                    # 列出家目录（第一行显示解析后的绝对路径）
 appform files ls --all /home/user           # 列出所有（自动翻页）
+
+# 获取远程用户家目录
+appform files home                          # HTTP API 方式（默认）
+appform files home --method sftp            # SFTP 方式（SSH echo ~）
 
 # 创建远程目录
 appform files mkdir /home/user/new_folder

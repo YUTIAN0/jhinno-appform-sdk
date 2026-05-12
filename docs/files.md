@@ -81,8 +81,9 @@ all_files = client.files.list_all(path="/home/user")
 # 创建目录
 client.files.mkdir(path="/home/user/new_folder", force=True)
 
-# 获取根目录信息
-root = client.files.get_root_dir()
+# 获取远程用户家目录
+home = client.files.get_home_dir()                       # HTTP API 方式（默认）
+home = client.files.get_home_dir(transfer_method="sftp") # SFTP 方式（SSH echo ~）
 ```
 
 ### 文件操作
@@ -204,8 +205,11 @@ appform files rm /home/user/file.txt --method sftp
 ### put — 上传文件到远程
 
 ```bash
-# 上传文件（自动创建远程目录）
+# 上传文件（远程路径以 / 结尾：保留原文件名）
 appform files put ./local_file.txt /home/user/
+
+# 上传文件（远程路径不以 / 结尾：作为文件目标路径，可重命名）
+appform files put ./local_file.txt /home/user/renamed.txt
 
 # 上传整个目录
 appform files put ./local_folder /home/user/remote_folder
@@ -221,6 +225,24 @@ appform files put ./local_file.txt /home/user/ -f
 
 # 指定上传读取块大小（支持 256K、100M、1G 等格式）
 appform files put ./large_file.tar.gz /home/user/ --chunk-size 500M
+```
+
+> **注意**：省略远程路径时文件上传到 `/`（根目录），通常不是期望行为。建议始终指定 `$HOME/` 下的目标目录。
+> 远程路径以 `/` 结尾时保留原文件名，不以 `/` 结尾时作为文件目标路径（支持重命名）。上传后 CLI 会检查 API 返回结果，失败时显示错误并退出。
+
+### home — 获取远程用户家目录
+
+### home — 获取远程用户家目录
+
+```bash
+# 获取远程用户家目录（HTTP API，默认）
+appform files home
+
+# 使用 SFTP 方式（SSH echo ~）
+appform files home --method sftp
+
+# 查看 $HOME 解析后的绝对路径
+appform files ls '$HOME'               # 第一行显示解析后的路径
 ```
 
 ### get — 从远程下载文件

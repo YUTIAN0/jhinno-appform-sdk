@@ -859,6 +859,17 @@ def _add_files_parser(subparsers):
     files_tailf_parser.add_argument("path", help="Remote file path")
     files_tailf_parser.add_argument("--encoding", default="utf-8", help="Text encoding")
 
+    # home
+    files_home_parser = files_subparsers.add_parser(
+        "home", help="Show remote user home directory path"
+    )
+    files_home_parser.add_argument(
+        "--method",
+        choices=["http", "sftp"],
+        default=None,
+        help="Transfer method: http (default, uses API) or sftp (uses SSH echo ~)",
+    )
+
 
 def _add_apps_parser(subparsers):
     apps_parser = subparsers.add_parser("apps", help="Application operations")

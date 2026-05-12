@@ -79,10 +79,11 @@ result = client.jobs.submit(
 )
 print(f'Job ID: {result["data"][0]["jobid"]}')
 
-# 暂停 / 恢复 / 停止
+# 暂停 / 恢复 / 停止 / 终止
 client.jobs.suspend("241028")
 client.jobs.resume("241028")
-client.jobs.stop("241028")
+client.jobs.stop("241028")      # 挂起，可 resume 恢复
+client.jobs.kill("241028")      # 终止运行中的作业，不可恢复
 
 # 获取作业输出和文件
 output = client.jobs.get_output("241028")
