@@ -108,6 +108,9 @@ def handle_jobs_command(args, submit_extra_args=None):
         elif args.jobs_command == "stop":
             result = client.jobs.stop(args.job_id)
             output_result(result, args.output, "jobs.stop")
+        elif args.jobs_command == "kill":
+            result = client.jobs.kill(args.job_id)
+            output_result(result, args.output, "jobs.action")
         elif args.jobs_command == "suspend":
             result = client.jobs.suspend(args.job_id)
             output_result(result, args.output, "jobs.suspend")

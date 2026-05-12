@@ -29,6 +29,7 @@ class JobsAPI:
     ACTION_SUSPEND = "suspend"
     ACTION_RESUME = "resume"
     ACTION_REQUEUE = "requeue"
+    ACTION_KILL = "kill"
 
     def __init__(self, client):
         """
@@ -266,6 +267,10 @@ class JobsAPI:
         """Requeue a job."""
         return self.perform_action(job_id, self.ACTION_REQUEUE)
 
+    def kill(self, job_id: str) -> Dict[str, Any]:
+        """Kill a running job (terminate)."""
+        return self.perform_action(job_id, self.ACTION_KILL)
+
     def batch_action(self, job_ids: List[str], action: str) -> Dict[str, Any]:
         """
         Perform an action on multiple jobs.
@@ -297,6 +302,10 @@ class JobsAPI:
     def batch_requeue(self, job_ids: List[str]) -> Dict[str, Any]:
         """Requeue multiple jobs."""
         return self.batch_action(job_ids, self.ACTION_REQUEUE)
+
+    def batch_kill(self, job_ids: List[str]) -> Dict[str, Any]:
+        """Kill multiple jobs."""
+        return self.batch_action(job_ids, self.ACTION_KILL)
 
     def get_history(self, job_id: str) -> Dict[str, Any]:
         """

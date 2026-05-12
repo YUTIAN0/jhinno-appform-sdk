@@ -336,7 +336,16 @@ def _add_jobs_parser(subparsers):
         "--page-size", type=int, default=20, help="Page size"
     )
 
-    for cmd in ("get", "stop", "suspend", "resume", "output", "history", "delete"):
+    for cmd in (
+        "get",
+        "stop",
+        "suspend",
+        "resume",
+        "output",
+        "history",
+        "delete",
+        "kill",
+    ):
         p = jobs_subparsers.add_parser(cmd, help=f"{cmd.capitalize()} a job")
         p.add_argument("job_id", help="Job ID")
 

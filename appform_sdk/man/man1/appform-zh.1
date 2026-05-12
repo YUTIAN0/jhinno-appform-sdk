@@ -105,7 +105,10 @@ SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
 获取作业详情
 .TP
 .B jobs stop JOB_ID
-停止作业
+停止作业（挂起，可恢复）
+.TP
+.B jobs kill JOB_ID
+终止运行中的作业（不可恢复）
 .TP
 .B jobs suspend JOB_ID
 暂停作业
@@ -114,7 +117,7 @@ SFTP/SSH 连接代理 URL（如 socks5://proxy:1080 或 http://proxy:8080）
 恢复作业
 .TP
 .B jobs delete JOB_ID
-删除作业（6.6+）
+删除作业记录（仅 6.6+，低版本返回 405）
 .TP
 .B jobs output JOB_ID
 获取作业输出

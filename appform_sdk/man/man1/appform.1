@@ -111,7 +111,10 @@ List jobs by status
 Get detailed information for a job
 .TP
 .B jobs stop JOB_ID
-Stop a running job
+Stop a running job (suspends the job, can be resumed)
+.TP
+.B jobs kill JOB_ID
+Kill/terminate a running job (cannot be undone)
 .TP
 .B jobs suspend JOB_ID
 Suspend a job
@@ -120,7 +123,7 @@ Suspend a job
 Resume a suspended job
 .TP
 .B jobs delete JOB_ID
-Delete a job (6.6+)
+Delete a job record (6.6+ only; earlier versions return 405)
 .TP
 .B jobs output JOB_ID
 Get job dynamic output

@@ -91,8 +91,11 @@ result = client.jobs.submit(...)
 
 ## 提交作业
 
+> **注意**：`JH_CAS` 等参数中的文件路径必须是集群共享存储上的远程路径。本地文件需先通过 `client.files.upload()` 上传，再用远程路径提交。
+
 ```python
-# 基本提交
+# 完整工作流：上传本地文件 → 提交作业
+client.files.upload(file_path="./test.sim", remote_path="/home/user/simulations/")
 result = client.jobs.submit(
     app_id="starccm",
     params={
@@ -138,15 +141,17 @@ output = client.jobs.get_output("1001")
 history = client.jobs.list_history(page=1, page_size=50)
 
 # 作业控制
-client.jobs.stop("1001")
-client.jobs.suspend("1001")
-client.jobs.resume("1001")
+client.jobs.stop("1001")       # 挂起作业（PSUSP），可 resume 恢复
+client.jobs.kill("1001")       # 终止运行中的作业，不可恢复
+client.jobs.suspend("1001")    # 挂起（同 stop）
+client.jobs.resume("1001")     # 恢复挂起的作业
 client.jobs.requeue("1001")
 
 # 批量操作
 client.jobs.batch_stop(["1001", "1002"])
+client.jobs.batch_kill(["1001", "1002"])
 
-# 删除作业（6.6+）
+# 删除作业记录（仅 6.6+，低版本返回 405）
 client.jobs.delete_job("1001")
 ```
 
