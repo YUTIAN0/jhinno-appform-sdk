@@ -336,9 +336,31 @@ class SFTPAPI:
             raise FileNotFoundError(f"File not found: {file_path}")
 
         sftp = self._get_manager().sftp
-        remote_dir = remote_path.rstrip("/")
         fname = file_path.name
-        remote_full = f"{remote_dir}/{fname}"
+
+        # Determine if remote_path is a directory or a file destination
+        try:
+            st = sftp.stat(remote_path.rstrip("/"))
+            if st.isdir():
+                remote_dir = remote_path.rstrip("/")
+                remote_full = f"{remote_dir}/{fname}"
+            else:
+                # Existing file — overwrite
+                remote_dir = str(Path(remote_path).parent)
+                remote_full = remote_path.rstrip("/")
+        except IOError:
+            # Path doesn't exist — check if parent directory exists
+            parent = str(Path(remote_path.rstrip("/")).parent)
+            try:
+                sftp.stat(parent)
+                # Parent exists: treat remote_path as file destination
+                remote_dir = parent
+                remote_full = remote_path.rstrip("/")
+            except IOError:
+                # Parent doesn't exist either: create parent, treat as file
+                _mkdir_recursive(sftp, parent)
+                remote_dir = parent
+                remote_full = remote_path.rstrip("/")
 
         # Ensure remote directory exists
         try:

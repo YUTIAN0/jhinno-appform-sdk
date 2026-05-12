@@ -225,7 +225,10 @@ def _handle_put(client, config, args, method):
             )
     elif local_path.is_file():
         fname = local_path.name
-        saved = f"{remote.rstrip('/')}/{fname}"
+        if remote.endswith("/"):
+            saved = f"{remote.rstrip('/')}/{fname}"
+        else:
+            saved = remote.rstrip("/")
         if (
             cmd_method == "http"
             and not force

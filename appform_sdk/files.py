@@ -122,11 +122,12 @@ class _MultipartBody:
         fields: dict,
         boundary: str,
         on_progress: Optional[Callable] = None,
+        override_name: Optional[str] = None,
     ):
         self._boundary = boundary
         self._on_progress = on_progress
         self._file_size = os.path.getsize(filepath)
-        self._filename = Path(filepath).name
+        self._filename = override_name or Path(filepath).name
         self._file_obj = None
         self._file_read = 0
         self._filepath = filepath
@@ -423,7 +424,10 @@ class FilesAPI:
 
         Args:
             file_path: Local file path
-            remote_path: Remote directory path to save the file
+            remote_path: Remote path — if it ends with '/', treated as a
+                directory and the local filename is preserved. Otherwise
+                treated as a file destination (parent dir must exist or
+                will be created for SFTP).
             on_progress: Optional callback(filename, bytes_read, total_bytes)
             chunk_size: Unused, kept for API compatibility
             transfer_method: Transfer protocol ("http" or "sftp", default "http")
@@ -442,14 +446,26 @@ class FilesAPI:
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
+        fname = file_path.name
+        # Determine upload_dir and upload_name for the server
+        if remote_path.endswith("/"):
+            upload_dir = remote_path
+            upload_name = fname
+        else:
+            # Treat as file destination: parent is the directory, basename is desired name
+            rpath = remote_path.rstrip("/")
+            upload_dir = str(Path(rpath).parent) + "/"
+            upload_name = Path(rpath).name
+
         boundary = f"----WebKitFormBoundary{os.urandom(16).hex()}"
 
         if on_progress:
             body = _MultipartBody(
                 str(file_path),
-                {"uploadPath": remote_path, "isCover": "true"},
+                {"uploadPath": upload_dir, "isCover": "true"},
                 boundary,
                 on_progress=on_progress,
+                override_name=upload_name,
             )
             content_type = f"multipart/form-data; boundary={boundary}"
             try:
@@ -465,8 +481,8 @@ class FilesAPI:
             with open(str(file_path), "rb") as f:
                 return self._client.post(
                     "/appform/ws/api/files/upload",
-                    data={"uploadPath": remote_path, "isCover": "true"},
-                    files={"file": (file_path.name, f)},
+                    data={"uploadPath": upload_dir, "isCover": "true"},
+                    files={"file": (upload_name, f)},
                 )
 
     def upload_directory(
