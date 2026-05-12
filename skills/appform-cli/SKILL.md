@@ -152,18 +152,18 @@ appform files put ./test.sim $HOME/simulations/      # 同上
 **集群外节点（Windows / Linux）—— 先上传再提交：**
 
 ```bash
-# 1. 上传本地文件到集群共享存储
-appform files put ./test.sim /home/user/simulations/
-# 不指定远程路径时上传到 /（根目录），建议始终指定目标目录
+# 1. 上传本地文件到集群共享存储（始终指定目标目录，避免上传到根目录）
+appform files put ./test.sim '$HOME/simulations/'
+# 省略远程路径时上传到 /（根目录），不是期望行为
 
 # 2. 用远程路径提交作业（有 YAML profile 时）
 appform jobs submit -a starccm \
-  -i /home/user/simulations/test.sim \
+  -i /public3/homes/user/simulations/test.sim \
   -n 32 -r 16.02
 
 # 2. 用远程路径提交作业（无 YAML profile 或 6.6+ 时）
 appform jobs submit-raw --app-id starccm \
-  --params '{"JH_CAS":"/home/user/simulations/test.sim","JH_NCPU":"32","JH_RELEASE":"16.02"}'
+  --params '{"JH_CAS":"/public3/homes/user/simulations/test.sim","JH_NCPU":"32","JH_RELEASE":"16.02"}'
 ```
 
 **集群内节点 —— 直接提交：**
