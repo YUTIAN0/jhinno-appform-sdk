@@ -344,15 +344,17 @@ appform sessions share session_id --usernames user2,user3
 ## 文件操作（全局）
 
 ```bash
-# 列出远程目录
+# 列出远程目录（ls 输出自动显示解析后的绝对路径）
 appform files ls /home/user
-appform files ls /home/user --all          # 自动分页列出所有
-appform files ls /home/user --method sftp
-appform files ls /home/user --method sftp -A  # 显示隐藏文件
+appform files ls '$HOME'                 # 自动显示为 /public3/homes/username
+appform files ls '$HOME' --all           # 自动分页列出所有
+appform files ls '$HOME' --method sftp   # SFTP 方式（SSH 端口开放时可用）
+appform files ls '$HOME' --method http   # HTTP 方式（默认，SSH 不可用时用此方式）
 
 # 上传 / 下载
 appform files put local.txt /remote/path     # 不指定远程路径时上传到 /（根目录）
 appform files get /remote/file ./local
+appform files put local.txt '$HOME/simulations/'
 appform files put local.txt /remote/path --method http  # SFTP 不可用时用 HTTP 上传
 
 # 创建目录 / 复制 / 移动 / 删除
