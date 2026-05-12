@@ -48,6 +48,19 @@ def handle_files_command(args):
                         transfer_method=cmd_method,
                         hidden=hidden,
                     )
+                # Display the resolved path
+                # HTTP API: $HOME is resolved server-side, path still has $HOME
+                # SFTP: $HOME is resolved locally by resolve_home_in_path
+                display_path = path
+                if "$HOME" in path:
+                    data = result.get("data", []) if isinstance(result, dict) else []
+                    if isinstance(data, list) and len(data) > 0:
+                        first = data[0]
+                        p = first.get("path") or first.get("absolutePath") or ""
+                        if p:
+                            display_path = p.rsplit("/", 1)[0] or "/"
+                if args.output not in ("json", "raw"):
+                    print(f"  {display_path}")
                 output_result(result, args.output, list_template)
 
             elif args.files_command == "cp":
