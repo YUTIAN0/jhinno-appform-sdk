@@ -91,6 +91,24 @@ result = client.jobs.submit(...)
 
 ## 提交作业
 
+**查询提交参数**（先确认 API 版本）：
+
+```python
+# 查看当前 API 版本
+config = Config()
+print(config.api_version)  # e.g. "6.6"
+
+# 6.6+ — 优先从服务器获取表单定义（与服务端同步，最准确）
+form = client.jobs.get_form("starccm")
+
+# 6.3 及以下 — 使用 YAML 配置文件中的 profile
+from appform_sdk.job_profiles import JobProfileManager
+pm = JobProfileManager(config_file=config.job_profile_config)
+profile = pm.get_profile("starccm")
+```
+
+> `appform jobs submit` 和 `job_submit` 工具会自动读取 YAML profile 生成参数，无需手动处理。区别在于：6.6+ 的 `jobs form` 返回服务端最新表单定义，YAML 配置可能与服务端不同步。
+
 > **注意**：`JH_CAS` 等参数中的文件路径必须是集群共享存储上的路径。集群外节点需先上传再提交。
 
 **集群外节点 —— 先上传再提交：**
