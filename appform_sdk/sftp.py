@@ -54,8 +54,12 @@ def _open_proxy_socket(proxy_url: str, target_host: str, target_port: int):
                 "PySocks is required for SOCKS proxy support. "
                 "Install with: pip install jhinno-appform-sdk[proxy]"
             )
-        sock = socks.socksocket()
         proxy_type = socks.SOCKS5 if parsed.scheme == "socks5" else socks.SOCKS4
+        # Use AF_INET6 for IPv6 proxy addresses (PySocks defaults to AF_INET)
+        import socket as _socket
+
+        af = _socket.AF_INET6 if ":" in (parsed.hostname or "") else _socket.AF_INET
+        sock = socks.socksocket(af)
         sock.set_proxy(
             proxy_type,
             parsed.hostname,
