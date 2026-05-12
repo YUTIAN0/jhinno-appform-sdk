@@ -91,11 +91,15 @@ result = client.jobs.submit(...)
 
 ## 提交作业
 
-> **注意**：`JH_CAS` 等参数中的文件路径必须是集群共享存储上的远程路径。本地文件需先通过 `client.files.upload()` 上传，再用远程路径提交。
+> **注意**：`JH_CAS` 等参数中的文件路径必须是集群共享存储上的路径。集群外节点需先上传再提交。
+
+**集群外节点 —— 先上传再提交：**
 
 ```python
-# 完整工作流：上传本地文件 → 提交作业
+# 1. 上传本地文件到集群共享存储
 client.files.upload(file_path="./test.sim", remote_path="/home/user/simulations/")
+
+# 2. 用远程路径提交作业
 result = client.jobs.submit(
     app_id="starccm",
     params={
@@ -107,6 +111,23 @@ result = client.jobs.submit(
         "STAR_POST_SWITCH": "off",
     },
 )
+```
+
+**集群内节点 —— 直接提交：**
+
+文件已在共享存储上，直接使用远程路径。
+
+**集群内 Windows 节点 —— 路径自动转换：**
+
+`job_profile_config` YAML 中配置 `windows_disk_mapping`（如 `{'S:': '/apps'}`）后，`appform jobs submit` 和 `job_submit` 会自动将 Windows 路径（`S:\project\file.sim`）转换为 Linux 路径（`/apps/project/file.sim`）。`upload` 类型参数（`JH_CAS`、`JH_DAT` 等）均支持自动转换。
+
+```python
+# 直接传 Windows 路径，转换由 job_submit 工具内部完成
+# 在 Python SDK 中调用 convert_windows_path() 手动转换
+from appform_sdk.job_submit import convert_windows_path
+linux_path = convert_windows_path("S:\\project\\test.sim", {"S:": "/apps"})
+# => "/apps/project/test.sim"
+```
 
 # V2 提交（6.6+）— 先用 get_form 获取参数模板
 form = client.jobs.get_form("starccm")
