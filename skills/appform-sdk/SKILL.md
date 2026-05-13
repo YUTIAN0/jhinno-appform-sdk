@@ -273,6 +273,10 @@ client.files.list(path="/home/user")
 client.files.upload(file_path="local.txt", remote_path="/remote/")
 client.files.download(remote_path="/remote/file", local_path="./file")
 
+# 获取远程用户家目录
+client.files.get_home_dir()                        # HTTP API 方式（默认）
+client.files.get_home_dir(transfer_method="sftp")  # SFTP 方式（SSH echo ~）
+
 # $HOME 路径变量 — 集群用户的主目录（如 /public3/homes/username）
 # HTTP API: $HOME 由服务端解析，SFTP: $HOME 由客户端通过 SSH echo ~ 解析
 client.files.list(path="$HOME")

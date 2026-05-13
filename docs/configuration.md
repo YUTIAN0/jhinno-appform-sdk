@@ -248,7 +248,7 @@ client = AppformClient(base_url="https://other-server", config=config)
 | `job_profile_config` | 作业配置文件路径 | 自动检测 |
 | `output_format` | 默认输出格式 | `table` |
 | `output_template` | 输出模板文件路径 | 内置模板 |
-| `default_remote_path` | 文件操作默认远程路径 | `/` |
+| `default_remote_path` | 文件操作默认远程路径（`put` 省略路径时使用，支持 `$HOME`） | `/` |
 | `chunk_size` | 上传/下载分块大小 | `100M` |
 | `default_method` | 文件操作默认传输方式 | `http` |
 | `sftp_host` | SFTP 主机名 | 从 `base_url` 提取 |

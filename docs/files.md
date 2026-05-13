@@ -218,7 +218,8 @@ appform files put ./local_folder /home/user/remote_folder
 appform files put ./local_file.txt /home/user/ --method sftp
 
 # 使用默认远程路径（配置文件中设置 default_remote_path）
-appform files put ./local_file.txt
+appform files put ./local_file.txt            # 省略路径时使用 default_remote_path
+appform files put ./renamed.txt /home/user/   # 指定路径时忽略 default_remote_path
 
 # 强制覆盖远程已存在的文件（跳过确认提示）
 appform files put ./local_file.txt /home/user/ -f
@@ -229,8 +230,6 @@ appform files put ./large_file.tar.gz /home/user/ --chunk-size 500M
 
 > **注意**：省略远程路径时文件上传到 `/`（根目录），通常不是期望行为。建议始终指定 `$HOME/` 下的目标目录。
 > 远程路径以 `/` 结尾时保留原文件名，不以 `/` 结尾时作为文件目标路径（支持重命名）。上传后 CLI 会检查 API 返回结果，失败时显示错误并退出。
-
-### home — 获取远程用户家目录
 
 ### home — 获取远程用户家目录
 
@@ -331,15 +330,33 @@ appform files conf --set /home/user/file.txt secret
 
 ## 默认远程路径
 
-通过配置文件或环境变量设置默认远程路径，这样在使用 `put` 命令时可以省略远程目录参数：
+通过配置文件或环境变量设置默认远程路径，这样在使用 `put`、`get` 等命令时可以省略远程路径参数：
 
 ```bash
-# 环境变量
-export APPFORM_DEFAULT_REMOTE_PATH=/home/user/
+# 方式 1: CLI 配置（推荐）
+appform config set --default-remote-path '$HOME/work/'
 
-# 配置文件 (~/.appform/config.json)
-appform config set --default-remote-path /home/user/
+# 方式 2: 环境变量
+export APPFORM_DEFAULT_REMOTE_PATH='$HOME/work/'
+
+# 方式 3: 配置文件 (~/.appform/config.json) 直接编辑
+# { "default_remote_path": "$HOME/work/" }
+
+# 查看当前配置
+appform -o json config show    # 检查 default_remote_path 字段
 ```
+
+**生效规则：**
+
+| 场景 | 是否使用 `default_remote_path` |
+|------|------|
+| `appform files put ./file.txt`（省略远程路径） | 是，上传到 `$HOME/work/` |
+| `appform files put ./file.txt /other/path/`（指定远程路径） | 否，使用 `/other/path/` |
+| `appform files get /remote/file` | 否，`get` 的源路径必须显式指定 |
+
+**优先级：** CLI 参数（`--default-remote-path`）> 环境变量（`APPFORM_DEFAULT_REMOTE_PATH`）> 配置文件（`default_remote_path` 字段）。默认值为 `/`。
+
+> **注意**：`default_remote_path` 中可以使用 `$HOME`，在执行时由服务端（HTTP）或客户端（SFTP）解析为实际家目录路径。建议设置为 `'$HOME/'` 下的子目录，避免文件散落在根目录。
 
 ---
 

@@ -118,9 +118,8 @@ appform config set --verify-ssl false
 appform config set --job-profile-config /path/to/job_submit.yaml
 appform config set --output-format table
 appform config set --output-template /path/to/template.yaml
-appform config set --default-remote-path /home/user/
+appform config set --default-remote-path '$HOME/work/'    # 文件操作默认远程路径
 appform config set --aes-key YOUR_AES_KEY
-appform config set --default-remote-path /home/user/
 appform config set --chunk-size 100M
 
 # 设置默认文件传输方式
