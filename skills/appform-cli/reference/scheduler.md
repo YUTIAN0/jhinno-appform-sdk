@@ -1,7 +1,7 @@
 # 调度命令参考
 
 集群节点上可直接使用的调度命令（jsub/jjobs/jctrl 等），无需通过 appform API。
-完整参数参考 `命令行手册.md`。
+完整参数参考 → [scheduler-manual.md](scheduler-manual.md)（28 个命令）
 
 ---
 
@@ -73,6 +73,39 @@ jctrl stop 6[15-20]                   # 挂起指定范围的子作业
 jsub -Is bash             # 服务模式交互式
 jattach 13                # 重新连接到作业 13
 ```
+
+### 资源需求（`-R` 详细说明）
+
+`-R` 支持三个关键字，可组合使用：`-R "select[...] rusage[...] span[...]"`
+
+| 关键字 | 作用 | 示例 |
+|--------|------|------|
+| `select` | 节点选择条件 | `select[mem>1024]`、`select[type==LINUX64]`、`select[gpu_node]` |
+| `rusage` | 资源预留 | `rusage[mem=500]`、`rusage[mem=800/slot]`、`rusage[mem=500&&swap=200]` |
+| `span` | 分布控制 | `span[hosts=1]`（单节点）、`span[ptile=2]`（每节点 2 slot） |
+
+**rusage 预留方式：**
+
+| 写法 | 含义 |
+|------|------|
+| `mem=800` | 默认按 slot 预留（等同 `mem=800/slot`） |
+| `mem=800/slot` | 预留值 × 节点分配的 slot 数 |
+| `mem=800/host` | 每节点固定预留，不乘以 slot 数 |
+
+**组合示例：**
+
+```bash
+# 选择 LINUX64 节点 + 预留 500MB 内存 + 单节点运行
+jsub -n 4 -R "select[type==LINUX64] rusage[mem=500] span[hosts=1]" my_job
+
+# 选择内存充足节点 + 预留资源 + 每节点 2 slots
+jsub -n 8 -R "select[mem>1024] rusage[mem=800] span[ptile=2]" my_job
+
+# 复合条件：NTX64 且 mem>50，或 LINUX64 且 mem>100
+jsub -R "select[((type==NTX64 && mem>50) || (type==LINUX64 && mem>100))]" my_job
+```
+
+> 完整说明 → [jsub_R_resource_requirements.md](jsub_R_resource_requirements.md)
 
 ### 其他选项
 
