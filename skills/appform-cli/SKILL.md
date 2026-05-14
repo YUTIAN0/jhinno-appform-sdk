@@ -12,6 +12,17 @@ description: >
 
 Appform 6.0-6.6 HPC 平台，支持两种方式操作集群：
 
+## 安装
+
+```bash
+pip install git+https://github.com/YUTIAN0/jhinno-appform-sdk.git
+
+# SFTP 可选（文件传输使用 SFTP 时需要）
+pip install "git+https://github.com/YUTIAN0/jhinno-appform-sdk.git#egg=jhinno-appform-sdk[sftp]"
+```
+
+安装后 `appform` 命令即可使用。调度命令（`jsub`/`jjobs`/`jctrl` 等）为集群自带，无需安装。
+
 | 方式 | 命令 | 适用场景 |
 |------|------|---------|
 | **appform CLI**（HTTP API） | `appform jobs submit` | 集群内外均可，需认证配置 |
@@ -23,23 +34,41 @@ Appform 6.0-6.6 HPC 平台，支持两种方式操作集群：
 
 ## 认证
 
+**禁止将密码、密钥、令牌等敏感信息发送给 AI。** 引导用户自行在终端执行配置命令。
+
+### 配置步骤
+
+1. 引导用户确认是否已有配置：
+
 ```bash
-# AccessKey（推荐）
-appform config set \
-  --base-url https://appform.example.com \
-  --access-key YOUR_KEY \
-  --access-key-secret YOUR_SECRET \
-  --username your_username
-
-# 用户名密码登录
-appform auth login --username user --password pass
-appform auth ping
-
-# 查看配置（禁止直接读 ~/.appform/config.json）
-appform -o json config show
+appform -o json config show    # 查看当前配置
 ```
 
-环境变量：`APPFORM_BASE_URL`, `APPFORM_ACCESS_KEY`, `APPFORM_ACCESS_KEY_SECRET`, `APPFORM_USERNAME`
+2. 如果未配置，提示用户在终端中自行执行以下命令（不要代为执行含敏感信息的命令）：
+
+```bash
+# 方式 1：AccessKey（推荐，一次性配置）
+appform config set \
+  --base-url <服务器地址> \
+  --access-key <用户的 AccessKey> \
+  --access-key-secret <用户的 AccessKeySecret> \
+  --username <用户名>
+
+# 方式 2：用户名密码登录（每次会话）
+appform auth login --username <用户名> --password <密码>
+```
+
+3. 用户配置完成后，验证连接：
+
+```bash
+appform auth ping
+```
+
+### 说明
+
+- 环境变量：`APPFORM_BASE_URL`, `APPFORM_ACCESS_KEY`, `APPFORM_ACCESS_KEY_SECRET`, `APPFORM_USERNAME`
+- 每次命令可用 `--base-url` 等参数覆盖
+- **禁止直接读取 `~/.appform/config.json` 文件。始终使用 `appform -o json config show` 命令获取配置内容。**
 
 ---
 
