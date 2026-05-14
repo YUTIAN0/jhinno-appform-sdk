@@ -4,8 +4,9 @@ version: 3.0.0
 description: >
   使用 appform 命令行工具或调度命令（jsub/jjobs/jctrl）提交计算作业、
   查看作业状态、获取应用列表、启动交互应用。
-  当用户在终端/Shell 中操作 Appform HPC 集群时使用。
-  务必在此类场景下使用此 skill，即使用户用 "提交任务"、"看作业" 等口语化表述。
+  当用户在终端/Shell 中操作 Appform HPC 集群时，**务必使用此 skill**。
+  即使用户只说 "看作业状态"、"提交任务"、"启动交互应用" 等口语化表述，也要使用。
+  **不要在用户涉及 Python 代码或 SDK 时使用此 skill**（那会由 appform-sdk 处理）。
 ---
 
 # appform CLI 使用指南

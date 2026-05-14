@@ -1,6 +1,10 @@
 ---
 name: appform-sdk
-description: 使用 Appform Python SDK (AppformClient) 提交计算作业、查看作业状态、获取应用列表、启动交互应用。当用户在 Python 代码中操作 Appform、导入 appform_sdk、或使用 SDK 编程方式与 Appform HPC 集群交互时使用。务必在此类场景下使用此 skill，即使用户没有明确提到 "appform_sdk"。
+description: >
+  使用 Appform Python SDK (AppformClient) 提交计算作业、查看作业状态、获取应用列表、
+  启动交互应用。当用户在 Python 代码中操作 Appform、导入 appform_sdk、
+  或使用 SDK 编程方式与 Appform HPC 集群交互时，**务必使用此 skill**。
+  **不要在用户涉及终端命令、Shell 脚本或 CLI 操作时使用此 skill**。
 ---
 
 # Appform Python SDK 使用指南
