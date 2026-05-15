@@ -1243,7 +1243,7 @@ Repeated argument <-J job1> in script, ignored
 | 环境变量 | 说明 |
 |---|---|
 | `JH_JOBID` | 系统分配的作业号 |
-| `JH_HOSTS` | 执行作业的节点列表（串行作业为单个节点，并行作业为多个节点） |
+| `JH_HOSTS` | 执行作业的节点及 slot 分配信息，格式为 `节点名1 slot数1 节点名2 slot数2 ...`，每个节点名后跟该节点分配的 slot 数。串行作业仅一个节点，如 `host1 1`；并行作业含多个节点，如 `host1 4 host2 4 host3 2` |
 | `JH_QUEUE` | 作业所在队列的名称 |
 | `JH_JOBNAME` | 作业名称 |
 | `JH_SUB_HOST` | 作业的提交节点 |
