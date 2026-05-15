@@ -39,9 +39,13 @@ pip install "git+https://github.com/YUTIAN0/jhinno-appform-sdk.git#egg=jhinno-ap
 
 **编写 jsub 脚本前，必须先查阅对应文档，禁止凭经验假设参数格式。**
 
+> **真实失败案例**：未查文档直接写脚本导致：队列名 "default" 不存在、缺少 `module purge` 导致模块冲突、
+> 未指定 `select[type==LINUX64]` 导致作业分配到 Windows view 节点失败、OpenMPI 缺少 ucx 库链接失败。
+> **每次写脚本前必须先读对应文档。**
+
 | 作业类型 | 必须查阅的文档 |
 |---------|-------------|
-| MPI 并行 | [apps/mpi.md](apps/mpi.md) — hostfile 生成、节点类型、module purge |
+| MPI 并行 | [apps/mpi.md](apps/mpi.md) — hostfile 生成、节点类型、module purge、推荐模块 |
 | 串行/GPU/通用 | [reference/scheduler.md](reference/scheduler.md) — jsub 参数速查 |
 | 完整参数 | [reference/scheduler-manual.md](reference/scheduler-manual.md) — 所有 jsub 选项 |
 | 特定应用 | [apps/starccm.md](apps/starccm.md) / [apps/fluent.md](apps/fluent.md) 等 |
@@ -64,6 +68,18 @@ module load <模块名>          # 再加载所需模块
 
 # 执行计算命令
 ```
+
+### 脚本编写检查清单
+
+**每次生成 jsub 脚本前，逐项检查：**
+
+1. **查文档** — 是否查阅了对应应用/作业类型的文档？
+2. **队列名** — 是否使用 `jqueues` 确认了队列存在？（**没有 "default" 队列**，常用：`debug`、`normal`、`fatnode`、`gpu`）
+3. **module purge** — 是否在 `module load` 前加了 `module purge`？
+4. **节点类型** — 是否在 `-R` 中指定了 `select[type==LINUX64]`？
+5. **hostfile** — MPI 作业是否从 `JH_HOSTS` 生成 hostfile 并计算 NP？
+6. **输出捕获** — 是否在脚本内用 `{ ... } > logfile 2>&1` 显式重定向？
+7. **脚本权限** — 是否执行了 `chmod +x`？（`./` 前缀也需要脚本有可执行权限）
 
 ### 正确 vs 错误示例
 

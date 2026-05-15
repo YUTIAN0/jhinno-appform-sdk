@@ -153,13 +153,19 @@ module unload intelmpi
 module switch intelmpi/2021.11 intelmpi/2024.0
 ```
 
+### 推荐模块
+
+> 具体可用模块以 `module avail mpi` 输出为准，不同集群命名可能不同。
+> 如果模块加载后编译报链接错误（如缺少 ucx/infiniband 库），可能是因为**登录节点未安装相关库**，
+> 计算节点通常正常。在脚本中 `module load` 后编译即可（`jsub` 作业在计算节点执行）。
+
 ### 常见 MPI 模块名
 
 | MPI 实现 | 典型模块名 |
 |----------|-----------|
-| Intel MPI | `intelmpi`, `intel-mpi`, `impi` |
+| Intel MPI | `oneapi/mpi`, `intelmpi`, `intel-mpi`, `impi` |
 | MPICH | `mpich`, `mpich/4.1.2` |
-| OpenMPI | `openmpi`, `openmpi/4.1.5` |
+| OpenMPI | `ompi`, `openmpi`, `openmpi/4.1.5` |
 
 > 具体模块名以 `module avail mpi` 输出为准，不同集群命名可能不同。
 
@@ -301,7 +307,9 @@ mpirun -np "$NP" \
   ./my_program input.dat
 ```
 
-> **环境变量传递**：OpenMPI 默认不将当前环境变量传递给 MPI 进程。需要用 `-x VAR` 显式传递，或用 `-x`（无参数）传递所有环境变量。`module load` 设置的 `PATH`/`LD_LIBRARY_PATH` 等必须通过 `-x` 传递，否则 MPI 进程找不到命令。
+> **环境变量传递**：OpenMPI 默认不将当前环境变量传递给 MPI 进程。必须用 `-x VAR` 显式传递变量名。
+> **`-x` 后面必须跟变量名**，不能省略（`-x` 无参数时会把下一个参数当作变量名，导致命令解析错误）。
+> `module load` 设置的 `PATH`/`LD_LIBRARY_PATH` 等必须通过 `-x` 传递，否则 MPI 进程找不到命令。
 
 ```bash
 chmod +x run_openmpi.sh
@@ -338,50 +346,3 @@ jsub -J openmpi_job -n 32 -R "select[type==LINUX64] span[ptile=8]" \
 | 网络优化 | `I_MPI_FABRICS` | UCX/MOFI | UCX/BTL |
 | 适用场景 | Intel 平台优化 | 通用、教学 | 异构环境 |
 
----
-
-## 常见问题
-
-### Q: 如何确定每节点进程数？
-
-一般规则：**每节点进程数 ≤ 节点 CPU 核数**。查看节点资源：
-
-```bash
-jhosts -l node_name    # 查看节点 ncpus 数
-```
-
-### Q: 进程绑定有什么用？
-
-绑定进程到 CPU 核心可减少进程迁移开销，提高缓存命中率。通常建议启用。
-
-### Q: 如何查看作业分配了哪些节点？
-
-```bash
-jjobs -l <job_id>              # EXEC_HOST 字段显示执行节点
-echo $JH_HOSTS                 # 脚本内获取，格式: "host1 4 host2 4"
-echo $JH_HOSTS | awk '{for(i=1;i<=NF;i+=2) print $i}'  # 仅提取节点名
-```
-
-### Q: MPI 程序报 "no available NIC" 怎么办？
-
-通常是网络设备配置问题。检查并设置：
-
-```bash
-# Intel MPI
-export I_MPI_FABRICS=shm:tcp
-
-# OpenMPI
-export OMPI_MCA_btl_tcp_if_include=eth0
-
-# 通用（UCX）
-export UCX_NET_DEVICES=eth0
-```
-
-### Q: module load 报 "command not found" 怎么办？
-
-Modules 初始化脚本可能未在计算节点的 shell 中加载。手动初始化：
-
-```bash
-module purge
-module load intelmpi/2021.11
-```
