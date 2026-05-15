@@ -250,7 +250,55 @@ jhosts host1               # 指定节点
 jhosts stat                # 节点负载
 jhosts stat -l             # 负载详情
 jhosts attrib              # 静态资源信息
+jhosts attrib -l <节点名>  # 指定节点的详细静态资源
 ```
+
+### jhosts attrib -l 输出说明
+
+`jhosts attrib -l` 显示节点的硬件静态资源信息，用于确认节点类型、CPU 架构、GPU 等。
+
+**Linux 计算节点示例**（`jhosts attrib -l ev-hpc-compute001`）：
+
+```
+HOST  ev-hpc-compute001
+type     model    ndisks ncpus   maxmem  maxswap   maxtmp nsocket ncore nthread ngpus nnodes RESOURCES
+LINUX64  AMD64         1    64  385863M       0K  448367M       2    32       1     -      2 -
+
+ NUMA node:    ID   core_id               max_mem     gpu_id
+                0   0:0-3,0:16-19,0:32-35    192397M          -
+                    0:48-51,0:64-67,0:80-83
+                    0:96-99,0:112-115
+                1   1:0-3,1:16-19,1:32-35    193465M          -
+                    1:48-51,1:64-67,1:80-83
+                    1:96-99,1:112-115
+```
+
+**Windows 视图节点示例**（`jhosts attrib -l ev-hpc-view11`）：
+
+```
+HOST  ev-hpc-view11
+type     model    ndisks ncpus   maxmem  maxswap   maxtmp nsocket ncore nthread ngpus nnodes RESOURCES
+NTX64    Intel64       5    92 1048239M 1099439M        -       2    23       2     1      - -
+
+  GPU: ID  type                        max_mem  processors  cores  threads  capability  gpu_clock max_power
+        0  NVIDIARTX5880AdaGeneration   49140M         110   7040   168960         8.9  2460.0MHz    285.0w
+```
+
+**字段说明**：
+
+| 字段 | 说明 |
+|------|------|
+| `type` | 操作系统类型：`LINUX64`（Linux 计算节点）、`NTX64`（Windows 视图节点） |
+| `model` | CPU 架构：`AMD64`、`Intel64` 等 |
+| `ncpus` | 总 CPU 核数（= nsocket × ncore × nthread） |
+| `maxmem` | 最大可用内存 |
+| `nsocket` | CPU 插槽数（物理 CPU 数） |
+| `ncore` | 每插槽核心数 |
+| `nthread` | 每核心线程数（超线程，1 = 无超线程） |
+| `ngpus` | GPU 数量（`-` 表示无 GPU） |
+| `nnodes` | NUMA 节点数 |
+
+> **`type` 字段用于 `-R "select[type==LINUX64]"` 参数**，确保作业分配到 Linux 计算节点而非 Windows 视图节点。
 
 ---
 
