@@ -35,6 +35,87 @@ pip install "git+https://github.com/YUTIAN0/jhinno-appform-sdk.git#egg=jhinno-ap
 
 ---
 
+## 使用 jsub 脚本提交前必读（禁止跳过）
+
+**编写 jsub 脚本前，必须先查阅对应文档，禁止凭经验假设参数格式。**
+
+| 作业类型 | 必须查阅的文档 |
+|---------|-------------|
+| MPI 并行 | [apps/mpi.md](apps/mpi.md) — hostfile 生成、节点类型、module purge |
+| 串行/GPU/通用 | [reference/scheduler.md](reference/scheduler.md) — jsub 参数速查 |
+| 完整参数 | [reference/scheduler-manual.md](reference/scheduler-manual.md) — 所有 jsub 选项 |
+| 特定应用 | [apps/starccm.md](apps/starccm.md) / [apps/fluent.md](apps/fluent.md) 等 |
+
+### jsub 脚本格式（景行调度系统专用）
+
+**⚠ 禁止使用 SLURM/SGE/PBS 语法。** 景行调度系统使用 `#JSUB` 指令，格式如下：
+
+```bash
+#!/bin/bash
+#JSUB -J 作业名              # 作业名称（等同 SLURM --job-name，但必须用 -J）
+#JSUB -n 4                   # 总处理器数（等同 SLURM --ntasks）
+#JSUB -R "select[type==LINUX64] span[ptile=2]"   # 节点类型 + 每节点进程数
+#JSUB -q 队列名              # 队列（等同 SLURM --partition）
+#JSUB -o output.log          # 输出文件（等同 SLURM --output）
+#JSUB -e error.log           # 错误文件（等同 SLURM --error）
+
+module purge                 # 必须先清理环境
+module load <模块名>          # 再加载所需模块
+
+# 执行计算命令
+```
+
+### 正确 vs 错误示例
+
+```bash
+# ✅ 正确：景行 jsub 语法
+#!/bin/bash
+#JSUB -J calc_pi
+#JSUB -n 4
+#JSUB -R "select[type==LINUX64] span[ptile=4]"
+#JSUB -o calc_pi.out
+#JSUB -e calc_pi.err
+
+module purge
+module load intelmpi/2021.11
+
+NP=$(echo "$JH_HOSTS" | awk '{s=0; for(i=2;i<=NF;i+=2) s+=$i; print s}')
+HOSTFILE="hostfile_${JH_JOBID}"
+echo "$JH_HOSTS" | awk '{for(i=1;i<=NF;i+=2){host=$i;slots=$(i+1);for(j=1;j<=slots;j++) print host}}' > "$HOSTFILE"
+
+mpirun -n "$NP" -machinefile "$HOSTFILE" ./my_program
+```
+
+```bash
+# ❌ 错误：SLURM 语法（景行不支持）
+#!/bin/bash
+#SBATCH --job-name calc_pi          # 错误：景行用 #JSUB -J
+#SBATCH --ntasks 4                  # 错误：景行用 #JSUB -n
+#SBATCH --cpus-per-task 1           # 错误：景行用 -R "span[ptile=1]"
+#SBATCH --output calc_pi.out        # 错误：景行用 #JSUB -o
+```
+
+### JSUB 参数速查
+
+| JSUB 选项 | 说明 | SLURM 对应 |
+|-----------|------|-----------|
+| `-J name` | 作业名 | `--job-name` |
+| `-n N` | 总处理器数 | `--ntasks` |
+| `-R "select[...] span[...]"` | 资源需求 | `--constraint` + `--cpus-per-task` |
+| `-q queue` | 队列 | `--partition` |
+| `-m node` | 指定节点 | `--nodelist` |
+| `-o file` | 输出文件 | `--output` |
+| `-e file` | 错误文件 | `--error` |
+| `-W minutes` | 运行时限 | `--time` |
+| `-M MB` | 内存限制 | `--mem` |
+| `-gpgpu N` | GPU 数 | `--gres=gpu:N` |
+| `-Ep script` | post-exec 脚本 | 无直接对应 |
+| `-app id` | 指定应用 | 无直接对应 |
+
+> 完整参数 → [scheduler.md](reference/scheduler.md) | [scheduler-manual.md](reference/scheduler-manual.md)
+
+---
+
 ## 认证
 
 **禁止将密码、密钥、令牌等敏感信息发送给 AI。** 引导用户自行在终端执行配置命令。
