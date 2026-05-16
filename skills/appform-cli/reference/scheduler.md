@@ -302,6 +302,29 @@ NTX64    Intel64       5    92 1048239M 1099439M        -       2    23       2 
 
 ---
 
+## jhostgroup — 节点组信息
+
+节点组将配置相同或相近的节点归为一组，提交作业时通过 `-m <节点组>` 指定执行节点组。
+
+```bash
+jhostgroup                  # 所有节点组
+jhostgroup -w               # 宽格式（显示包含的节点列表）
+jhostgroup -r               # 递归展开（只显示节点名，不含子组名，去重）
+jhostgroup group_name       # 指定节点组
+```
+
+**提交作业时指定节点组**：
+
+```bash
+# jsub 方式
+jsub -m <节点组名> -n 16 ./my_job.sh
+
+# appform CLI 方式
+appform jobs submit -a starccm -i /path/test.sim -n 16 --set JH_NODE_GROUP=<节点组名>
+```
+
+---
+
 ## 内置环境变量
 
 作业提交后自动设置，可在脚本中直接使用：
