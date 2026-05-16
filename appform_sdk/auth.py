@@ -2,7 +2,12 @@
 Authentication API module for Appform SDK
 """
 
-from typing import Any, Dict, Optional
+from __future__ import annotations
+
+from typing import Any, Dict, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .client import AppformClient
 
 from .exceptions import AuthenticationError
 from .utils import AESEncryptor, check_cluster_environment
@@ -16,7 +21,7 @@ class AuthAPI:
     AccessKey authentication, and permission validation.
     """
 
-    def __init__(self, client):
+    def __init__(self, client: AppformClient):
         """
         Initialize the Auth API.
 

@@ -3,7 +3,7 @@ Data models for Appform SDK
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 @dataclass
@@ -336,7 +336,7 @@ class PaginatedResult:
     has_previous: bool = False
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], item_parser=None) -> "PaginatedResult":
+    def from_dict(cls, data: Dict[str, Any], item_parser: Optional[Callable[..., Any]] = None) -> "PaginatedResult":
         """Create PaginatedResult from dictionary."""
         content = data.get("content", data.get("jobs", data.get("list", [])))
 

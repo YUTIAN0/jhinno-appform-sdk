@@ -335,3 +335,12 @@ def compare_versions(v1: str, v2: str) -> int:
     if len(parts1) > len(parts2):
         return 1
     return 0
+
+
+def human_size(n: int) -> str:
+    """Convert bytes to human-readable size string."""
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if abs(n) < 1024:
+            return f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} PB"

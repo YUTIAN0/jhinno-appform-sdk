@@ -2,8 +2,13 @@
 Jobs API module for Appform SDK
 """
 
+from __future__ import annotations
+
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .client import AppformClient
 
 
 class JobsAPI:
@@ -31,7 +36,7 @@ class JobsAPI:
     ACTION_REQUEUE = "requeue"
     ACTION_KILL = "kill"
 
-    def __init__(self, client):
+    def __init__(self, client: AppformClient):
         """
         Initialize the Jobs API.
 
@@ -48,7 +53,7 @@ class JobsAPI:
         """
         Submit a new job (6.0+).
 
-        Uses multipart/form-data with appId and params JSON string.
+        Uses query parameters with appId and params JSON string.
 
         Args:
             app_id: Application ID (e.g., "fluent", "starccm")

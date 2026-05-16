@@ -332,6 +332,23 @@ class Config:
         """Get the default extensions directory path."""
         return Path.home() / cls.DEFAULT_CONFIG_DIR / "extensions"
 
+    _FIELDS = [
+        "base_url", "access_key", "access_key_secret", "username", "password",
+        "token", "aes_key", "timeout", "verify_ssl", "api_version",
+        "extensions_dir", "job_profile_config", "output_format", "output_template",
+        "default_remote_path", "chunk_size", "default_method", "sftp_host",
+        "sftp_port", "sftp_username", "sftp_password", "sftp_key_file",
+        "sftp_key_password", "auto_add_host_key", "http_proxy", "sftp_proxy",
+    ]
+
+    @staticmethod
+    def _apply_fields(target: dict, **kwargs) -> None:
+        """Apply non-None kwargs to target dict based on _FIELDS list."""
+        for key in Config._FIELDS:
+            val = kwargs.get(key)
+            if val is not None:
+                target[key] = val
+
     @classmethod
     def save_config_file(
         cls,
@@ -409,58 +426,22 @@ class Config:
             except (json.JSONDecodeError, IOError):
                 pass
 
-        if base_url is not None:
-            existing["base_url"] = base_url
-        if access_key is not None:
-            existing["access_key"] = access_key
-        if access_key_secret is not None:
-            existing["access_key_secret"] = access_key_secret
-        if username is not None:
-            existing["username"] = username
-        if password is not None:
-            existing["password"] = password
-        if token is not None:
-            existing["token"] = token
-        if aes_key is not None:
-            existing["aes_key"] = aes_key
-        if timeout is not None:
-            existing["timeout"] = timeout
-        if verify_ssl is not None:
-            existing["verify_ssl"] = verify_ssl
-        if api_version is not None:
-            existing["api_version"] = api_version
-        if extensions_dir is not None:
-            existing["extensions_dir"] = extensions_dir
-        if job_profile_config is not None:
-            existing["job_profile_config"] = job_profile_config
-        if output_format is not None:
-            existing["output_format"] = output_format
-        if output_template is not None:
-            existing["output_template"] = output_template
-        if default_remote_path is not None:
-            existing["default_remote_path"] = default_remote_path
-        if chunk_size is not None:
-            existing["chunk_size"] = chunk_size
-        if default_method is not None:
-            existing["default_method"] = default_method
-        if sftp_host is not None:
-            existing["sftp_host"] = sftp_host
-        if sftp_port is not None:
-            existing["sftp_port"] = sftp_port
-        if sftp_username is not None:
-            existing["sftp_username"] = sftp_username
-        if sftp_password is not None:
-            existing["sftp_password"] = sftp_password
-        if sftp_key_file is not None:
-            existing["sftp_key_file"] = sftp_key_file
-        if sftp_key_password is not None:
-            existing["sftp_key_password"] = sftp_key_password
-        if auto_add_host_key is not None:
-            existing["auto_add_host_key"] = auto_add_host_key
-        if http_proxy is not None:
-            existing["http_proxy"] = http_proxy
-        if sftp_proxy is not None:
-            existing["sftp_proxy"] = sftp_proxy
+        kwargs = dict(
+            base_url=base_url, access_key=access_key,
+            access_key_secret=access_key_secret, username=username,
+            password=password, token=token, aes_key=aes_key,
+            timeout=timeout, verify_ssl=verify_ssl, api_version=api_version,
+            extensions_dir=extensions_dir, job_profile_config=job_profile_config,
+            output_format=output_format, output_template=output_template,
+            default_remote_path=default_remote_path, chunk_size=chunk_size,
+            default_method=default_method, sftp_host=sftp_host,
+            sftp_port=sftp_port, sftp_username=sftp_username,
+            sftp_password=sftp_password, sftp_key_file=sftp_key_file,
+            sftp_key_password=sftp_key_password,
+            auto_add_host_key=auto_add_host_key,
+            http_proxy=http_proxy, sftp_proxy=sftp_proxy,
+        )
+        cls._apply_fields(existing, **kwargs)
 
         if environment is not None:
             if "environments" not in existing or not isinstance(
@@ -471,59 +452,7 @@ class Config:
                 existing["environments"][environment], dict
             ):
                 existing["environments"][environment] = {}
-            env_target = existing["environments"][environment]
-            if base_url is not None:
-                env_target["base_url"] = base_url
-            if access_key is not None:
-                env_target["access_key"] = access_key
-            if access_key_secret is not None:
-                env_target["access_key_secret"] = access_key_secret
-            if username is not None:
-                env_target["username"] = username
-            if password is not None:
-                env_target["password"] = password
-            if token is not None:
-                env_target["token"] = token
-            if aes_key is not None:
-                env_target["aes_key"] = aes_key
-            if timeout is not None:
-                env_target["timeout"] = timeout
-            if verify_ssl is not None:
-                env_target["verify_ssl"] = verify_ssl
-            if api_version is not None:
-                env_target["api_version"] = api_version
-            if extensions_dir is not None:
-                env_target["extensions_dir"] = extensions_dir
-            if job_profile_config is not None:
-                env_target["job_profile_config"] = job_profile_config
-            if output_format is not None:
-                env_target["output_format"] = output_format
-            if output_template is not None:
-                env_target["output_template"] = output_template
-            if default_remote_path is not None:
-                env_target["default_remote_path"] = default_remote_path
-            if chunk_size is not None:
-                env_target["chunk_size"] = chunk_size
-            if default_method is not None:
-                env_target["default_method"] = default_method
-            if sftp_host is not None:
-                env_target["sftp_host"] = sftp_host
-            if sftp_port is not None:
-                env_target["sftp_port"] = sftp_port
-            if sftp_username is not None:
-                env_target["sftp_username"] = sftp_username
-            if sftp_password is not None:
-                env_target["sftp_password"] = sftp_password
-            if sftp_key_file is not None:
-                env_target["sftp_key_file"] = sftp_key_file
-            if sftp_key_password is not None:
-                env_target["sftp_key_password"] = sftp_key_password
-            if auto_add_host_key is not None:
-                env_target["auto_add_host_key"] = auto_add_host_key
-            if http_proxy is not None:
-                env_target["http_proxy"] = http_proxy
-            if sftp_proxy is not None:
-                env_target["sftp_proxy"] = sftp_proxy
+            cls._apply_fields(existing["environments"][environment], **kwargs)
 
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)

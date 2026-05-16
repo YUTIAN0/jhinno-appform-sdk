@@ -2,7 +2,12 @@
 Apps API module for Appform SDK
 """
 
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import Any, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .client import AppformClient
 
 
 class AppsAPI:
@@ -12,7 +17,7 @@ class AppsAPI:
     Provides methods for querying application information.
     """
 
-    def __init__(self, client):
+    def __init__(self, client: AppformClient):
         """
         Initialize the Apps API.
 

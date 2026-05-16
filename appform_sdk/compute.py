@@ -20,6 +20,7 @@ except ImportError:
     paramiko = None
 
 from .exceptions import ComputeError
+from .utils import human_size
 
 DEFAULT_COMPUTE_CONFIG_PATH = os.path.expanduser("~/.appform/compute.yaml")
 ENV_COMPUTE_CONFIG = "APPFORM_COMPUTE_CONFIG"
@@ -231,11 +232,15 @@ def connect_via_gateway(
 
     # Step 2: Open TCP tunnel from gateway to compute node
     gateway_transport = gateway_client.get_transport()
-    tunnel_channel = gateway_transport.open_channel(
-        "direct-tcpip",
-        (node, 22),
-        ("127.0.0.1", 0),
-    )
+    try:
+        tunnel_channel = gateway_transport.open_channel(
+            "direct-tcpip",
+            (node, 22),
+            ("127.0.0.1", 0),
+        )
+    except Exception as e:
+        gateway_client.close()
+        raise ComputeError(f"Failed to open tunnel to {node}: {e}") from e
 
     # Step 3: New SSH session on the tunnel
     # Load key if specified (Transport.connect uses pkey, not key_filename)
@@ -398,15 +403,6 @@ def print_ls_table(items: List[Dict], path: str):
 # ---------------------------------------------------------------------------
 
 
-def human_size(n: int) -> str:
-    """Convert bytes to human-readable size."""
-    for unit in ("B", "KB", "MB", "GB", "TB"):
-        if abs(n) < 1024:
-            return f"{n:.1f} {unit}"
-        n /= 1024
-    return f"{n:.1f} PB"
-
-
 def compute_get(sftp_client, remote_path: str, local_path: str):
     """Download file or directory via SFTP with progress."""
     local = Path(local_path)
@@ -425,7 +421,13 @@ def compute_get(sftp_client, remote_path: str, local_path: str):
 
 
 def _download_file(sftp_client, remote_path: str, local_path: Path):
-    """Download a single file with progress."""
+    """Download a single file via SFTP with progress reporting.
+
+    Args:
+        sftp_client: SFTP client instance.
+        remote_path: Remote file path to download.
+        local_path: Local destination path. If a directory, the remote filename is used.
+    """
     if local_path.is_dir():
         local_path = local_path / Path(remote_path).name
     local_path.parent.mkdir(parents=True, exist_ok=True)
@@ -445,7 +447,13 @@ def _download_file(sftp_client, remote_path: str, local_path: Path):
 
 
 def _download_directory(sftp_client, remote_dir: str, local_dir: Path):
-    """Recursively download directory with per-file progress."""
+    """Recursively download directory with per-file progress.
+
+    Args:
+        sftp_client: SFTP client instance.
+        remote_dir: Remote directory path to download.
+        local_dir: Local destination directory. Created if it doesn't exist.
+    """
     local_dir.mkdir(parents=True, exist_ok=True)
     entries = sftp_client.listdir_attr(remote_dir)
     downloaded = 0

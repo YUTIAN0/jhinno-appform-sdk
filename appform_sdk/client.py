@@ -140,6 +140,7 @@ class AppformClient:
         self._extensions_dir = extensions_dir
 
         # SFTP configuration
+        self.auto_add_host_key = False
         self._sftp_host = None
         self._sftp_port = 22
         self._sftp_username = None
@@ -172,7 +173,7 @@ class AppformClient:
             total=max_retries,
             backoff_factor=0.5,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET", "HEAD", "OPTIONS"],
+            allowed_methods=["GET", "HEAD", "OPTIONS", "POST"],
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
