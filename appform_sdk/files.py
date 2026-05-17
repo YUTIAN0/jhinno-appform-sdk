@@ -392,15 +392,16 @@ class FilesAPI:
             return self._client.sftp.move(src_path=src_path, dest_dir=dest_dir)
 
         # Bare name without / → rename in same directory
+        src_path_stripped = src_path.rstrip("/")
         if "/" not in dest_dir.rstrip("/"):
-            return self.rename(src_path, dest_dir)
+            return self.rename(src_path_stripped, dest_dir)
 
         # Determine parent directories
         dest_parts = dest_dir.rstrip("/").split("/")
         dest_name = dest_parts[-1]
         dest_parent = "/".join(dest_parts[:-1]) or "/"
 
-        src_parts = src_path.rstrip("/").split("/")
+        src_parts = src_path_stripped.split("/")
         src_name = src_parts[-1]
         src_parent = "/".join(src_parts[:-1]) or "/"
 
@@ -735,7 +736,7 @@ class FilesAPI:
         for idx, item in enumerate(file_items, 1):
             fname = item.get("fileName", "")
             fpath = item.get("path", f"{remote_dir}/{fname}")
-            rel = fpath.replace(remote_dir, "").lstrip("/")
+            rel = fpath[len(remote_dir.rstrip("/")) :].lstrip("/")
             local_file = local_base / rel
 
             try:
@@ -752,8 +753,9 @@ class FilesAPI:
         for item in dir_items:
             fname = item.get("fileName", "")
             fpath = item.get("path", f"{remote_dir}/{fname}")
+            rel = fpath[len(remote_dir.rstrip("/")) :].lstrip("/")
             sub_results = self.download_directory(
-                fpath, str(local_base / fname), on_progress=on_progress
+                fpath, str(local_base / rel), on_progress=on_progress
             )
             results.extend(sub_results)
 

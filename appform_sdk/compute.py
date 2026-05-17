@@ -675,6 +675,7 @@ def execute_on_compute_node(
         # 3. Dispatch subcommand
         if subcommand == "ls":
             user_path = subcommand_args[0] if subcommand_args else "."
+            _validate_path(user_path)
             remote_path = resolve_path(work_path, user_path)
             sftp = client.open_sftp()
             items = compute_ls(sftp, remote_path)
@@ -684,6 +685,7 @@ def execute_on_compute_node(
         elif subcommand == "get":
             if not subcommand_args:
                 raise ComputeError("Usage: custom get <remote> [local]")
+            _validate_path(subcommand_args[0])
             remote_file = resolve_path(work_path, subcommand_args[0])
             local_dest = subcommand_args[1] if len(subcommand_args) > 1 else "."
             sftp = client.open_sftp()
@@ -693,6 +695,7 @@ def execute_on_compute_node(
         elif subcommand == "cat":
             if not subcommand_args:
                 raise ComputeError("Usage: custom cat <path>")
+            _validate_path(subcommand_args[0])
             remote_file = resolve_path(work_path, subcommand_args[0])
             head_n = ssh_kwargs.get("head")
             tail_n = ssh_kwargs.get("tail")

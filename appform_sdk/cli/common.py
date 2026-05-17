@@ -196,15 +196,22 @@ def check_is_directory(client, cmd_method, remote):
     """Check if a remote path is a directory."""
     if cmd_method == "http":
         try:
+            # Try listing as directory first
             items = client.files.list(path=remote, page=1, page_size=1)
             data = items.get("data", [])
-            # Directory listing returns a dict with files/records key,
-            # or a list of entries. An empty list means the path is a file
-            # (list on a file returns empty data), not a directory.
             if isinstance(data, dict) and ("files" in data or "records" in data):
                 return True
             if isinstance(data, list) and len(data) > 0:
-                return True
+                # Non-empty list — check if returned item's path matches as
+                # a child (directory listing) vs. the path itself (file stat).
+                first = data[0]
+                item_path = first.get("path") or first.get("absolutePath") or ""
+                if item_path and not item_path.rstrip("/").endswith(
+                    remote.rstrip("/").rsplit("/", 1)[-1]
+                ):
+                    return True
+                # Path looks like it returned the file itself — not a directory
+                return False
             return False
         except Exception:
             return False
@@ -216,7 +223,12 @@ def check_is_directory(client, cmd_method, remote):
             if isinstance(data, dict) and "files" in data:
                 return True
             if isinstance(data, list) and len(data) > 0:
-                return True
+                first = data[0]
+                # If the returned item's path is a child of remote, it's a dir listing
+                item_path = first.get("path") or ""
+                if item_path and item_path.rstrip("/") != remote.rstrip("/"):
+                    return True
+                return False
             return remote.endswith("/")
         except Exception:
             return remote.endswith("/")
