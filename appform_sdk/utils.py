@@ -6,6 +6,7 @@ import base64
 import hashlib
 import hmac
 import os
+import re
 import subprocess
 import time
 from typing import Any, Dict, Optional
@@ -13,6 +14,40 @@ from urllib.parse import quote, unquote
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
+
+
+# ---------------------------------------------------------------------------
+# Path validation
+# ---------------------------------------------------------------------------
+
+_DANGEROUS_PATH_CHARS = re.compile(r"""[;&|`(){}$\\><'" ]""")
+
+
+def validate_path(path: str, exception_class: type = ValueError) -> str:
+    """Validate a file/directory path for use in shell commands.
+
+    Allows glob patterns (* ? [...]) but rejects characters that could
+    be used for command injection (semicolons, pipes, redirects,
+    subshells, variable expansion, backslashes, quotes, spaces).
+
+    Args:
+        path: The path to validate
+        exception_class: Exception class to raise on validation failure.
+                       Defaults to ValueError.
+
+    Returns the unchanged path if safe. Raises exception_class if dangerous.
+    """
+    if ".." in path:
+        raise exception_class(f"Directory traversal not allowed in path: {path!r}")
+    if _DANGEROUS_PATH_CHARS.search(path):
+        raise exception_class(
+            f"Invalid characters in path: {path!r}. "
+            "Paths must not contain shell metacharacters or spaces "
+            "(; & | ( ) `{ } $ \\ ' \" space)."
+        )
+    if "\n" in path:
+        raise exception_class(f"Newline not allowed in path: {path!r}")
+    return path
 
 
 class SignatureGenerator:

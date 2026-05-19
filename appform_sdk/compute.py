@@ -20,7 +20,7 @@ except ImportError:
     paramiko = None
 
 from .exceptions import ComputeError
-from .utils import human_size
+from .utils import human_size, validate_path
 
 DEFAULT_COMPUTE_CONFIG_PATH = os.path.expanduser("~/.appform/compute.yaml")
 ENV_COMPUTE_CONFIG = "APPFORM_COMPUTE_CONFIG"
@@ -514,9 +514,6 @@ def compute_cat(
 # Path validation
 # ---------------------------------------------------------------------------
 
-# Characters/patterns that would allow command injection in shell commands
-_DANGEROUS_PATH_CHARS = re.compile(r"""[;&|`(){}$\\><'" ]""")
-
 
 def _validate_path(path: str) -> str:
     """Validate a file/directory path for use in shell commands.
@@ -527,17 +524,7 @@ def _validate_path(path: str) -> str:
 
     Returns the unchanged path if safe. Raises ComputeError if dangerous.
     """
-    if ".." in path:
-        raise ComputeError(f"Directory traversal not allowed in path: {path!r}")
-    if _DANGEROUS_PATH_CHARS.search(path):
-        raise ComputeError(
-            f"Invalid characters in path: {path!r}. "
-            "Paths must not contain shell metacharacters or spaces "
-            "(; & | ( ) `{ } $ \\ ' \" space)."
-        )
-    if "\n" in path:
-        raise ComputeError(f"Newline not allowed in path: {path!r}")
-    return path
+    return validate_path(path, exception_class=ComputeError)
 
 
 # ---------------------------------------------------------------------------
@@ -707,6 +694,7 @@ def execute_on_compute_node(
         elif subcommand == "tailf":
             if not subcommand_args:
                 raise ComputeError("Usage: custom tailf <path>")
+            _validate_path(subcommand_args[0])
             remote_file = resolve_path(work_path, subcommand_args[0])
             compute_tailf(client, remote_file, encoding=encoding)
 

@@ -92,7 +92,7 @@ class TestCheckIsDirectory:
         from appform_sdk.cli.common import check_is_directory
 
         client = MagicMock()
-        client.files.list.return_value = {"data": [{"fileName": "x.txt"}]}
+        client.files.list.return_value = {"data": [{"fileName": "x.txt", "path": "/remote/dir/x.txt"}]}
         assert check_is_directory(client, "http", "/remote/dir") is True
 
     def test_http_with_scalar_data_returns_false(self):
@@ -127,7 +127,7 @@ class TestCheckIsDirectory:
         from appform_sdk.cli.common import check_is_directory
 
         client = MagicMock()
-        client.sftp.list.return_value = {"data": [{"fileName": "x.txt"}]}
+        client.sftp.list.return_value = {"data": [{"fileName": "x.txt", "path": "/remote/dir/x.txt"}]}
         assert check_is_directory(client, "sftp", "/remote/dir") is True
 
     def test_sftp_with_scalar_data_falls_back_to_trailing_slash(self):

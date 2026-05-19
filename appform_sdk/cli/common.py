@@ -206,12 +206,11 @@ def check_is_directory(client, cmd_method, remote):
                 # a child (directory listing) vs. the path itself (file stat).
                 first = data[0]
                 item_path = first.get("path") or first.get("absolutePath") or ""
-                if item_path and not item_path.rstrip("/").endswith(
-                    remote.rstrip("/").rsplit("/", 1)[-1]
-                ):
+                if item_path and item_path.rstrip("/") != remote.rstrip("/"):
                     return True
-                # Path looks like it returned the file itself — not a directory
-                return False
+                # Path matches remote itself (file stat) or no path key
+                # — return True based on list non-emptiness (backward compat)
+                return True if not item_path else False
             return False
         except Exception:
             return False
@@ -225,7 +224,7 @@ def check_is_directory(client, cmd_method, remote):
             if isinstance(data, list) and len(data) > 0:
                 first = data[0]
                 # If the returned item's path is a child of remote, it's a dir listing
-                item_path = first.get("path") or ""
+                item_path = first.get("path") or first.get("absolutePath") or ""
                 if item_path and item_path.rstrip("/") != remote.rstrip("/"):
                     return True
                 return False

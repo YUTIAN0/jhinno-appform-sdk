@@ -28,9 +28,7 @@ def _require_paramiko():
 
 
 from .exceptions import SFTPError  # noqa: E402
-
-# Characters/patterns that would allow command injection in shell commands
-_DANGEROUS_PATH_CHARS = re.compile(r"""[;&|`(){}$\\><'" ]""")
+from .utils import validate_path
 
 
 def _open_proxy_socket(proxy_url: str, target_host: str, target_port: int):
@@ -107,17 +105,7 @@ def _validate_path(path: str) -> str:
 
     Returns the unchanged path if safe. Raises SFTPError if dangerous.
     """
-    if ".." in path:
-        raise SFTPError(f"Directory traversal not allowed in path: {path!r}")
-    if _DANGEROUS_PATH_CHARS.search(path):
-        raise SFTPError(
-            f"Invalid characters in path: {path!r}. "
-            "Paths must not contain shell metacharacters or spaces "
-            "(; & | ( ) `{ } $ \\ ' \" space)."
-        )
-    if "\n" in path:
-        raise SFTPError(f"Newline not allowed in path: {path!r}")
-    return path
+    return validate_path(path, exception_class=SFTPError)
 
 
 class SFTPClientManager:

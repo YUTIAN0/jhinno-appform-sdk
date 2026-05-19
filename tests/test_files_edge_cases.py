@@ -297,6 +297,91 @@ class TestUploadDownload:
         api.download_directory("/remote/dir", "/local/dir", transfer_method="sftp")
         api._client.sftp.download_directory.assert_called_once()
 
+    def test_download_directory_http_nested_structure(self):
+        """Test download_directory correctly computes relative paths for nested dirs."""
+        api = _make_files_api()
+
+        # Mock list_all to return nested structure:
+        # /remote/dir/sub1/file1.txt  (file)
+        # /remote/dir/sub2/file2.txt  (dir with subdir)
+        # /remote/dir/sub2/nested/file3.txt (file in nested dir)
+        api.list_all = MagicMock(
+            return_value=[
+                {"fileName": "file1.txt", "path": "/remote/dir/sub1/file1.txt", "fileType": "file"},
+                {"fileName": "sub2", "path": "/remote/dir/sub2", "fileType": "directory", "dirs": "1"},
+            ]
+        )
+
+        # Mock download to succeed
+        api.download = MagicMock(return_value={})
+
+        # Mock recursive calls for subdirs
+        call_count = 0
+        def fake_download_directory(remote_dir, local_dir, on_progress=None):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # First call for /remote/dir/sub2 (the nested dir)
+                assert local_dir.endswith("sub2"), f"Expected local path to end with 'sub2', got {local_dir}"
+                return [{"file": "nested/file3.txt", "status": "ok"}]
+            return []
+
+        api.download_directory = MagicMock(side_effect=fake_download_directory)
+
+        results = api.download_directory("/remote/dir", "/local/dir")
+
+        # Verify file path calculation
+        api.download.assert_called_once_with(
+            "/remote/dir/sub1/file1.txt",
+            "/local/dir/sub1/file1.txt",
+            chunk_size=104857600
+        )
+
+        # Verify directory recursion
+        api.download_directory.assert_called_once_with(
+            "/remote/dir/sub2",
+            "/local/dir/sub2",
+            on_progress=None
+        )
+
+        # Verify results structure
+        assert len(results) == 2
+        assert results[0]["file"] == "sub1/file1.txt"
+        assert results[1]["file"] == "nested/file3.txt"
+
+    def test_download_directory_http_direct_file(self):
+        """Test download_directory with files directly in remote_dir."""
+        api = _make_files_api()
+
+        api.list_all = MagicMock(
+            return_value=[
+                {"fileName": "file1.txt", "path": "/remote/dir/file1.txt", "fileType": "file"},
+                {"fileName": "file2.txt", "path": "/remote/dir/file2.txt", "fileType": "file"},
+            ]
+        )
+
+        api.download = MagicMock(return_value={})
+        api.download_directory = MagicMock(return_value=[])
+
+        results = api.download_directory("/remote/dir", "/local/dir")
+
+        # Verify both files are downloaded to the local base
+        api.download.assert_any_call(
+            "/remote/dir/file1.txt",
+            "/local/dir/file1.txt",
+            chunk_size=104857600
+        )
+        api.download.assert_any_call(
+            "/remote/dir/file2.txt",
+            "/local/dir/file2.txt",
+            chunk_size=104857600
+        )
+
+        # Verify results structure
+        assert len(results) == 2
+        assert results[0]["file"] == "file1.txt"
+        assert results[1]["file"] == "file2.txt"
+
     def test_upload_directory_missing(self):
         """Test upload_directory raises for non-directory."""
         api = _make_files_api()

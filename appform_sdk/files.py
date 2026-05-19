@@ -409,7 +409,7 @@ class FilesAPI:
         if not dest_dir.endswith("/") and src_parent.rstrip("/") == dest_parent.rstrip(
             "/"
         ):
-            return self.rename(src_path, dest_name)
+            return self.rename(src_path_stripped, dest_name)
 
         # Cross-directory move or dest is a directory (trailing /).
         # Copy source into the target directory, then delete source.
